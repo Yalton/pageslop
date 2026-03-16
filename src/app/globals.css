@@ -109,6 +109,19 @@
   --font-sans: var(--font-inter);
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 25%, hsl(var(--accent) / 0.1) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer { animation: none; }
+}
+
 * {
   border-color: hsl(var(--border));
 }
