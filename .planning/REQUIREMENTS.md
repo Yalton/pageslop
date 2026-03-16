@@ -96,13 +96,38 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| — | — | — |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| LINK-01 | Phase 1 | Pending |
+| LINK-02 | Phase 1 | Pending |
+| LINK-03 | Phase 1 | Pending |
+| LINK-04 | Phase 1 | Pending |
+| CLSF-01 | Phase 2 | Pending |
+| CLSF-02 | Phase 2 | Pending |
+| CLSF-03 | Phase 2 | Pending |
+| CLSF-04 | Phase 2 | Pending |
+| CLSF-05 | Phase 2 | Pending |
+| SRCH-01 | Phase 3 | Pending |
+| SRCH-02 | Phase 3 | Pending |
+| SRCH-03 | Phase 3 | Pending |
+| SRCH-04 | Phase 3 | Pending |
+| LINK-05 | Phase 3 | Pending |
+| LINK-06 | Phase 3 | Pending |
+| MNTR-01 | Phase 4 | Pending |
+| MNTR-02 | Phase 4 | Pending |
+| BYOK-01 | Phase 5 | Pending |
+| BYOK-02 | Phase 5 | Pending |
+| BYOK-03 | Phase 5 | Pending |
+| GRPH-01 | Phase 6 | Pending |
+| GRPH-02 | Phase 6 | Pending |
+| GRPH-03 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24 ⚠️
+- v1 requirements: 26 total (file previously stated 24 — recount: AUTH 3 + LINK 6 + CLSF 5 + BYOK 3 + SRCH 4 + GRPH 3 + MNTR 2 = 26)
+- Mapped to phases: 26
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-16*
-*Last updated: 2026-03-16 after initial definition*
+*Last updated: 2026-03-16 after roadmap creation — traceability complete*
