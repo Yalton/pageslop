@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 1 UI-SPEC approved
-last_updated: "2026-03-16T05:54:58.729Z"
+stopped_at: Completed 01-foundation-01-PLAN.md
+last_updated: "2026-03-16T06:23:02.152Z"
 last_activity: 2026-03-16 — Roadmap created, phases defined
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 6
+  completed_plans: 1
   percent: 0
 ---
 
@@ -50,6 +50,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 01-foundation P01 | 10 | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,9 @@ Recent decisions affecting current work:
 - [Pre-planning]: Hybrid classification — must work without LLM, better with one (pending confirmation)
 - [Pre-planning]: Email/password auth for v1 — simplest path, social login deferred (pending confirmation)
 - [Pre-planning]: Uptime as indicator only — no alerts or history in v1 (pending confirmation)
+- [Phase 01-foundation]: Use explicit native bindings (@tailwindcss/oxide-darwin-arm64, @rolldown/binding-darwin-arm64) — npm optional deps skip them on arm64 macOS
+- [Phase 01-foundation]: Two DB clients: neon-http for serverless API routes, pg Pool (max:5) for worker — pg-boss requires direct connection with session-level advisory locks
+- [Phase 01-foundation]: Tags as free-form strings with source field (user/rule/llm) — never enums — preserves Phase 2 classification compatibility
 
 ### Pending Todos
 
@@ -75,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16T05:54:58.725Z
-Stopped at: Phase 1 UI-SPEC approved
-Resume file: .planning/phases/01-foundation/01-UI-SPEC.md
+Last session: 2026-03-16T06:23:02.150Z
+Stopped at: Completed 01-foundation-01-PLAN.md
+Resume file: None
