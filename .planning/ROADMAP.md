@@ -31,7 +31,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can paste a URL and see it saved immediately with a pending state indicator (no wait for scraping)
   4. System auto-fetches page title and OG image/favicon in the background and updates the link card
   5. Saving a duplicate URL notifies the user rather than creating a second entry
-**Plans**: TBD
+**Plans:** 6 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Project scaffold, DB schema, types, Vitest config
+- [ ] 01-02-PLAN.md — Auth system (Better Auth, signup/login/onboarding pages)
+- [ ] 01-03-PLAN.md — Link save API, Cheerio scraper, pg-boss worker
+- [ ] 01-04-PLAN.md — Marketing landing page, dashboard layout shell, sidebar
+- [ ] 01-05-PLAN.md — Dashboard link components (cards, grid, detail, save input, SWR polling)
+- [ ] 01-06-PLAN.md — Human verification checkpoint (end-to-end flow)
 
 ### Phase 2: Enrichment
 **Goal**: Every saved link has machine-generated tags, a description, and a category — with no LLM key required
@@ -94,7 +102,7 @@ Note: Phase 4 depends only on Phase 1 (not Phase 2 or 3) and can begin after Pha
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/6 | Planning complete | - |
 | 2. Enrichment | 0/TBD | Not started | - |
 | 3. Search & Browse | 0/TBD | Not started | - |
 | 4. Monitoring | 0/TBD | Not started | - |
