@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can paste a URL and see it saved immediately with a pending state indicator (no wait for scraping)
   4. System auto-fetches page title and OG image/favicon in the background and updates the link card
   5. Saving a duplicate URL notifies the user rather than creating a second entry
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 
 Plans:
 - [ ] 01-01-PLAN.md — Project scaffold, DB schema, types, Vitest config
@@ -102,7 +102,7 @@ Note: Phase 4 depends only on Phase 1 (not Phase 2 or 3) and can begin after Pha
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 3/6 | In Progress|  |
+| 1. Foundation | 4/6 | In Progress|  |
 | 2. Enrichment | 0/TBD | Not started | - |
 | 3. Search & Browse | 0/TBD | Not started | - |
 | 4. Monitoring | 0/TBD | Not started | - |

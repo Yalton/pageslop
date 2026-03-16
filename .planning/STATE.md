@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-foundation-04-PLAN.md
-last_updated: "2026-03-16T06:30:14.913Z"
+stopped_at: Completed 01-foundation-01-03-PLAN.md
+last_updated: "2026-03-16T06:35:02.747Z"
 last_activity: 2026-03-16 — Auth system implemented (Better Auth, signup/login/onboarding, middleware, tests)
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 6
-  completed_plans: 3
+  completed_plans: 4
   percent: 33
 ---
 
@@ -52,6 +52,7 @@ Progress: [███░░░░░░░] 33%
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 10 | 2 tasks | 14 files |
 | Phase 01-foundation P04 | 4min | 2 tasks | 8 files |
+| Phase 01-foundation P03 | 9 | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Recent decisions affecting current work:
 - [Phase 01-foundation P02]: Shared Zod schemas in src/lib/validations/auth.ts — reused by both form pages and unit tests
 - [Phase 01-foundation]: Dashboard lives at /dashboard (not /) to avoid routing conflict between marketing page and authenticated view
 - [Phase 01-foundation]: Sidebar uses three separate aside elements (desktop/tablet/mobile) for cleaner control over responsive fixed-position layouts
+- [Phase 01-foundation]: pg-boss v12 uses named export {PgBoss} not default; WorkHandler receives Job[] array; localConcurrency replaces teamSize
+- [Phase 01-foundation]: vitest v4.1 requires Node 20+ — run tests via /Users/yalt/.nvm/versions/node/v20.20.1/bin/node
+- [Phase 01-foundation]: Worker uses relative imports not @/ alias — runs as standalone Node process via tsx
 
 ### Pending Todos
 
@@ -84,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16T06:30:14.911Z
-Stopped at: Completed 01-foundation-04-PLAN.md
+Last session: 2026-03-16T06:35:02.745Z
+Stopped at: Completed 01-foundation-01-03-PLAN.md
 Resume file: None

@@ -15,10 +15,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Link Management
 
-- [ ] **LINK-01**: User can save a link by pasting a URL in the web app
+- [x] **LINK-01**: User can save a link by pasting a URL in the web app
 - [x] **LINK-02**: System auto-fetches page title and OG image/favicon on save
 - [x] **LINK-03**: System detects and handles duplicate URLs on save
-- [ ] **LINK-04**: User can delete a saved link
+- [x] **LINK-04**: User can delete a saved link
 - [ ] **LINK-05**: User can import bookmarks from browser export (HTML file)
 - [ ] **LINK-06**: User can export their links as JSON or HTML
 
@@ -99,10 +99,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Complete |
-| LINK-01 | Phase 1 | Pending |
+| LINK-01 | Phase 1 | Complete |
 | LINK-02 | Phase 1 | Complete |
 | LINK-03 | Phase 1 | Complete |
-| LINK-04 | Phase 1 | Pending |
+| LINK-04 | Phase 1 | Complete |
 | CLSF-01 | Phase 2 | Pending |
 | CLSF-02 | Phase 2 | Pending |
 | CLSF-03 | Phase 2 | Pending |
