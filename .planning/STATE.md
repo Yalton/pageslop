@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Completed 01-foundation-01-PLAN.md
-last_updated: "2026-03-16T06:23:02.152Z"
-last_activity: 2026-03-16 — Roadmap created, phases defined
+status: executing
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-03-16T06:30:07.270Z"
+last_activity: 2026-03-16 — Auth system implemented (Better Auth, signup/login/onboarding, middleware, tests)
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 6
-  completed_plans: 1
-  percent: 0
+  completed_plans: 3
+  percent: 33
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 1 of 6 (Foundation)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-03-16 — Roadmap created, phases defined
+Plan: 2 of TBD in current phase
+Status: Executing
+Last activity: 2026-03-16 — Auth system implemented (Better Auth, signup/login/onboarding, middleware, tests)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 10 | 2 tasks | 14 files |
+| Phase 01-foundation P04 | 4min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,10 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: Use explicit native bindings (@tailwindcss/oxide-darwin-arm64, @rolldown/binding-darwin-arm64) — npm optional deps skip them on arm64 macOS
 - [Phase 01-foundation]: Two DB clients: neon-http for serverless API routes, pg Pool (max:5) for worker — pg-boss requires direct connection with session-level advisory locks
 - [Phase 01-foundation]: Tags as free-form strings with source field (user/rule/llm) — never enums — preserves Phase 2 classification compatibility
+- [Phase 01-foundation P02]: Cookie-only middleware check for better-auth.session_token — Edge-compatible, no DB round-trip on every request
+- [Phase 01-foundation P02]: Shared Zod schemas in src/lib/validations/auth.ts — reused by both form pages and unit tests
+- [Phase 01-foundation]: Dashboard lives at /dashboard (not /) to avoid routing conflict between marketing page and authenticated view
+- [Phase 01-foundation]: Sidebar uses three separate aside elements (desktop/tablet/mobile) for cleaner control over responsive fixed-position layouts
 
 ### Pending Todos
 
@@ -79,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16T06:23:02.150Z
-Stopped at: Completed 01-foundation-01-PLAN.md
+Last session: 2026-03-16T06:28:25Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
