@@ -75,9 +75,9 @@ Exceptions:
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
 | Body | 14px | 400 (regular) | 1.5 | Link descriptions, card body text, form help text |
-| Label | 14px | 500 (medium) | 1.4 | Form labels, sidebar nav items, tag pills, metadata |
+| Label | 14px | 600 (semibold) | 1.4 | Form labels, sidebar nav items, tag pills, metadata |
 | Heading | 20px | 600 (semibold) | 1.2 | Page titles, detail view title, section headers |
-| Display | 36px | 700 (bold) | 1.1 | Marketing hero headline only |
+| Display | 36px | 600 (semibold) | 1.1 | Marketing hero headline only |
 
 **Font stack:**
 ```
@@ -85,9 +85,9 @@ font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
 ```
 
 **Constraints:**
-- Weights used: 400, 500, 600, 700 (load only these four via `next/font`)
-- 700 is reserved exclusively for the marketing display heading
-- 500 is reserved for labels and navigation — never for body text
+- Weights used: 400, 600 (load only these two via `next/font`)
+- 600 is the single emphasis weight — used for labels, headings, and the display headline
+- 400 is the single body weight — used for all running text and descriptions
 - No italic usage in Phase 1
 
 ---
@@ -214,7 +214,7 @@ Accent is NOT used on: body text, card backgrounds, sidebar background, headings
 |---------|-----------|--------|-------|
 | Row container | div | default, hover (bg muted) | `h-16 px-4 flex items-center gap-3` |
 | Favicon | Avatar (20px) | loaded, fallback | Left side |
-| Title | Label | — | `14px weight 500`, truncate |
+| Title | Label | — | `14px weight 600`, truncate |
 | Domain | Label (muted) | — | `14px`, after title |
 | Tags | Badge | — | Max 2 visible, compact |
 | Timestamp | Label (muted) | — | Relative time ("2h ago"), right-aligned |
@@ -241,7 +241,7 @@ Accent is NOT used on: body text, card backgrounds, sidebar background, headings
 |---------|-----------|--------|-------|
 | Desktop bar | Input + Button | idle, focus, submitting, success | Always visible at top of dashboard |
 | Input field | Input | idle, focus | Placeholder: "Paste a link..." |
-| Submit button | Button (violet, icon) | default, loading | Plus icon or arrow icon |
+| Submit button | Button (violet, icon) | default, loading | Plus icon or arrow icon. `aria-label="Save link"` |
 | Multi-line expand | Textarea | expanded when newlines detected | Switches from Input to Textarea on multi-line paste |
 | Mobile FAB | Button (violet, round) | default, pressed | 56px, bottom-right, `fixed` position |
 | Mobile modal | Dialog | open, closed | Textarea + submit button |
@@ -367,7 +367,7 @@ Accent is NOT used on: body text, card backgrounds, sidebar background, headings
 | Keyboard navigation | All interactive elements focusable via Tab. Enter/Space to activate. Escape closes dialogs/sheets/dropdowns. |
 | Focus visible | 2px violet outline ring on all focusable elements (shadcn default `ring-ring`) |
 | Color contrast | All text meets WCAG AA (4.5:1 body, 3:1 large text) against their backgrounds |
-| Screen reader | All images have `alt` text (title or empty string for decorative). Skeleton states have `aria-busy="true"`. Toast announcements via `aria-live="polite"`. |
+| Screen reader | All images have `alt` text (title or empty string for decorative). Skeleton states have `aria-busy="true"`. Toast announcements via `aria-live="polite"`. Icon-only buttons have explicit `aria-label` (e.g. SaveURLInput submit: `aria-label="Save link"`). |
 | Reduced motion | Skeleton shimmer respects `prefers-reduced-motion: reduce` — disable animation |
 | Touch targets | Minimum 44px touch target on mobile for all interactive elements. FAB is 56px. |
 
