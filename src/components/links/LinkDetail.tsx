@@ -4,7 +4,6 @@ import { format } from 'date-fns'
 import { ExternalLink, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -14,15 +13,19 @@ import {
 } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { CategorySelect } from '@/components/links/CategorySelect'
+import { InlineEdit } from '@/components/links/InlineEdit'
+import { TagEditor } from '@/components/links/TagEditor'
 import { domainToHue } from '@/lib/utils/domain-color'
-import type { Link } from '@/types'
+import type { Link, LinkWithTags } from '@/types'
 
 interface LinkDetailProps {
-  link: Link | null
+  link: LinkWithTags | null
   open: boolean
   onClose: () => void
   onDelete: (id: string) => void
   onUndoDelete: (link: Link) => void
+  onMutate: () => void
 }
 
 function LinkDetailContent({
@@ -30,11 +33,13 @@ function LinkDetailContent({
   onClose,
   onDelete,
   onUndoDelete,
+  onMutate,
 }: {
-  link: Link
+  link: LinkWithTags
   onClose: () => void
   onDelete: (id: string) => void
   onUndoDelete: (link: Link) => void
+  onMutate: () => void
 }) {
   const hue = domainToHue(link.domain || '')
   const domainInitial = (link.domain || link.url).charAt(0).toUpperCase()
@@ -53,6 +58,24 @@ function LinkDetailContent({
         onClick: () => onUndoDelete(link),
       },
     })
+  }
+
+  async function handleCategoryChange(category: string) {
+    await fetch(`/api/links/${link.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category }),
+    })
+    onMutate()
+  }
+
+  async function handleDescriptionSave(description: string) {
+    await fetch(`/api/links/${link.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description }),
+    })
+    onMutate()
   }
 
   return (
@@ -108,10 +131,31 @@ function LinkDetailContent({
         Visit Link
       </Button>
 
-      {/* Description */}
-      {link.description && (
-        <p className="text-sm text-muted-foreground">{link.description}</p>
-      )}
+      {/* Description (inline editable) */}
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-1 px-3">Description</p>
+        <InlineEdit
+          value={link.description ?? ''}
+          onSave={handleDescriptionSave}
+        />
+      </div>
+
+      {/* Category */}
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-1">Category</p>
+        <CategorySelect value={link.category} onChange={handleCategoryChange} />
+      </div>
+
+      {/* Tags */}
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-1">Tags</p>
+        <TagEditor
+          linkId={link.id}
+          tags={link.tags}
+          onTagAdded={onMutate}
+          onTagRemoved={onMutate}
+        />
+      </div>
 
       {/* Saved date */}
       <p className="text-sm text-muted-foreground">
@@ -133,7 +177,7 @@ function LinkDetailContent({
   )
 }
 
-export function LinkDetail({ link, open, onClose, onDelete, onUndoDelete }: LinkDetailProps) {
+export function LinkDetail({ link, open, onClose, onDelete, onUndoDelete, onMutate }: LinkDetailProps) {
   if (!link) return null
 
   return (
@@ -149,6 +193,7 @@ export function LinkDetail({ link, open, onClose, onDelete, onUndoDelete }: Link
             onClose={onClose}
             onDelete={onDelete}
             onUndoDelete={onUndoDelete}
+            onMutate={onMutate}
           />
         </DialogContent>
       </Dialog>
@@ -165,6 +210,7 @@ export function LinkDetail({ link, open, onClose, onDelete, onUndoDelete }: Link
               onClose={onClose}
               onDelete={onDelete}
               onUndoDelete={onUndoDelete}
+              onMutate={onMutate}
             />
           </div>
         </SheetContent>
