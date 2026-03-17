@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "worker": "npx tsx src/workers/scrape.worker.ts",
+    "worker": "node --env-file=.env --import tsx src/workers/scrape.worker.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -16,8 +16,6 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@neondatabase/serverless": "^1.0.2",
-    "@rolldown/binding-darwin-arm64": "^1.0.0-rc.9",
-    "@tailwindcss/oxide-darwin-arm64": "^4.2.1",
     "better-auth": "^1.5.5",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",
@@ -50,6 +48,7 @@
     "@vitejs/plugin-react": "^6.0.1",
     "drizzle-kit": "^0.31.9",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5",
     "vitest": "^4.1.0"
   }

@@ -22,6 +22,16 @@ export function SaveURLInput() {
     }
   }
 
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault()
+      if (!isMultiLine) {
+        setIsMultiLine(true)
+      }
+      setValue(prev => prev + '\n')
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = value.trim()
@@ -65,6 +75,7 @@ export function SaveURLInput() {
         <Textarea
           value={value}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
           placeholder="Paste a link..."
           className="flex-1 text-sm min-h-[48px] resize-none"
           disabled={isSubmitting}
@@ -73,6 +84,7 @@ export function SaveURLInput() {
         <Input
           value={value}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
           placeholder="Paste a link..."
           className="flex-1 text-sm h-12"
           disabled={isSubmitting}

@@ -16,8 +16,11 @@ const STORAGE_KEY = 'pageslop-view-mode'
 export function LinkGrid() {
   const { links, isLoading, deleteLink, undoDelete, mutate } = useLinks()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [selectedLink, setSelectedLink] = useState<LinkWithTags | null>(null)
+  const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+
+  // Derive selectedLink from SWR data so it stays in sync after mutations
+  const selectedLink = selectedLinkId ? links.find(l => l.id === selectedLinkId) ?? null : null
 
   // Load view mode from localStorage on mount
   useEffect(() => {
@@ -33,13 +36,13 @@ export function LinkGrid() {
   }
 
   function handleOpenDetail(link: LinkWithTags) {
-    setSelectedLink(link)
+    setSelectedLinkId(link.id)
     setDetailOpen(true)
   }
 
   function handleCloseDetail() {
     setDetailOpen(false)
-    setSelectedLink(null)
+    setSelectedLinkId(null)
   }
 
   return (

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ExternalLink, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -178,29 +179,24 @@ function LinkDetailContent({
 }
 
 export function LinkDetail({ link, open, onClose, onDelete, onUndoDelete, onMutate }: LinkDetailProps) {
-  if (!link) return null
+  const [isMobile, setIsMobile] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  return (
-    <>
-      {/* Desktop: Dialog */}
-      <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="hidden md:grid max-w-[600px] overflow-y-auto max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="sr-only">Link Detail</DialogTitle>
-          </DialogHeader>
-          <LinkDetailContent
-            link={link}
-            onClose={onClose}
-            onDelete={onDelete}
-            onUndoDelete={onUndoDelete}
-            onMutate={onMutate}
-          />
-        </DialogContent>
-      </Dialog>
+  useEffect(() => {
+    setMounted(true)
+    const mql = window.matchMedia('(max-width: 767px)')
+    setIsMobile(mql.matches)
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
 
-      {/* Mobile: Sheet */}
+  if (!link || !mounted) return null
+
+  if (isMobile) {
+    return (
       <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-        <SheetContent side="bottom" className="md:hidden max-h-[90vh] overflow-y-auto">
+        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="sr-only">Link Detail</SheetTitle>
           </SheetHeader>
@@ -215,6 +211,23 @@ export function LinkDetail({ link, open, onClose, onDelete, onUndoDelete, onMuta
           </div>
         </SheetContent>
       </Sheet>
-    </>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-[600px] overflow-y-auto max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="sr-only">Link Detail</DialogTitle>
+        </DialogHeader>
+        <LinkDetailContent
+          link={link}
+          onClose={onClose}
+          onDelete={onDelete}
+          onUndoDelete={onUndoDelete}
+          onMutate={onMutate}
+        />
+      </DialogContent>
+    </Dialog>
   )
 }
