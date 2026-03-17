@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth/server'
 import { headers } from 'next/headers'
-import { insertLink, findDuplicate, listLinks } from '@/lib/db/queries/links'
+import { insertLink, findDuplicate, listLinksWithTags } from '@/lib/db/queries/links'
 import { enqueueScrapeJob } from '@/lib/queue/boss'
 import type { SaveLinksRequest, LinkWithDuplicate } from '@/types'
 
@@ -44,6 +44,6 @@ export async function GET(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session) return new Response('Unauthorized', { status: 401 })
 
-  const data = await listLinks(session.user.id)
+  const data = await listLinksWithTags(session.user.id)
   return Response.json(data)
 }

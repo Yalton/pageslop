@@ -1,5 +1,41 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+// Mock the db client so routes that import it directly don't hit a real DB
+// The mock supports the chained query pattern used for ownership checks
+let mockSelectResult: any[] = []
+
+vi.mock('@/lib/db/client', () => ({
+  db: {
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => ({
+          limit: vi.fn(() => Promise.resolve(mockSelectResult)),
+        })),
+        innerJoin: vi.fn(() => ({
+          where: vi.fn(() => Promise.resolve([])),
+        })),
+      })),
+    })),
+    insert: vi.fn(() => ({
+      values: vi.fn(() => ({
+        onConflictDoNothing: vi.fn(() => ({
+          returning: vi.fn(() => Promise.resolve([])),
+        })),
+      })),
+    })),
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: vi.fn(() => ({
+          returning: vi.fn(() => Promise.resolve([])),
+        })),
+      })),
+    })),
+    delete: vi.fn(() => ({
+      where: vi.fn(() => Promise.resolve([])),
+    })),
+  },
+}))
+
 // Mock database query modules
 vi.mock('@/lib/db/queries/links', () => ({
   insertLink: vi.fn(),
@@ -69,26 +105,24 @@ const mockLinkWithTags = { ...mockLink, tags: [mockTag] }
 describe('POST /api/links/[id]/tags', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockSelectResult = []
   })
 
   it('creates a user tag and links it to the link, returns 201 with tag', async () => {
     const { auth } = await import('@/lib/auth/server')
     const { upsertTag, linkTagToLink } = await import('@/lib/db/queries/tags')
-    const { deleteLink } = await import('@/lib/db/queries/links')
 
     vi.mocked(auth.api.getSession).mockResolvedValueOnce({
       user: { id: 'user-1' },
       session: {} as any,
     } as any)
 
-    // Simulate route: verify link ownership via deleteLink-style query (using a dedicated links query)
-    // The route uses its own DB query for ownership check; we mock that via the links module
-    // The route handler does: db.select from links where id AND userId
-    // We model this as the tags route using the same auth + links ownership check
+    // Ownership check returns the link
+    mockSelectResult = [mockLink]
+
     vi.mocked(upsertTag).mockResolvedValueOnce(mockTag)
     vi.mocked(linkTagToLink).mockResolvedValueOnce(undefined)
 
-    // Import the POST route handler
     const { POST } = await import('@/app/api/links/[id]/tags/route')
 
     const req = new Request('http://localhost/api/links/link-1/tags', {
@@ -97,25 +131,14 @@ describe('POST /api/links/[id]/tags', () => {
       headers: { 'content-type': 'application/json' },
     })
 
-    // Mock DB client for ownership check inside the route
-    vi.doMock('@/lib/db/client', () => ({
-      db: {
-        select: vi.fn(() => ({
-          from: vi.fn(() => ({
-            where: vi.fn(() => ({
-              limit: vi.fn().mockResolvedValueOnce([mockLink]),
-            })),
-          })),
-        })),
-      },
-    }))
-
     const res = await POST(req, { params: Promise.resolve({ id: 'link-1' }) })
     expect(res.status).toBe(201)
     const body = await res.json()
     expect(body.tag).toBeDefined()
     expect(body.tag.name).toBe('react')
     expect(body.tag.source).toBe('user')
+    expect(vi.mocked(upsertTag)).toHaveBeenCalledWith('user-1', 'react', 'user')
+    expect(vi.mocked(linkTagToLink)).toHaveBeenCalledWith('link-1', 'tag-1')
   })
 
   it('returns 400 when name is empty', async () => {
@@ -135,6 +158,28 @@ describe('POST /api/links/[id]/tags', () => {
 
     const res = await POST(req, { params: Promise.resolve({ id: 'link-1' }) })
     expect(res.status).toBe(400)
+  })
+
+  it('returns 404 for non-owned link', async () => {
+    const { auth } = await import('@/lib/auth/server')
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce({
+      user: { id: 'user-2' },
+      session: {} as any,
+    } as any)
+
+    // Ownership check returns empty (link belongs to different user)
+    mockSelectResult = []
+
+    const { POST } = await import('@/app/api/links/[id]/tags/route')
+
+    const req = new Request('http://localhost/api/links/link-1/tags', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'react' }),
+      headers: { 'content-type': 'application/json' },
+    })
+
+    const res = await POST(req, { params: Promise.resolve({ id: 'link-1' }) })
+    expect(res.status).toBe(404)
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -159,6 +204,7 @@ describe('POST /api/links/[id]/tags', () => {
 describe('DELETE /api/links/[id]/tags/[tagId]', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockSelectResult = []
   })
 
   it('removes tag from link, returns 200', async () => {
@@ -169,6 +215,9 @@ describe('DELETE /api/links/[id]/tags/[tagId]', () => {
       user: { id: 'user-1' },
       session: {} as any,
     } as any)
+
+    // Ownership check returns the link
+    mockSelectResult = [mockLink]
     vi.mocked(deleteLinkTag).mockResolvedValueOnce(undefined)
 
     const { DELETE } = await import('@/app/api/links/[id]/tags/[tagId]/route')
@@ -183,6 +232,29 @@ describe('DELETE /api/links/[id]/tags/[tagId]', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.deleted).toBe(true)
+    expect(vi.mocked(deleteLinkTag)).toHaveBeenCalledWith('link-1', 'tag-1')
+  })
+
+  it('returns 404 for non-owned link', async () => {
+    const { auth } = await import('@/lib/auth/server')
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce({
+      user: { id: 'user-2' },
+      session: {} as any,
+    } as any)
+
+    // Link not found for this user
+    mockSelectResult = []
+
+    const { DELETE } = await import('@/app/api/links/[id]/tags/[tagId]/route')
+
+    const req = new Request('http://localhost/api/links/link-1/tags/tag-1', {
+      method: 'DELETE',
+    })
+
+    const res = await DELETE(req, {
+      params: Promise.resolve({ id: 'link-1', tagId: 'tag-1' }),
+    })
+    expect(res.status).toBe(404)
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -207,6 +279,7 @@ describe('DELETE /api/links/[id]/tags/[tagId]', () => {
 describe('PATCH /api/links/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockSelectResult = []
   })
 
   it('updates description and returns updated link', async () => {
@@ -220,7 +293,7 @@ describe('PATCH /api/links/[id]', () => {
     vi.mocked(updateLinkFields).mockResolvedValueOnce({
       ...mockLink,
       description: 'new desc',
-    })
+    } as any)
 
     const { PATCH } = await import('@/app/api/links/[id]/route')
 
@@ -247,7 +320,7 @@ describe('PATCH /api/links/[id]', () => {
     vi.mocked(updateLinkFields).mockResolvedValueOnce({
       ...mockLink,
       category: 'Technology',
-    })
+    } as any)
 
     const { PATCH } = await import('@/app/api/links/[id]/route')
 
@@ -304,6 +377,7 @@ describe('PATCH /api/links/[id]', () => {
 describe('GET /api/links returns links with tags', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockSelectResult = []
   })
 
   it('returns links with tags array included', async () => {
@@ -331,6 +405,10 @@ describe('GET /api/links returns links with tags', () => {
 // ---- listLinksWithTags query function ----
 
 describe('listLinksWithTags — query function', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('returns links with their tags batched', async () => {
     const { listLinksWithTags } = await import('@/lib/db/queries/links')
 
@@ -343,9 +421,13 @@ describe('listLinksWithTags — query function', () => {
   })
 })
 
-// ---- upsertTag + linkTagToLink ----
+// ---- upsertTag normalization ----
 
 describe('upsertTag', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('normalizes name to lowercase and returns tag', async () => {
     const { upsertTag } = await import('@/lib/db/queries/tags')
 
