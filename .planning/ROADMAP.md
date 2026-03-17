@@ -51,7 +51,12 @@ Plans:
   3. Each link is assigned a category (e.g., "Technology", "News", "Reference") based on content
   4. User can click on any tag and edit or remove it
   5. User can click on a link description and edit the text inline
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Schema migration, enrichment types, TDD enrichment module (tags, descriptions, categories)
+- [ ] 02-02-PLAN.md — Worker enrich handler, tag query module, tag/description API routes
+- [ ] 02-03-PLAN.md — Enrichment UI (TagEditor, InlineEdit, CategorySelect, card/detail integration)
 
 ### Phase 3: Search & Browse
 **Goal**: Users can find any saved link quickly and browse their collection in organized views at any scale
@@ -103,7 +108,7 @@ Note: Phase 4 depends only on Phase 1 (not Phase 2 or 3) and can begin after Pha
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/6 | In Progress|  |
-| 2. Enrichment | 0/TBD | Not started | - |
+| 2. Enrichment | 0/3 | Not started | - |
 | 3. Search & Browse | 0/TBD | Not started | - |
 | 4. Monitoring | 0/TBD | Not started | - |
 | 5. BYOK LLM | 0/TBD | Not started | - |
