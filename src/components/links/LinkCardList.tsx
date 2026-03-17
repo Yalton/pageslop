@@ -13,13 +13,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { LinkSkeleton } from '@/components/links/LinkSkeleton'
-import type { Link } from '@/types'
+import type { LinkWithTags } from '@/types'
 
 interface LinkCardListProps {
-  link: Link
+  link: LinkWithTags
   onDelete: (id: string) => void
-  onUndoDelete: (link: Link) => void
-  onOpenDetail: (link: Link) => void
+  onUndoDelete: (link: LinkWithTags) => void
+  onOpenDetail: (link: LinkWithTags) => void
 }
 
 export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail }: LinkCardListProps) {
@@ -29,6 +29,7 @@ export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail }: Lin
 
   const domainInitial = (link.domain || link.url).charAt(0).toUpperCase()
   const relativeTime = formatDistanceToNow(new Date(link.createdAt), { addSuffix: true })
+  const visibleTags = link.tags?.slice(0, 2) ?? []
 
   function handleDelete() {
     onDelete(link.id)
@@ -59,8 +60,26 @@ export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail }: Lin
       {/* Title */}
       <span className="text-sm font-semibold truncate flex-1">{link.title || link.url}</span>
 
+      {/* Tag pills (max 2, hidden on small screens) */}
+      {visibleTags.length > 0 && (
+        <div className="hidden sm:flex items-center gap-1 shrink-0">
+          {visibleTags.map((tag) => (
+            <Badge key={tag.id} variant="secondary" className="text-xs">
+              {tag.name}
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Category badge (hidden on small screens) */}
+      {link.category && link.category !== 'Other' && (
+        <Badge variant="outline" className="text-xs shrink-0 hidden sm:flex">
+          {link.category}
+        </Badge>
+      )}
+
       {/* Domain */}
-      <span className="text-sm text-muted-foreground shrink-0 hidden sm:block">
+      <span className="text-sm text-muted-foreground shrink-0 hidden md:block">
         {link.domain || ''}
       </span>
 

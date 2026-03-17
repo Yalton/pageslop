@@ -13,13 +13,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { LinkSkeleton } from '@/components/links/LinkSkeleton'
 import { domainToHue } from '@/lib/utils/domain-color'
-import type { Link } from '@/types'
+import type { LinkWithTags } from '@/types'
 
 interface LinkCardProps {
-  link: Link
+  link: LinkWithTags
   onDelete: (id: string) => void
-  onUndoDelete: (link: Link) => void
-  onOpenDetail: (link: Link) => void
+  onUndoDelete: (link: LinkWithTags) => void
+  onOpenDetail: (link: LinkWithTags) => void
 }
 
 export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail }: LinkCardProps) {
@@ -29,6 +29,8 @@ export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail }: LinkCar
 
   const hue = domainToHue(link.domain || '')
   const domainInitial = (link.domain || link.url).charAt(0).toUpperCase()
+  const visibleTags = link.tags?.slice(0, 3) ?? []
+  const extraTagCount = (link.tags?.length ?? 0) - 3
 
   function handleDelete() {
     onDelete(link.id)
@@ -78,13 +80,18 @@ export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail }: LinkCar
 
       {/* Card body */}
       <div className="p-3 flex flex-col gap-2">
-        {/* Favicon + domain */}
-        <div className="flex items-center gap-1.5">
-          <Avatar className="size-4">
+        {/* Favicon + domain + category badge */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Avatar className="size-4 shrink-0">
             <AvatarImage src={link.favicon || undefined} alt="" />
             <AvatarFallback className="text-[8px]">{domainInitial}</AvatarFallback>
           </Avatar>
           <span className="text-sm text-muted-foreground truncate">{link.domain || ''}</span>
+          {link.category && link.category !== 'Other' && (
+            <Badge variant="outline" className="text-xs ml-auto shrink-0">
+              {link.category}
+            </Badge>
+          )}
         </div>
 
         {/* Title */}
@@ -95,6 +102,22 @@ export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail }: LinkCar
         {/* Description */}
         {link.description && (
           <p className="text-sm text-muted-foreground line-clamp-2">{link.description}</p>
+        )}
+
+        {/* Tag pills */}
+        {visibleTags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {visibleTags.map((tag) => (
+              <Badge key={tag.id} variant="secondary" className="text-xs">
+                {tag.name}
+              </Badge>
+            ))}
+            {extraTagCount > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                +{extraTagCount}
+              </Badge>
+            )}
+          </div>
         )}
       </div>
 

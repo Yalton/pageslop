@@ -8,15 +8,15 @@ import { LinkCardList } from '@/components/links/LinkCardList'
 import { LinkDetail } from '@/components/links/LinkDetail'
 import { SaveURLInput } from '@/components/links/SaveURLInput'
 import { useLinks } from '@/lib/hooks/useLinks'
-import type { Link } from '@/types'
+import type { LinkWithTags } from '@/types'
 
 type ViewMode = 'grid' | 'list'
 const STORAGE_KEY = 'pageslop-view-mode'
 
 export function LinkGrid() {
-  const { links, isLoading, deleteLink, undoDelete } = useLinks()
+  const { links, isLoading, deleteLink, undoDelete, mutate } = useLinks()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
-  const [selectedLink, setSelectedLink] = useState<Link | null>(null)
+  const [selectedLink, setSelectedLink] = useState<LinkWithTags | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
 
   // Load view mode from localStorage on mount
@@ -32,7 +32,7 @@ export function LinkGrid() {
     localStorage.setItem(STORAGE_KEY, mode)
   }
 
-  function handleOpenDetail(link: Link) {
+  function handleOpenDetail(link: LinkWithTags) {
     setSelectedLink(link)
     setDetailOpen(true)
   }
@@ -122,6 +122,7 @@ export function LinkGrid() {
         onClose={handleCloseDetail}
         onDelete={deleteLink}
         onUndoDelete={undoDelete}
+        onMutate={() => mutate()}
       />
     </div>
   )
