@@ -27,8 +27,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CLSF-01**: System auto-generates tags from page content using rule-based NLP (no LLM required)
 - [x] **CLSF-02**: System auto-generates a brief description from page content (rule-based baseline)
 - [x] **CLSF-03**: System classifies links into categories based on content analysis
-- [ ] **CLSF-04**: User can manually edit tags on any link
-- [ ] **CLSF-05**: User can manually edit description on any link
+- [x] **CLSF-04**: User can manually edit tags on any link
+- [x] **CLSF-05**: User can manually edit description on any link
 
 ### BYOK LLM
 
@@ -106,8 +106,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLSF-01 | Phase 2 | Complete |
 | CLSF-02 | Phase 2 | Complete |
 | CLSF-03 | Phase 2 | Complete |
-| CLSF-04 | Phase 2 | Pending |
-| CLSF-05 | Phase 2 | Pending |
+| CLSF-04 | Phase 2 | Complete |
+| CLSF-05 | Phase 2 | Complete |
 | SRCH-01 | Phase 3 | Pending |
 | SRCH-02 | Phase 3 | Pending |
 | SRCH-03 | Phase 3 | Pending |

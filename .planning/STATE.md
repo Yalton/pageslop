@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-enrichment/02-01-PLAN.md
-last_updated: "2026-03-17T17:02:17.744Z"
+stopped_at: Completed 02-enrichment/02-02-PLAN.md
+last_updated: "2026-03-17T17:12:34.054Z"
 last_activity: 2026-03-16 — Auth system implemented (Better Auth, signup/login/onboarding, middleware, tests)
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 9
-  completed_plans: 6
+  completed_plans: 7
   percent: 33
 ---
 
@@ -55,6 +55,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 01-foundation P03 | 9 | 3 tasks | 10 files |
 | Phase 01-foundation P05 | 3min | 2 tasks | 10 files |
 | Phase 02-enrichment P01 | 5 | 2 tasks | 9 files |
+| Phase 02-enrichment P02 | 7 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,9 @@ Recent decisions affecting current work:
 - [Phase 02-enrichment]: extractKeywords uses frequency-based scoring (not TF-IDF) — simpler and sufficient for 5000-char bodyText
 - [Phase 02-enrichment]: buildTags: domain hints injected first (higher signal), keywords fill remainder up to 4 total tags
 - [Phase 02-enrichment]: db:push used for active dev database — applies delta without failing on existing tables
+- [Phase 02-enrichment]: Tag routes import db directly for ownership checks — avoids a separate findLink query function
+- [Phase 02-enrichment]: listLinksWithTags uses batch query with inArray for all link IDs — no N+1 queries
+- [Phase 02-enrichment]: Test ownership mock: module-level mockSelectResult variable captured in vi.mock factory for per-test control
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T17:02:17.741Z
-Stopped at: Completed 02-enrichment/02-01-PLAN.md
+Last session: 2026-03-17T17:12:34.051Z
+Stopped at: Completed 02-enrichment/02-02-PLAN.md
 Resume file: None
