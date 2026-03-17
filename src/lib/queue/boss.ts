@@ -16,11 +16,23 @@ export function getBoss(): PgBoss {
 
 export async function enqueueScrapeJob(linkId: string, url: string) {
   const b = getBoss()
-  // Ensure boss is started before sending
+  // Ensure boss is started and queue exists before sending
   await b.start()
+  await b.createQueue('scrape')
   await b.send('scrape', { linkId, url }, {
     retryLimit: 2,
     retryDelay: 5,
     expireInSeconds: 60,
+  })
+}
+
+export async function enqueueEnrichJob(linkId: string) {
+  const b = getBoss()
+  await b.start()
+  await b.createQueue('enrich')
+  await b.send('enrich', { linkId }, {
+    retryLimit: 2,
+    retryDelay: 10,
+    expireInSeconds: 120,
   })
 }
