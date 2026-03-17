@@ -1,5 +1,21 @@
 export type LinkStatus = 'pending' | 'ready' | 'error'
 
+export const CATEGORIES = [
+  'Technology',
+  'News',
+  'Reference',
+  'Entertainment',
+  'Shopping',
+  'Social',
+  'Education',
+  'Finance',
+  'Health',
+  'Creative',
+  'Other',
+] as const
+
+export type Category = typeof CATEGORIES[number]
+
 export interface Link {
   id: string
   userId: string
@@ -10,12 +26,17 @@ export interface Link {
   favicon: string | null
   domain: string | null
   status: LinkStatus
+  category: string | null
   createdAt: Date
   updatedAt: Date
 }
 
 export interface LinkWithDuplicate extends Link {
   duplicate?: boolean
+}
+
+export interface LinkWithTags extends Link {
+  tags: Tag[]
 }
 
 export interface Tag {

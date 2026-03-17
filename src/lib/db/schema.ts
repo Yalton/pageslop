@@ -61,6 +61,7 @@ export const links = pgTable('links', {
   favicon: text('favicon'),
   domain: text('domain'),
   status: text('status').notNull().default('pending'),
+  category: text('category'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
@@ -90,4 +91,6 @@ export const tags = pgTable('tags', {
 export const linkTags = pgTable('link_tags', {
   linkId: text('link_id').notNull().references(() => links.id, { onDelete: 'cascade' }),
   tagId: text('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
-})
+}, (table) => ({
+  uniqueLinkTag: unique().on(table.linkId, table.tagId),
+}))

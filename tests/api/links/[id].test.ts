@@ -27,6 +27,7 @@ describe('DELETE /api/links/[id]', () => {
       description: null,
       ogImage: null,
       favicon: null,
+      category: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
