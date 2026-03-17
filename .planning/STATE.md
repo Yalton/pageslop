@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-enrichment/02-02-PLAN.md
-last_updated: "2026-03-17T17:12:34.054Z"
+stopped_at: "Checkpoint: Task 3 human verification of enrichment UI in 02-enrichment/02-03-PLAN.md"
+last_updated: "2026-03-17T17:21:25.771Z"
 last_activity: 2026-03-16 — Auth system implemented (Better Auth, signup/login/onboarding, middleware, tests)
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
   percent: 33
 ---
 
@@ -56,6 +56,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 01-foundation P05 | 3min | 2 tasks | 10 files |
 | Phase 02-enrichment P01 | 5 | 2 tasks | 9 files |
 | Phase 02-enrichment P02 | 7 | 2 tasks | 9 files |
+| Phase 02-enrichment P03 | 8min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,9 @@ Recent decisions affecting current work:
 - [Phase 02-enrichment]: Tag routes import db directly for ownership checks — avoids a separate findLink query function
 - [Phase 02-enrichment]: listLinksWithTags uses batch query with inArray for all link IDs — no N+1 queries
 - [Phase 02-enrichment]: Test ownership mock: module-level mockSelectResult variable captured in vi.mock factory for per-test control
+- [Phase 02-enrichment]: select.tsx shadcn wrapper created around already-installed @radix-ui/react-select — no new npm dependency needed
+- [Phase 02-enrichment]: TagEditor makes fetch calls directly; onTagAdded/onTagRemoved callbacks trigger parent SWR revalidation via onMutate prop on LinkDetail
+- [Phase 02-enrichment]: LinkWithTags is now the standard link type throughout the entire UI layer (cards, detail, grid, hook)
 
 ### Pending Todos
 
@@ -100,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T17:12:34.051Z
-Stopped at: Completed 02-enrichment/02-02-PLAN.md
+Last session: 2026-03-17T17:21:25.769Z
+Stopped at: Checkpoint: Task 3 human verification of enrichment UI in 02-enrichment/02-03-PLAN.md
 Resume file: None
