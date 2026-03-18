@@ -38,10 +38,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Search & Navigation
 
-- [ ] **SRCH-01**: User can search across titles, tags, descriptions, and URLs
-- [ ] **SRCH-02**: User can view links in a grouped/clustered layout organized by classification
-- [ ] **SRCH-03**: User can view links in a list/card layout
-- [ ] **SRCH-04**: User can filter links by tag
+- [x] **SRCH-01**: User can search across titles, tags, descriptions, and URLs
+- [x] **SRCH-02**: User can view links in a grouped/clustered layout organized by classification
+- [x] **SRCH-03**: User can view links in a list/card layout
+- [x] **SRCH-04**: User can filter links by tag
 
 ### Graph
 
@@ -108,10 +108,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CLSF-03 | Phase 2 | Complete |
 | CLSF-04 | Phase 2 | Complete |
 | CLSF-05 | Phase 2 | Complete |
-| SRCH-01 | Phase 3 | Pending |
-| SRCH-02 | Phase 3 | Pending |
-| SRCH-03 | Phase 3 | Pending |
-| SRCH-04 | Phase 3 | Pending |
+| SRCH-01 | Phase 3 | Complete |
+| SRCH-02 | Phase 3 | Complete |
+| SRCH-03 | Phase 3 | Complete |
+| SRCH-04 | Phase 3 | Complete |
 | LINK-05 | Phase 3 | Pending |
 | LINK-06 | Phase 3 | Pending |
 | MNTR-01 | Phase 4 | Pending |
