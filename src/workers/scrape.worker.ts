@@ -4,6 +4,7 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { eq, sql, and } from 'drizzle-orm'
 import * as schema from '../lib/db/schema'
+import { importJobs } from '../lib/db/schema'
 import { enrich } from '../lib/enrichment/classify'
 
 // DIRECT connection (no -pooler in hostname) — required for pg-boss LISTEN/NOTIFY
@@ -62,8 +63,8 @@ async function main() {
   // Run backfill for un-enriched links
   await backfillEnrichment()
 
-  await boss.work<{ linkId: string; url: string }>('scrape', { localConcurrency: 5 }, async ([job]) => {
-    const { linkId, url } = job.data!
+  await boss.work<{ linkId: string; url: string; importJobId?: string }>('scrape', { localConcurrency: 5 }, async ([job]) => {
+    const { linkId, url, importJobId } = job.data!
     console.log(`[worker] scraping ${url} for link ${linkId}`)
 
     try {
@@ -95,6 +96,20 @@ async function main() {
         retryDelay: 10,
         expireInSeconds: 120,
       })
+
+      // Update import job progress if this scrape is part of a bulk import
+      if (importJobId) {
+        const [updated] = await db.update(importJobs)
+          .set({ processedUrls: sql`${importJobs.processedUrls} + 1`, updatedAt: new Date() })
+          .where(eq(importJobs.id, importJobId))
+          .returning()
+
+        if (updated && updated.processedUrls >= updated.totalUrls) {
+          await db.update(importJobs)
+            .set({ status: 'complete' })
+            .where(eq(importJobs.id, importJobId))
+        }
+      }
 
       console.log(`[worker] completed scraping ${url}`)
     } catch (err) {
