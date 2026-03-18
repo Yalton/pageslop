@@ -1,6 +1,6 @@
 import { db } from '@/lib/db/client'
 import { tags, linkTags } from '@/lib/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, sql } from 'drizzle-orm'
 import type { Tag } from '@/types'
 
 /**
@@ -69,4 +69,23 @@ export async function deleteLinkTag(linkId: string, tagId: string): Promise<void
   await db
     .delete(linkTags)
     .where(and(eq(linkTags.linkId, linkId), eq(linkTags.tagId, tagId)))
+}
+
+/**
+ * List all tags for a user with the count of links each tag is applied to.
+ * Returns tags sorted alphabetically by name.
+ */
+export async function listTagsWithCount(
+  userId: string
+): Promise<{ name: string; count: number }[]> {
+  return db
+    .select({
+      name: tags.name,
+      count: sql<number>`count(${linkTags.linkId})::int`,
+    })
+    .from(tags)
+    .leftJoin(linkTags, eq(tags.id, linkTags.tagId))
+    .where(eq(tags.userId, userId))
+    .groupBy(tags.name)
+    .orderBy(tags.name)
 }

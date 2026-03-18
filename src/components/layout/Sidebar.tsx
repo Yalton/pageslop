@@ -26,9 +26,9 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   { label: "All Links", icon: Link2, href: "/dashboard", disabled: false },
-  { label: "Tags", icon: Tags, href: "#", disabled: true },
+  { label: "Tags", icon: Tags, href: "/dashboard/tags", disabled: false },
   { label: "Graph", icon: Network, href: "#", disabled: true },
-  { label: "Settings", icon: Settings, href: "#", disabled: true },
+  { label: "Settings", icon: Settings, href: "/dashboard/settings", disabled: false },
 ]
 
 function NavItem({

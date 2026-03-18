@@ -1,16 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { LayoutGrid, List } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { LayoutGrid, List, Layers } from 'lucide-react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Toggle } from '@/components/ui/toggle'
+import { Button } from '@/components/ui/button'
 import { LinkCard } from '@/components/links/LinkCard'
 import { LinkCardList } from '@/components/links/LinkCardList'
 import { LinkDetail } from '@/components/links/LinkDetail'
 import { SaveURLInput } from '@/components/links/SaveURLInput'
+import { SearchInput } from '@/components/links/SearchInput'
+import { TagFilterChip } from '@/components/links/TagFilterChip'
+import { GroupedView } from '@/components/links/GroupedView'
+import { filterLinks } from '@/lib/utils/search'
 import { useLinks } from '@/lib/hooks/useLinks'
 import type { LinkWithTags } from '@/types'
 
-type ViewMode = 'grid' | 'list'
+type ViewMode = 'grid' | 'list' | 'grouped'
 const STORAGE_KEY = 'pageslop-view-mode'
 
 export function LinkGrid() {
@@ -18,14 +24,25 @@ export function LinkGrid() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const tagFilter = searchParams.get('tag')
 
   // Derive selectedLink from SWR data so it stays in sync after mutations
   const selectedLink = selectedLinkId ? links.find(l => l.id === selectedLinkId) ?? null : null
 
+  // Filter links client-side using search query and tag filter
+  const filteredLinks = useMemo(
+    () => filterLinks(links, searchQuery, tagFilter),
+    [links, searchQuery, tagFilter]
+  )
+
   // Load view mode from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === 'grid' || stored === 'list') {
+    if (stored === 'grid' || stored === 'list' || stored === 'grouped') {
       setViewMode(stored)
     }
   }, [])
@@ -45,12 +62,23 @@ export function LinkGrid() {
     setSelectedLinkId(null)
   }
 
+  function handleTagClick(tagName: string) {
+    router.push(`/dashboard?tag=${encodeURIComponent(tagName)}`)
+  }
+
+  function handleClearTagFilter() {
+    router.push('/dashboard')
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Top bar: URL input + view toggle */}
-      <div className="flex items-start gap-2">
-        <div className="flex-1">
+      {/* Top bar: URL input + search + view toggle */}
+      <div className="flex items-start gap-2 flex-wrap">
+        <div className="flex-1 min-w-[200px]">
           <SaveURLInput />
+        </div>
+        <div className="flex-1 min-w-[160px] max-w-sm">
+          <SearchInput value={searchQuery} onChange={setSearchQuery} />
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <Toggle
@@ -69,8 +97,21 @@ export function LinkGrid() {
           >
             <List className="size-4" />
           </Toggle>
+          <Toggle
+            pressed={viewMode === 'grouped'}
+            onPressedChange={(pressed) => pressed && handleViewMode('grouped')}
+            aria-label="Grouped view"
+            size="sm"
+          >
+            <Layers className="size-4" />
+          </Toggle>
         </div>
       </div>
+
+      {/* Active tag filter chip */}
+      {tagFilter && (
+        <TagFilterChip tag={tagFilter} onClear={handleClearTagFilter} />
+      )}
 
       {/* Empty state */}
       {links.length === 0 && !isLoading && (
@@ -82,8 +123,33 @@ export function LinkGrid() {
         </div>
       )}
 
+      {/* No results state */}
+      {links.length > 0 && filteredLinks.length === 0 && (
+        <div className="flex flex-col items-center justify-center flex-1 py-16 text-center gap-3">
+          {searchQuery ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                No links match &quot;{searchQuery}&quot;
+              </p>
+              <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')}>
+                Clear search
+              </Button>
+            </>
+          ) : tagFilter ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                No links with tag &quot;{tagFilter}&quot;
+              </p>
+              <Button variant="ghost" size="sm" onClick={handleClearTagFilter}>
+                Clear filter
+              </Button>
+            </>
+          ) : null}
+        </div>
+      )}
+
       {/* Grid view */}
-      {viewMode === 'grid' && links.length > 0 && (
+      {viewMode === 'grid' && filteredLinks.length > 0 && (
         <div
           style={{
             display: 'grid',
@@ -91,31 +157,45 @@ export function LinkGrid() {
             gap: '16px',
           }}
         >
-          {links.map((link) => (
+          {filteredLinks.map((link) => (
             <LinkCard
               key={link.id}
               link={link}
               onDelete={deleteLink}
               onUndoDelete={undoDelete}
               onOpenDetail={handleOpenDetail}
+              onTagClick={handleTagClick}
             />
           ))}
         </div>
       )}
 
       {/* List view */}
-      {viewMode === 'list' && links.length > 0 && (
+      {viewMode === 'list' && filteredLinks.length > 0 && (
         <div className="flex flex-col border rounded-lg overflow-hidden">
-          {links.map((link) => (
+          {filteredLinks.map((link) => (
             <LinkCardList
               key={link.id}
               link={link}
               onDelete={deleteLink}
               onUndoDelete={undoDelete}
               onOpenDetail={handleOpenDetail}
+              onTagClick={handleTagClick}
             />
           ))}
         </div>
+      )}
+
+      {/* Grouped view */}
+      {viewMode === 'grouped' && filteredLinks.length > 0 && (
+        <GroupedView
+          links={filteredLinks}
+          subMode="grid"
+          onDelete={deleteLink}
+          onUndoDelete={undoDelete}
+          onOpenDetail={handleOpenDetail}
+          onTagClick={handleTagClick}
+        />
       )}
 
       {/* Link detail dialog/sheet */}

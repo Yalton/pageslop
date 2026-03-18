@@ -20,9 +20,10 @@ interface LinkCardListProps {
   onDelete: (id: string) => void
   onUndoDelete: (link: LinkWithTags) => void
   onOpenDetail: (link: LinkWithTags) => void
+  onTagClick?: (tagName: string) => void
 }
 
-export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail }: LinkCardListProps) {
+export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail, onTagClick }: LinkCardListProps) {
   if (link.status === 'pending') {
     return <LinkSkeleton variant="list" />
   }
@@ -64,7 +65,12 @@ export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail }: Lin
       {visibleTags.length > 0 && (
         <div className="hidden sm:flex items-center gap-1 shrink-0">
           {visibleTags.map((tag) => (
-            <Badge key={tag.id} variant="secondary" className="text-xs">
+            <Badge
+              key={tag.id}
+              variant="secondary"
+              className="text-xs cursor-pointer hover:bg-secondary/80"
+              onClick={(e) => { e.stopPropagation(); onTagClick?.(tag.name) }}
+            >
               {tag.name}
             </Badge>
           ))}

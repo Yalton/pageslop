@@ -20,9 +20,10 @@ interface LinkCardProps {
   onDelete: (id: string) => void
   onUndoDelete: (link: LinkWithTags) => void
   onOpenDetail: (link: LinkWithTags) => void
+  onTagClick?: (tagName: string) => void
 }
 
-export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail }: LinkCardProps) {
+export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail, onTagClick }: LinkCardProps) {
   if (link.status === 'pending') {
     return <LinkSkeleton variant="grid" />
   }
@@ -108,7 +109,12 @@ export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail }: LinkCar
         {visibleTags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {visibleTags.map((tag) => (
-              <Badge key={tag.id} variant="secondary" className="text-xs">
+              <Badge
+                key={tag.id}
+                variant="secondary"
+                className="text-xs cursor-pointer hover:bg-secondary/80"
+                onClick={(e) => { e.stopPropagation(); onTagClick?.(tag.name) }}
+              >
                 {tag.name}
               </Badge>
             ))}
