@@ -68,7 +68,12 @@ Plans:
   3. User can filter the link list to show only links with a specific tag
   4. User can upload a browser-exported HTML bookmarks file and see all bookmarks imported
   5. User can download their entire link collection as a JSON or HTML file
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Search, filter, grouped view, tag browsing (client-side filtering + UI components)
+- [ ] 03-02-PLAN.md — Bookmark import/export (parser, API routes, Settings page, worker progress)
+- [ ] 03-03-PLAN.md — Human verification checkpoint (end-to-end Phase 3 features)
 
 ### Phase 4: Monitoring
 **Goal**: Users can see at a glance which of their saved links are still live
@@ -109,7 +114,7 @@ Note: Phase 4 depends only on Phase 1 (not Phase 2 or 3) and can begin after Pha
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/6 | In Progress|  |
 | 2. Enrichment | 1/3 | In Progress|  |
-| 3. Search & Browse | 0/TBD | Not started | - |
+| 3. Search & Browse | 0/3 | Not started | - |
 | 4. Monitoring | 0/TBD | Not started | - |
 | 5. BYOK LLM | 0/TBD | Not started | - |
 | 6. Graph | 0/TBD | Not started | - |
