@@ -14,12 +14,12 @@ export function getBoss(): PgBoss {
   return boss
 }
 
-export async function enqueueScrapeJob(linkId: string, url: string) {
+export async function enqueueScrapeJob(linkId: string, url: string, importJobId?: string) {
   const b = getBoss()
   // Ensure boss is started and queue exists before sending
   await b.start()
   await b.createQueue('scrape')
-  await b.send('scrape', { linkId, url }, {
+  await b.send('scrape', { linkId, url, importJobId }, {
     retryLimit: 2,
     retryDelay: 5,
     expireInSeconds: 60,

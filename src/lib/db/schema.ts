@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, unique, index } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, unique, index, integer } from 'drizzle-orm/pg-core'
 
 // Better Auth tables — generated via `npx @better-auth/cli generate`
 // The auth CLI will create: user, session, account, verification tables
@@ -94,3 +94,13 @@ export const linkTags = pgTable('link_tags', {
 }, (table) => ({
   uniqueLinkTag: unique().on(table.linkId, table.tagId),
 }))
+
+export const importJobs = pgTable('import_jobs', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  status: text('status').notNull().default('pending'), // pending | processing | complete | error
+  totalUrls: integer('total_urls').notNull().default(0),
+  processedUrls: integer('processed_urls').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
