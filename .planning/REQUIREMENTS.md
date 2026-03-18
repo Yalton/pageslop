@@ -19,8 +19,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **LINK-02**: System auto-fetches page title and OG image/favicon on save
 - [x] **LINK-03**: System detects and handles duplicate URLs on save
 - [x] **LINK-04**: User can delete a saved link
-- [ ] **LINK-05**: User can import bookmarks from browser export (HTML file)
-- [ ] **LINK-06**: User can export their links as JSON or HTML
+- [x] **LINK-05**: User can import bookmarks from browser export (HTML file)
+- [x] **LINK-06**: User can export their links as JSON or HTML
 
 ### Classification
 
@@ -112,8 +112,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SRCH-02 | Phase 3 | Complete |
 | SRCH-03 | Phase 3 | Complete |
 | SRCH-04 | Phase 3 | Complete |
-| LINK-05 | Phase 3 | Pending |
-| LINK-06 | Phase 3 | Pending |
+| LINK-05 | Phase 3 | Complete |
+| LINK-06 | Phase 3 | Complete |
 | MNTR-01 | Phase 4 | Pending |
 | MNTR-02 | Phase 4 | Pending |
 | BYOK-01 | Phase 5 | Pending |
