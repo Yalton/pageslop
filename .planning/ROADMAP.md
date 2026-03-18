@@ -82,7 +82,12 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Each link card shows a green or red dot indicating whether the page was reachable on the last check
   2. Uptime status updates automatically on a schedule without any user action
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Schema extension, types, core monitor logic (checkUrl, updateUptimeStatus) with TDD tests
+- [ ] 04-02-PLAN.md — Worker monitor-sweep cron, per-link monitor handler, check-now API route
+- [ ] 04-03-PLAN.md — UptimeDot component, card/list/detail integration, human verification
 
 ### Phase 5: BYOK LLM
 **Goal**: Users who supply their own LLM API key get noticeably better tags and descriptions, and their key is stored safely
@@ -115,6 +120,6 @@ Note: Phase 4 depends only on Phase 1 (not Phase 2 or 3) and can begin after Pha
 | 1. Foundation | 5/6 | In Progress|  |
 | 2. Enrichment | 1/3 | In Progress|  |
 | 3. Search & Browse | 3/3 | Complete    | 2026-03-18 |
-| 4. Monitoring | 0/TBD | Not started | - |
+| 4. Monitoring | 0/3 | Not started | - |
 | 5. BYOK LLM | 0/TBD | Not started | - |
 | 6. Graph | 0/TBD | Not started | - |
