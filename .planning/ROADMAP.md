@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Foundation** - Auth, link save, and async enrichment pipeline infrastructure
 - [ ] **Phase 2: Enrichment** - Scraping, rule-based classification, auto-tags and descriptions
-- [ ] **Phase 3: Search & Browse** - Full-text search, grouped views, import/export
+- [x] **Phase 3: Search & Browse** - Full-text search, grouped views, import/export (completed 2026-03-18)
 - [ ] **Phase 4: Monitoring** - Scheduled uptime pings with green/red status per link
 - [ ] **Phase 5: BYOK LLM** - User-provided API key for enhanced classification and descriptions
 - [ ] **Phase 6: Graph** - Relational force-directed graph connecting links by shared tags
@@ -68,7 +68,7 @@ Plans:
   3. User can filter the link list to show only links with a specific tag
   4. User can upload a browser-exported HTML bookmarks file and see all bookmarks imported
   5. User can download their entire link collection as a JSON or HTML file
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 03-01-PLAN.md — Search, filter, grouped view, tag browsing (client-side filtering + UI components)
@@ -114,7 +114,7 @@ Note: Phase 4 depends only on Phase 1 (not Phase 2 or 3) and can begin after Pha
 |-------|----------------|--------|-----------|
 | 1. Foundation | 5/6 | In Progress|  |
 | 2. Enrichment | 1/3 | In Progress|  |
-| 3. Search & Browse | 2/3 | In Progress|  |
+| 3. Search & Browse | 3/3 | Complete   | 2026-03-18 |
 | 4. Monitoring | 0/TBD | Not started | - |
 | 5. BYOK LLM | 0/TBD | Not started | - |
 | 6. Graph | 0/TBD | Not started | - |
