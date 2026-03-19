@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-monitoring/04-02-PLAN.md
-last_updated: "2026-03-19T00:10:54.374Z"
+stopped_at: Completed 04-monitoring/04-03-PLAN.md
+last_updated: "2026-03-19T20:36:06.177Z"
 last_activity: 2026-03-16 — Auth system implemented (Better Auth, signup/login/onboarding, middleware, tests)
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 14
   percent: 33
 ---
 
@@ -62,6 +62,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 03-search-browse P03 | 1min | 1 tasks | 0 files |
 | Phase 04-monitoring P01 | 3min | 2 tasks | 7 files |
 | Phase 04-monitoring P02 | 5min | 2 tasks | 4 files |
+| Phase 04-monitoring P03 | 20min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,9 @@ Recent decisions affecting current work:
 - [Phase 04-monitoring]: listLinksForMonitor selects only ready links — skip pending/error links that haven't been scraped yet
 - [Phase 04-monitoring]: monitor-sweep fans out per-link jobs using staggered startAfter (10s per 100 links) to avoid thundering herd
 - [Phase 04-monitoring]: Worker inlines uptime status update logic (no @/ alias import) — consistent with existing enrich handler pattern
+- [Phase 04-monitoring]: check-url fallback broadened to any 4xx HEAD response (not just 405) — some servers return 404 for HEAD but work with GET
+- [Phase 04-monitoring]: Login redirect fixed to push directly to /dashboard after sign-in, removing incorrect callbackURL '/' option
+- [Phase 04-monitoring]: ThemeToggle uses mounted state gate to prevent hydration mismatch — renders placeholder span on server
 
 ### Pending Todos
 
@@ -122,6 +126,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T00:10:54.372Z
-Stopped at: Completed 04-monitoring/04-02-PLAN.md
+Last session: 2026-03-19T20:36:06.174Z
+Stopped at: Completed 04-monitoring/04-03-PLAN.md
 Resume file: None

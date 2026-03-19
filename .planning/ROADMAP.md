@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 1: Foundation** - Auth, link save, and async enrichment pipeline infrastructure
 - [ ] **Phase 2: Enrichment** - Scraping, rule-based classification, auto-tags and descriptions
 - [x] **Phase 3: Search & Browse** - Full-text search, grouped views, import/export (completed 2026-03-18)
-- [ ] **Phase 4: Monitoring** - Scheduled uptime pings with green/red status per link
+- [x] **Phase 4: Monitoring** - Scheduled uptime pings with green/red status per link (completed 2026-03-19)
 - [ ] **Phase 5: BYOK LLM** - User-provided API key for enhanced classification and descriptions
 - [ ] **Phase 6: Graph** - Relational force-directed graph connecting links by shared tags
 
@@ -82,7 +82,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Each link card shows a green or red dot indicating whether the page was reachable on the last check
   2. Uptime status updates automatically on a schedule without any user action
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 04-01-PLAN.md — Schema extension, types, core monitor logic (checkUrl, updateUptimeStatus) with TDD tests
@@ -120,6 +120,6 @@ Note: Phase 4 depends only on Phase 1 (not Phase 2 or 3) and can begin after Pha
 | 1. Foundation | 5/6 | In Progress|  |
 | 2. Enrichment | 1/3 | In Progress|  |
 | 3. Search & Browse | 3/3 | Complete    | 2026-03-18 |
-| 4. Monitoring | 2/3 | In Progress|  |
+| 4. Monitoring | 3/3 | Complete   | 2026-03-19 |
 | 5. BYOK LLM | 0/TBD | Not started | - |
 | 6. Graph | 0/TBD | Not started | - |
