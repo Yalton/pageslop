@@ -1,5 +1,6 @@
 import { PgBoss } from 'pg-boss'
 import { scrapeUrl } from '../lib/scraper/cheerio'
+import { checkUrl } from '../lib/monitor/check-url'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { eq, sql, and } from 'drizzle-orm'
@@ -58,7 +59,12 @@ async function main() {
   await boss.start()
   await boss.createQueue('scrape')
   await boss.createQueue('enrich')
-  console.log('[worker] pg-boss started, listening for scrape and enrich jobs...')
+  await boss.createQueue('monitor-sweep')
+  await boss.createQueue('monitor')
+  console.log('[worker] pg-boss started, listening for scrape, enrich, monitor-sweep, and monitor jobs...')
+
+  // Register 24-hour cron for monitor sweep at 02:00 UTC (pg-boss upserts on restart)
+  await boss.schedule('monitor-sweep', '0 2 * * *', {}, { tz: 'UTC' })
 
   // Run backfill for un-enriched links
   await backfillEnrichment()
@@ -187,6 +193,87 @@ async function main() {
     }
 
     console.log(`[worker] enriched link ${linkId}: category=${result.category}, tags=${result.tags.join(', ')}`)
+  })
+
+  // monitor-sweep: fan out per-link monitor jobs on a 24-hour cron
+  await boss.work('monitor-sweep', { localConcurrency: 1 }, async ([_job]) => {
+    // Fetch all ready links for uptime monitoring
+    const readyLinks = await db
+      .select({ id: schema.links.id })
+      .from(schema.links)
+      .where(eq(schema.links.status, 'ready'))
+
+    console.log(`[worker] monitor-sweep: queuing ${readyLinks.length} links for monitoring`)
+
+    if (readyLinks.length === 0) return
+
+    // Fan out individual monitor jobs with staggered startAfter (10s per 100 links)
+    const BATCH_SIZE = 100
+    const batches: typeof readyLinks[] = []
+    for (let i = 0; i < readyLinks.length; i += BATCH_SIZE) {
+      batches.push(readyLinks.slice(i, i + BATCH_SIZE))
+    }
+
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex]
+      const startAfterSeconds = batchIndex * 10
+      const startAfter = new Date(Date.now() + startAfterSeconds * 1000)
+
+      await boss.insert(
+        'monitor',
+        batch.map((link) => ({
+          data: { linkId: link.id },
+          startAfter,
+          retryLimit: 1,
+          expireInSeconds: 30,
+        }))
+      )
+    }
+  })
+
+  // monitor: check a single link and update uptime status
+  await boss.work<{ linkId: string }>('monitor', { localConcurrency: 20 }, async ([job]) => {
+    const { linkId } = job.data!
+
+    // Fetch the link's URL
+    const [link] = await db
+      .select({ url: schema.links.url })
+      .from(schema.links)
+      .where(eq(schema.links.id, linkId))
+      .limit(1)
+
+    if (!link) {
+      // Link was deleted — skip silently
+      return
+    }
+
+    const result = await checkUrl(link.url)
+
+    if (result.up) {
+      // Success: reset consecutive failures and mark up
+      await db.update(schema.links)
+        .set({
+          uptimeStatus: 'up',
+          lastStatusCode: result.statusCode,
+          lastCheckedAt: new Date(),
+          consecutiveFailures: 0,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.links.id, linkId))
+    } else {
+      // Failure: atomically increment consecutiveFailures and flip to 'down' at >= 2
+      await db.update(schema.links)
+        .set({
+          consecutiveFailures: sql`${schema.links.consecutiveFailures} + 1`,
+          lastStatusCode: result.statusCode,
+          lastCheckedAt: new Date(),
+          uptimeStatus: sql`CASE WHEN ${schema.links.consecutiveFailures} + 1 >= 2 THEN 'down' ELSE ${schema.links.uptimeStatus} END`,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.links.id, linkId))
+    }
+
+    console.log(`[worker] monitor ${linkId}: ${result.up ? 'up' : 'down'} (${result.statusCode})`)
   })
 }
 
