@@ -32,7 +32,6 @@ export default function LoginPage() {
       const { error } = await authClient.signIn.email({
         email: data.email,
         password: data.password,
-        callbackURL: '/',
       })
 
       if (error) {
@@ -40,7 +39,7 @@ export default function LoginPage() {
         return
       }
 
-      router.push('/')
+      router.push('/dashboard')
     } catch {
       toast.error('Invalid email or password. Please try again.')
     } finally {
