@@ -107,5 +107,10 @@ export function useLinks() {
     mutate()
   }
 
-  return { links, isLoading, error, hasPending, saveLinks, deleteLink, undoDelete, addTag, removeTag, updateLink, mutate }
+  async function checkLink(linkId: string): Promise<void> {
+    await fetch(`/api/links/${linkId}/check`, { method: 'POST' })
+    mutate()
+  }
+
+  return { links, isLoading, error, hasPending, saveLinks, deleteLink, undoDelete, addTag, removeTag, updateLink, checkLink, mutate }
 }

@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { LinkSkeleton } from '@/components/links/LinkSkeleton'
+import { UptimeDot } from '@/components/links/UptimeDot'
 import type { LinkWithTags } from '@/types'
 
 interface LinkCardListProps {
@@ -57,6 +58,9 @@ export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail, onTag
         <AvatarImage src={link.favicon || undefined} alt="" />
         <AvatarFallback className="text-[8px]">{domainInitial}</AvatarFallback>
       </Avatar>
+
+      {/* Uptime dot */}
+      <UptimeDot status={link.uptimeStatus} lastCheckedAt={link.lastCheckedAt} lastStatusCode={link.lastStatusCode} />
 
       {/* Title */}
       <span className="text-sm font-semibold truncate flex-1">{link.title || link.url}</span>

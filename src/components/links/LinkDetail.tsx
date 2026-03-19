@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { format } from 'date-fns'
-import { ExternalLink, Trash2 } from 'lucide-react'
+import { format, formatDistanceToNow } from 'date-fns'
+import { ExternalLink, RefreshCw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { CategorySelect } from '@/components/links/CategorySelect'
 import { InlineEdit } from '@/components/links/InlineEdit'
 import { TagEditor } from '@/components/links/TagEditor'
+import { UptimeDot } from '@/components/links/UptimeDot'
 import { domainToHue } from '@/lib/utils/domain-color'
 import type { Link, LinkWithTags } from '@/types'
 
@@ -44,6 +45,14 @@ function LinkDetailContent({
 }) {
   const hue = domainToHue(link.domain || '')
   const domainInitial = (link.domain || link.url).charAt(0).toUpperCase()
+  const [checking, setChecking] = useState(false)
+
+  async function handleCheckNow() {
+    setChecking(true)
+    await fetch(`/api/links/${link.id}/check`, { method: 'POST' })
+    onMutate()
+    setTimeout(() => setChecking(false), 3000)
+  }
 
   function handleVisit() {
     window.open(link.url, '_blank', 'noopener,noreferrer')
@@ -115,6 +124,20 @@ function LinkDetailContent({
           <AvatarFallback className="text-[8px]">{domainInitial}</AvatarFallback>
         </Avatar>
         <span className="text-sm text-muted-foreground">{link.domain || ''}</span>
+      </div>
+
+      {/* Uptime status */}
+      <div className="flex items-center gap-2">
+        <UptimeDot status={link.uptimeStatus} lastCheckedAt={link.lastCheckedAt} lastStatusCode={link.lastStatusCode} />
+        <span className="text-sm text-muted-foreground">
+          {link.lastCheckedAt
+            ? `Checked ${formatDistanceToNow(new Date(link.lastCheckedAt), { addSuffix: true })}`
+            : 'Not yet checked'}
+        </span>
+        <Button variant="outline" size="sm" className="ml-auto" onClick={handleCheckNow} disabled={checking}>
+          <RefreshCw className={`size-3 ${checking ? 'animate-spin' : ''}`} />
+          {checking ? 'Checking...' : 'Check now'}
+        </Button>
       </div>
 
       {/* URL display */}
