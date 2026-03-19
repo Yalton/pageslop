@@ -1,4 +1,5 @@
 export type LinkStatus = 'pending' | 'ready' | 'error'
+export type UptimeStatus = 'unchecked' | 'up' | 'down'
 
 export const CATEGORIES = [
   'Technology',
@@ -29,6 +30,10 @@ export interface Link {
   category: string | null
   createdAt: Date
   updatedAt: Date
+  uptimeStatus: UptimeStatus
+  lastStatusCode: number | null
+  lastCheckedAt: Date | null
+  consecutiveFailures: number
 }
 
 export interface LinkWithDuplicate extends Link {

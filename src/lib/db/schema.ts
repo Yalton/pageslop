@@ -64,6 +64,11 @@ export const links = pgTable('links', {
   category: text('category'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  // Uptime monitoring columns
+  uptimeStatus: text('uptime_status').notNull().default('unchecked'),
+  lastStatusCode: integer('last_status_code'),
+  lastCheckedAt: timestamp('last_checked_at'),
+  consecutiveFailures: integer('consecutive_failures').notNull().default(0),
 }, (table) => ({
   uniqueUserUrl: unique().on(table.userId, table.url),
   userIdIdx: index('links_user_id_idx').on(table.userId),

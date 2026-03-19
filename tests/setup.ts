@@ -14,14 +14,19 @@ vi.mock('pg', () => ({
   })),
 }))
 
-// Mock pg-boss
+// Mock pg-boss (v12 uses named export {PgBoss})
 vi.mock('pg-boss', () => {
+  const MockPgBoss = vi.fn().mockImplementation(() => ({
+    start: vi.fn(),
+    send: vi.fn(),
+    work: vi.fn(),
+    on: vi.fn(),
+    schedule: vi.fn(),
+    insert: vi.fn(),
+    createQueue: vi.fn(),
+  }))
   return {
-    default: vi.fn().mockImplementation(() => ({
-      start: vi.fn(),
-      send: vi.fn(),
-      work: vi.fn(),
-      on: vi.fn(),
-    })),
+    default: MockPgBoss,
+    PgBoss: MockPgBoss,
   }
 })
