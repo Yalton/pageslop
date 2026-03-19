@@ -3,6 +3,17 @@ import { links, rawContent, linkTags, tags } from '@/lib/db/schema'
 import { eq, and, desc, inArray } from 'drizzle-orm'
 import type { LinkWithTags, Tag } from '@/types'
 
+/**
+ * List all links eligible for uptime monitoring.
+ * Returns only 'ready' links (skip pending/error) across all users.
+ */
+export async function listLinksForMonitor(): Promise<{ id: string; url: string }[]> {
+  return db
+    .select({ id: links.id, url: links.url })
+    .from(links)
+    .where(eq(links.status, 'ready'))
+}
+
 export async function insertLink(userId: string, url: string) {
   const domain = new URL(url).hostname.replace(/^www\./, '')
   const [link] = await db.insert(links)
