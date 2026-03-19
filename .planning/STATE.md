@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-monitoring/04-01-PLAN.md
-last_updated: "2026-03-19T00:06:25.850Z"
+stopped_at: Completed 04-monitoring/04-02-PLAN.md
+last_updated: "2026-03-19T00:10:54.374Z"
 last_activity: 2026-03-16 — Auth system implemented (Better Auth, signup/login/onboarding, middleware, tests)
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 15
-  completed_plans: 12
+  completed_plans: 13
   percent: 33
 ---
 
@@ -61,6 +61,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 03-search-browse P02 | 25min | 2 tasks | 12 files |
 | Phase 03-search-browse P03 | 1min | 1 tasks | 0 files |
 | Phase 04-monitoring P01 | 3min | 2 tasks | 7 files |
+| Phase 04-monitoring P02 | 5min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,8 @@ Recent decisions affecting current work:
 - [Phase 04-monitoring]: updateUptimeStatus uses sql template for atomic consecutiveFailures increment — prevents race conditions
 - [Phase 04-monitoring]: uptimeStatus CASE expression flips to 'down' at consecutiveFailures >= 2 — avoids false alarms from transient failures
 - [Phase 04-monitoring]: listLinksForMonitor selects only ready links — skip pending/error links that haven't been scraped yet
+- [Phase 04-monitoring]: monitor-sweep fans out per-link jobs using staggered startAfter (10s per 100 links) to avoid thundering herd
+- [Phase 04-monitoring]: Worker inlines uptime status update logic (no @/ alias import) — consistent with existing enrich handler pattern
 
 ### Pending Todos
 
@@ -119,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T00:06:25.847Z
-Stopped at: Completed 04-monitoring/04-01-PLAN.md
+Last session: 2026-03-19T00:10:54.372Z
+Stopped at: Completed 04-monitoring/04-02-PLAN.md
 Resume file: None

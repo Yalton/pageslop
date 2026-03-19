@@ -82,7 +82,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Each link card shows a green or red dot indicating whether the page was reachable on the last check
   2. Uptime status updates automatically on a schedule without any user action
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 04-01-PLAN.md — Schema extension, types, core monitor logic (checkUrl, updateUptimeStatus) with TDD tests
@@ -120,6 +120,6 @@ Note: Phase 4 depends only on Phase 1 (not Phase 2 or 3) and can begin after Pha
 | 1. Foundation | 5/6 | In Progress|  |
 | 2. Enrichment | 1/3 | In Progress|  |
 | 3. Search & Browse | 3/3 | Complete    | 2026-03-18 |
-| 4. Monitoring | 1/3 | In Progress|  |
+| 4. Monitoring | 2/3 | In Progress|  |
 | 5. BYOK LLM | 0/TBD | Not started | - |
 | 6. Graph | 0/TBD | Not started | - |
