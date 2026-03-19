@@ -36,3 +36,13 @@ export async function enqueueEnrichJob(linkId: string) {
     expireInSeconds: 120,
   })
 }
+
+export async function enqueueMonitorJob(linkId: string) {
+  const b = getBoss()
+  await b.start()
+  await b.createQueue('monitor')
+  await b.send('monitor', { linkId }, {
+    retryLimit: 1,
+    expireInSeconds: 30,
+  })
+}
