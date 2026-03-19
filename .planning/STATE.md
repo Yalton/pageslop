@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 4 context gathered
-last_updated: "2026-03-18T23:45:23.381Z"
+stopped_at: Completed 04-monitoring/04-01-PLAN.md
+last_updated: "2026-03-19T00:06:25.850Z"
 last_activity: 2026-03-16 — Auth system implemented (Better Auth, signup/login/onboarding, middleware, tests)
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 12
-  completed_plans: 11
+  total_plans: 15
+  completed_plans: 12
   percent: 33
 ---
 
@@ -60,6 +60,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 03-search-browse P01 | 5min | 2 tasks | 15 files |
 | Phase 03-search-browse P02 | 25min | 2 tasks | 12 files |
 | Phase 03-search-browse P03 | 1min | 1 tasks | 0 files |
+| Phase 04-monitoring P01 | 3min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,10 @@ Recent decisions affecting current work:
 - [Phase 03-search-browse]: Worker uses SQL atomic increment (processedUrls + 1) to avoid race conditions on concurrent scrape jobs
 - [Phase 03-search-browse]: Import job marked complete after scrape (not enrich) — faster feedback, enrichment continues in background
 - [Phase 03-search-browse]: Phase 3 human verification passed — all SRCH and LINK requirements confirmed working in browser
+- [Phase 04-monitoring]: checkUrl tries HEAD first, falls back to GET on 405 — many servers block HEAD but allow GET
+- [Phase 04-monitoring]: updateUptimeStatus uses sql template for atomic consecutiveFailures increment — prevents race conditions
+- [Phase 04-monitoring]: uptimeStatus CASE expression flips to 'down' at consecutiveFailures >= 2 — avoids false alarms from transient failures
+- [Phase 04-monitoring]: listLinksForMonitor selects only ready links — skip pending/error links that haven't been scraped yet
 
 ### Pending Todos
 
@@ -114,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T23:45:23.378Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-monitoring/04-CONTEXT.md
+Last session: 2026-03-19T00:06:25.847Z
+Stopped at: Completed 04-monitoring/04-01-PLAN.md
+Resume file: None

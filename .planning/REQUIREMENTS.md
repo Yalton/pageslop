@@ -51,7 +51,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Monitoring
 
-- [ ] **MNTR-01**: System pings saved links on a schedule to check availability
+- [x] **MNTR-01**: System pings saved links on a schedule to check availability
 - [ ] **MNTR-02**: Each link displays a green/red uptime indicator
 
 ## v2 Requirements
@@ -114,7 +114,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SRCH-04 | Phase 3 | Complete |
 | LINK-05 | Phase 3 | Complete |
 | LINK-06 | Phase 3 | Complete |
-| MNTR-01 | Phase 4 | Pending |
+| MNTR-01 | Phase 4 | Complete |
 | MNTR-02 | Phase 4 | Pending |
 | BYOK-01 | Phase 5 | Pending |
 | BYOK-02 | Phase 5 | Pending |
