@@ -152,6 +152,16 @@ None - no external service configuration required.
 - MNTR-01 (schedule pings) and MNTR-02 (uptime indicator) requirements both complete.
 - Phase 5 (LLM/BYOK) is next — no blockers from Phase 4.
 
+## Self-Check: PASSED
+
+- FOUND: src/components/links/UptimeDot.tsx
+- FOUND: src/lib/monitor/check-url.ts
+- FOUND: .planning/phases/04-monitoring/04-03-SUMMARY.md
+- FOUND: c75a920 (feat: UptimeDot integration)
+- FOUND: 003b7e0 (fix: check-url fallback)
+- FOUND: b30ff8e (fix: login redirect + ThemeToggle)
+- Tests: 120/120 passing
+
 ---
 *Phase: 04-monitoring*
 *Completed: 2026-03-19*
