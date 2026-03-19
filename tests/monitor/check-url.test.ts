@@ -31,12 +31,34 @@ describe('checkUrl()', () => {
     expect(result).toEqual({ statusCode: 200, up: true })
   })
 
-  it('returns { statusCode: 404, up: false } for a 404 HEAD response', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
-      new Response(null, { status: 404 })
+  it('falls back to GET when HEAD returns 404 (server may block HEAD), returns GET result', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 200 }))
+
+    const result = await checkUrl('http://example.com')
+    expect(result).toEqual({ statusCode: 200, up: true })
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      'http://example.com',
+      expect.objectContaining({ method: 'HEAD' })
     )
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      'http://example.com',
+      expect.objectContaining({ method: 'GET' })
+    )
+  })
+
+  it('returns { statusCode: 404, up: false } when both HEAD and GET return 404 (true not-found)', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }))
+
     const result = await checkUrl('http://example.com')
     expect(result).toEqual({ statusCode: 404, up: false })
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('returns { statusCode: 503, up: false } for a 503 HEAD response', async () => {

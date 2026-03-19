@@ -9,8 +9,9 @@
 export async function checkUrl(url: string): Promise<{ statusCode: number | null; up: boolean }> {
   const result = await attemptRequest(url, 'HEAD')
 
-  // 405 Method Not Allowed — server doesn't support HEAD, retry with GET
-  if (result.statusCode === 405) {
+  // Some servers mishandle HEAD — return 4xx but work fine with GET.
+  // Fall back to GET on any 4xx to avoid false negatives.
+  if (result.statusCode !== null && result.statusCode >= 400 && result.statusCode < 500) {
     return attemptRequest(url, 'GET')
   }
 
