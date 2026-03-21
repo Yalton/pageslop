@@ -7,6 +7,8 @@ import { eq, sql, and } from 'drizzle-orm'
 import * as schema from '../lib/db/schema'
 import { importJobs } from '../lib/db/schema'
 import { enrich } from '../lib/enrichment/classify'
+import { decryptApiKey } from '../lib/enrichment/crypto'
+import { llmEnrich } from '../lib/enrichment/llm-enrich'
 
 // DIRECT connection (no -pooler in hostname) — required for pg-boss LISTEN/NOTIFY
 const pool = new Pool({
@@ -144,18 +146,51 @@ async function main() {
       return
     }
 
-    // Run enrichment
-    const result = enrich({
+    // Query the user's encrypted API key for potential LLM enrichment
+    const [userRow] = await db
+      .select({ encryptedApiKey: schema.user.encryptedApiKey })
+      .from(schema.user)
+      .where(eq(schema.user.id, link.userId))
+      .limit(1)
+
+    // Attempt LLM enrichment if user has an API key, else fall back to rule-based
+    let result = enrich({
       bodyText: raw.bodyText,
       existingDescription: link.description,
       domain: link.domain,
       title: link.title,
     })
+    let usedLlm = false
 
-    // Update link: description only if currently null, always set category
+    if (userRow?.encryptedApiKey) {
+      try {
+        const apiKey = decryptApiKey(userRow.encryptedApiKey)
+        const llmResult = await llmEnrich(
+          {
+            bodyText: raw.bodyText,
+            existingDescription: link.description,
+            domain: link.domain,
+            title: link.title,
+          },
+          apiKey
+        )
+        if (llmResult !== null) {
+          result = llmResult
+          usedLlm = true
+        } else {
+          console.warn(`[worker] LLM enrichment returned null for link ${linkId}, falling back to rule-based`)
+        }
+      } catch (err) {
+        console.warn(`[worker] LLM enrichment failed for link ${linkId}, falling back to rule-based:`, err)
+      }
+    }
+
+    const tagSource = usedLlm ? 'llm' : 'rule'
+
+    // Update link: when LLM result used, always set description; for rule-based, only if null
     await db.update(schema.links)
       .set({
-        ...(link.description === null ? { description: result.description } : {}),
+        ...(usedLlm || link.description === null ? { description: result.description } : {}),
         category: result.category,
         updatedAt: new Date(),
       })
@@ -168,7 +203,7 @@ async function main() {
       // Try to insert tag
       const [insertedTag] = await db
         .insert(schema.tags)
-        .values({ userId: link.userId, name: normalizedName, source: 'rule' })
+        .values({ userId: link.userId, name: normalizedName, source: tagSource })
         .onConflictDoNothing()
         .returning()
 
@@ -192,7 +227,11 @@ async function main() {
         .onConflictDoNothing()
     }
 
-    console.log(`[worker] enriched link ${linkId}: category=${result.category}, tags=${result.tags.join(', ')}`)
+    if (usedLlm) {
+      console.log(`[worker] LLM enriched link ${linkId}: category=${result.category}, tags=${result.tags.join(', ')}`)
+    } else {
+      console.log(`[worker] enriched link ${linkId}: category=${result.category}, tags=${result.tags.join(', ')}`)
+    }
   })
 
   // monitor-sweep: fan out per-link monitor jobs on a 24-hour cron
