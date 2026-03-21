@@ -13,6 +13,7 @@ export const user = pgTable('user', {
   image: text('image'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  encryptedApiKey: text('encrypted_api_key'),
 })
 
 export const session = pgTable('session', {

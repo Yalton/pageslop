@@ -1,9 +1,42 @@
 import { vi } from 'vitest'
 
+// Set test environment variables
+process.env.ENCRYPTION_KEY = '0'.repeat(64) // valid 64-char hex for tests
+
 // Mock Neon serverless driver
 vi.mock('@neondatabase/serverless', () => ({
   neon: vi.fn(() => vi.fn()),
 }))
+
+// Mock Anthropic SDK — tests configure mockCreate per test
+const mockCreate = vi.fn()
+export function getMockCreate() { return mockCreate }
+
+// Error classes exposed so tests can throw typed errors
+export class MockAuthenticationError extends Error {
+  status = 401
+  constructor(msg = 'Authentication error') { super(msg); this.name = 'AuthenticationError' }
+}
+export class MockRateLimitError extends Error {
+  status = 429
+  constructor(msg = 'Rate limit error') { super(msg); this.name = 'RateLimitError' }
+}
+
+vi.mock('@anthropic-ai/sdk', () => {
+  class MockAnthropic {
+    messages = {
+      create: (...args: unknown[]) => mockCreate(...args),
+    }
+    constructor(_opts?: unknown) {}
+    static AuthenticationError = MockAuthenticationError
+    static RateLimitError = MockRateLimitError
+  }
+  return {
+    default: MockAnthropic,
+    AuthenticationError: MockAuthenticationError,
+    RateLimitError: MockRateLimitError,
+  }
+})
 
 // Mock pg Pool
 vi.mock('pg', () => ({

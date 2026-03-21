@@ -1,0 +1,77 @@
+/**
+ * LLM-powered enrichment using the Anthropic SDK.
+ * Returns the same EnrichmentResult shape as the rule-based enrich() function.
+ * Falls back to null on any API error — caller handles fallback to rule-based.
+ */
+
+import Anthropic from '@anthropic-ai/sdk'
+import type { EnrichmentResult, EnrichInput } from './classify'
+import { CATEGORIES } from '@/types/index'
+
+const MODEL = 'claude-haiku-4-5-20251001'
+
+const SYSTEM_PROMPT = `You are a precise content classifier for a bookmark manager.
+Given a web page's title, domain, and body text excerpt, produce a JSON object with:
+- "tags": an array of 4-6 specific, lowercase, single-word-or-hyphenated tags describing the page content (prefer specific terms over generic ones)
+- "description": a concise 2-3 sentence summary of the page content (150-200 chars)
+- "category": the single best-matching category from this list: ${CATEGORIES.join(', ')}
+
+Respond ONLY with a valid JSON object matching this exact structure:
+{"tags":["tag1","tag2","tag3","tag4"],"description":"...","category":"Technology"}`
+
+/**
+ * Enriches a link using the Anthropic API.
+ * Returns EnrichmentResult or null on any error (auth failure, rate limit, network, etc.).
+ */
+export async function llmEnrich(
+  opts: EnrichInput,
+  apiKey: string
+): Promise<EnrichmentResult | null> {
+  const client = new Anthropic({ apiKey })
+
+  const userContent = [
+    opts.title && `Title: ${opts.title}`,
+    opts.domain && `Domain: ${opts.domain}`,
+    opts.bodyText && `Content excerpt: ${opts.bodyText.slice(0, 3000)}`,
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  try {
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: 300,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userContent }],
+    })
+
+    const textBlock = response.content.find((b) => b.type === 'text')
+    if (!textBlock || textBlock.type !== 'text') return null
+
+    const parsed = JSON.parse(textBlock.text) as EnrichmentResult
+    return parsed
+  } catch {
+    // Any error (auth, rate limit, network, JSON parse) — return null
+    // Caller logs and falls back to rule-based enrichment
+    return null
+  }
+}
+
+/**
+ * Validates an Anthropic API key by making a minimal test call.
+ * Returns true if the key is valid and the account has credits.
+ * Returns false on any error.
+ */
+export async function validateApiKey(apiKey: string): Promise<boolean> {
+  const client = new Anthropic({ apiKey })
+  try {
+    await client.messages.create({
+      model: MODEL,
+      max_tokens: 10,
+      messages: [{ role: 'user', content: 'Hi' }],
+    })
+    return true
+  } catch {
+    return false
+  }
+}
