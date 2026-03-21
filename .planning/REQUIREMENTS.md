@@ -32,9 +32,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### BYOK LLM
 
-- [ ] **BYOK-01**: User can add their own LLM API key in settings
-- [ ] **BYOK-02**: When API key is configured, system uses LLM for higher-quality tags and descriptions
-- [ ] **BYOK-03**: API key is encrypted at rest and never exposed in UI after saving
+- [x] **BYOK-01**: User can add their own LLM API key in settings
+- [x] **BYOK-02**: When API key is configured, system uses LLM for higher-quality tags and descriptions
+- [x] **BYOK-03**: API key is encrypted at rest and never exposed in UI after saving
 
 ### Search & Navigation
 
@@ -116,9 +116,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LINK-06 | Phase 3 | Complete |
 | MNTR-01 | Phase 4 | Complete |
 | MNTR-02 | Phase 4 | Complete |
-| BYOK-01 | Phase 5 | Pending |
-| BYOK-02 | Phase 5 | Pending |
-| BYOK-03 | Phase 5 | Pending |
+| BYOK-01 | Phase 5 | Complete |
+| BYOK-02 | Phase 5 | Complete |
+| BYOK-03 | Phase 5 | Complete |
 | GRPH-01 | Phase 6 | Pending |
 | GRPH-02 | Phase 6 | Pending |
 | GRPH-03 | Phase 6 | Pending |

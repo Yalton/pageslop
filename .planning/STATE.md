@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 5 context gathered
-last_updated: "2026-03-21T15:25:26.919Z"
+stopped_at: Completed 05-byok-llm 05-01-PLAN.md
+last_updated: "2026-03-21T16:06:23.534Z"
 last_activity: 2026-03-16 — Auth system implemented (Better Auth, signup/login/onboarding, middleware, tests)
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 15
-  completed_plans: 14
+  total_plans: 17
+  completed_plans: 15
   percent: 33
 ---
 
@@ -63,6 +63,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 04-monitoring P01 | 3min | 2 tasks | 7 files |
 | Phase 04-monitoring P02 | 5min | 2 tasks | 4 files |
 | Phase 04-monitoring P03 | 20min | 2 tasks | 8 files |
+| Phase 05-byok-llm P01 | 5min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,9 @@ Recent decisions affecting current work:
 - [Phase 04-monitoring]: check-url fallback broadened to any 4xx HEAD response (not just 405) — some servers return 404 for HEAD but work with GET
 - [Phase 04-monitoring]: Login redirect fixed to push directly to /dashboard after sign-in, removing incorrect callbackURL '/' option
 - [Phase 04-monitoring]: ThemeToggle uses mounted state gate to prevent hydration mismatch — renders placeholder span on server
+- [Phase 05-byok-llm]: Anthropic SDK mock uses ES class (not vi.fn) to support new Anthropic() calls in tests
+- [Phase 05-byok-llm]: MockAuthenticationError/MockRateLimitError exported from tests/setup.ts for per-test error injection
+- [Phase 05-byok-llm]: llmEnrich uses JSON prompt + JSON.parse — output_config not needed since catch-all handles malformed JSON
 
 ### Pending Todos
 
@@ -126,6 +130,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T15:25:26.917Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-byok-llm/05-CONTEXT.md
+Last session: 2026-03-21T16:06:23.531Z
+Stopped at: Completed 05-byok-llm 05-01-PLAN.md
+Resume file: None
