@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Enrichment** - Scraping, rule-based classification, auto-tags and descriptions
 - [x] **Phase 3: Search & Browse** - Full-text search, grouped views, import/export (completed 2026-03-18)
 - [x] **Phase 4: Monitoring** - Scheduled uptime pings with green/red status per link (completed 2026-03-19)
-- [ ] **Phase 5: BYOK LLM** - User-provided API key for enhanced classification and descriptions
+- [x] **Phase 5: BYOK LLM** - User-provided API key for enhanced classification and descriptions (completed 2026-03-21)
 - [ ] **Phase 6: Graph** - Relational force-directed graph connecting links by shared tags
 
 ## Phase Details
@@ -97,7 +97,7 @@ Plans:
   1. User can enter an LLM API key in settings and the key is accepted and saved
   2. After adding a key, newly saved links receive richer, more specific tags and descriptions than the rule-based baseline
   3. The API key is masked in the UI after saving (only first/last few characters visible) and cannot be retrieved in full
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 05-01-PLAN.md — Schema, crypto, LLM enrichment module, user queries, API key routes, TDD tests
@@ -125,5 +125,5 @@ Note: Phase 4 depends only on Phase 1 (not Phase 2 or 3) and can begin after Pha
 | 2. Enrichment | 1/3 | In Progress|  |
 | 3. Search & Browse | 3/3 | Complete    | 2026-03-18 |
 | 4. Monitoring | 3/3 | Complete    | 2026-03-19 |
-| 5. BYOK LLM | 1/2 | In Progress|  |
+| 5. BYOK LLM | 2/2 | Complete   | 2026-03-21 |
 | 6. Graph | 0/TBD | Not started | - |
