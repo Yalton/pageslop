@@ -97,7 +97,11 @@ Plans:
   1. User can enter an LLM API key in settings and the key is accepted and saved
   2. After adding a key, newly saved links receive richer, more specific tags and descriptions than the rule-based baseline
   3. The API key is masked in the UI after saving (only first/last few characters visible) and cannot be retrieved in full
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Schema, crypto, LLM enrichment module, user queries, API key routes, TDD tests
+- [ ] 05-02-PLAN.md — Worker LLM branch, Settings UI LLM Integration section, human verification
 
 ### Phase 6: Graph
 **Goal**: Users can explore how their bookmarks connect to each other through a visual, interactive graph
@@ -121,5 +125,5 @@ Note: Phase 4 depends only on Phase 1 (not Phase 2 or 3) and can begin after Pha
 | 2. Enrichment | 1/3 | In Progress|  |
 | 3. Search & Browse | 3/3 | Complete    | 2026-03-18 |
 | 4. Monitoring | 3/3 | Complete    | 2026-03-19 |
-| 5. BYOK LLM | 0/TBD | Not started | - |
+| 5. BYOK LLM | 0/2 | Not started | - |
 | 6. Graph | 0/TBD | Not started | - |
