@@ -125,5 +125,5 @@ Note: Phase 4 depends only on Phase 1 (not Phase 2 or 3) and can begin after Pha
 | 2. Enrichment | 1/3 | In Progress|  |
 | 3. Search & Browse | 3/3 | Complete    | 2026-03-18 |
 | 4. Monitoring | 3/3 | Complete    | 2026-03-19 |
-| 5. BYOK LLM | 2/2 | Complete   | 2026-03-21 |
+| 5. BYOK LLM | 2/2 | Complete    | 2026-03-21 |
 | 6. Graph | 0/TBD | Not started | - |
