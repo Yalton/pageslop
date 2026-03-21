@@ -65,6 +65,9 @@ export const links = pgTable('links', {
   category: text('category'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  // Enrichment source tracking
+  enrichmentSource: text('enrichment_source'), // null | 'rule' | 'llm' | 'llm_failed'
+  enrichmentError: text('enrichment_error'), // failure reason when llm_failed
   // Uptime monitoring columns
   uptimeStatus: text('uptime_status').notNull().default('unchecked'),
   lastStatusCode: integer('last_status_code'),

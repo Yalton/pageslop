@@ -48,11 +48,16 @@ export async function llmEnrich(
     const textBlock = response.content.find((b) => b.type === 'text')
     if (!textBlock || textBlock.type !== 'text') return null
 
-    const parsed = JSON.parse(textBlock.text) as EnrichmentResult
+    // Strip markdown code fences if present (```json ... ```)
+    let jsonText = textBlock.text.trim()
+    if (jsonText.startsWith('```')) {
+      jsonText = jsonText.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+    }
+
+    const parsed = JSON.parse(jsonText) as EnrichmentResult
     return parsed
-  } catch {
-    // Any error (auth, rate limit, network, JSON parse) — return null
-    // Caller logs and falls back to rule-based enrichment
+  } catch (err) {
+    console.error('[llmEnrich] error:', err instanceof Error ? err.message : err)
     return null
   }
 }

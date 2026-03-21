@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { LinkSkeleton } from '@/components/links/LinkSkeleton'
 import { UptimeDot } from '@/components/links/UptimeDot'
+import { EnrichmentBadge } from '@/components/links/EnrichmentBadge'
 import { domainToHue } from '@/lib/utils/domain-color'
 import type { LinkWithTags } from '@/types'
 
@@ -90,6 +91,7 @@ export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail, onTagClic
           </Avatar>
           <UptimeDot status={link.uptimeStatus} lastCheckedAt={link.lastCheckedAt} lastStatusCode={link.lastStatusCode} />
           <span className="text-sm text-muted-foreground truncate">{link.domain || ''}</span>
+          <EnrichmentBadge source={link.enrichmentSource} error={link.enrichmentError} />
           {link.category && link.category !== 'Other' && (
             <Badge variant="outline" className="text-xs ml-auto shrink-0">
               {link.category}

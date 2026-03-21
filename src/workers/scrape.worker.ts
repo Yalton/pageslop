@@ -161,6 +161,8 @@ async function main() {
       title: link.title,
     })
     let usedLlm = false
+    let enrichmentSource: string = 'rule'
+    let enrichmentError: string | null = null
 
     if (userRow?.encryptedApiKey) {
       try {
@@ -177,10 +179,15 @@ async function main() {
         if (llmResult !== null) {
           result = llmResult
           usedLlm = true
+          enrichmentSource = 'llm'
         } else {
+          enrichmentSource = 'llm_failed'
+          enrichmentError = 'LLM returned empty response'
           console.warn(`[worker] LLM enrichment returned null for link ${linkId}, falling back to rule-based`)
         }
       } catch (err) {
+        enrichmentSource = 'llm_failed'
+        enrichmentError = err instanceof Error ? err.message : 'Unknown LLM error'
         console.warn(`[worker] LLM enrichment failed for link ${linkId}, falling back to rule-based:`, err)
       }
     }
@@ -192,6 +199,8 @@ async function main() {
       .set({
         ...(usedLlm || link.description === null ? { description: result.description } : {}),
         category: result.category,
+        enrichmentSource,
+        enrichmentError,
         updatedAt: new Date(),
       })
       .where(eq(schema.links.id, linkId))

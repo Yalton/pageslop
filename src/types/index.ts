@@ -1,5 +1,6 @@
 export type LinkStatus = 'pending' | 'ready' | 'error'
 export type UptimeStatus = 'unchecked' | 'up' | 'down'
+export type EnrichmentSource = 'rule' | 'llm' | 'llm_failed' | null
 
 export const CATEGORIES = [
   'Technology',
@@ -30,6 +31,8 @@ export interface Link {
   category: string | null
   createdAt: Date
   updatedAt: Date
+  enrichmentSource: EnrichmentSource
+  enrichmentError: string | null
   uptimeStatus: UptimeStatus
   lastStatusCode: number | null
   lastCheckedAt: Date | null

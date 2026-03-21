@@ -18,6 +18,7 @@ import { CategorySelect } from '@/components/links/CategorySelect'
 import { InlineEdit } from '@/components/links/InlineEdit'
 import { TagEditor } from '@/components/links/TagEditor'
 import { UptimeDot } from '@/components/links/UptimeDot'
+import { EnrichmentBadge } from '@/components/links/EnrichmentBadge'
 import { domainToHue } from '@/lib/utils/domain-color'
 import type { Link, LinkWithTags } from '@/types'
 
@@ -125,6 +126,21 @@ function LinkDetailContent({
         </Avatar>
         <span className="text-sm text-muted-foreground">{link.domain || ''}</span>
       </div>
+
+      {/* Enrichment source */}
+      {link.enrichmentSource && (
+        <div className="flex items-center gap-2">
+          <EnrichmentBadge source={link.enrichmentSource} error={link.enrichmentError} />
+          <span className="text-sm text-muted-foreground">
+            {link.enrichmentSource === 'llm' && 'Enhanced by Claude'}
+            {link.enrichmentSource === 'rule' && 'Rule-based enrichment'}
+            {link.enrichmentSource === 'llm_failed' && 'LLM failed — used rule-based'}
+          </span>
+          {link.enrichmentSource === 'llm_failed' && link.enrichmentError && (
+            <span className="text-xs text-muted-foreground/70 truncate">({link.enrichmentError})</span>
+          )}
+        </div>
+      )}
 
       {/* Uptime status */}
       <div className="flex items-center gap-2">

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { LinkSkeleton } from '@/components/links/LinkSkeleton'
 import { UptimeDot } from '@/components/links/UptimeDot'
+import { EnrichmentBadge } from '@/components/links/EnrichmentBadge'
 import type { LinkWithTags } from '@/types'
 
 interface LinkCardListProps {
@@ -61,6 +62,9 @@ export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail, onTag
 
       {/* Uptime dot */}
       <UptimeDot status={link.uptimeStatus} lastCheckedAt={link.lastCheckedAt} lastStatusCode={link.lastStatusCode} />
+
+      {/* Enrichment badge */}
+      <EnrichmentBadge source={link.enrichmentSource} error={link.enrichmentError} />
 
       {/* Title */}
       <span className="text-sm font-semibold truncate flex-1">{link.title || link.url}</span>
