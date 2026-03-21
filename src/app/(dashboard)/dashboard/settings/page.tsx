@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Upload, FileDown, CheckCircle, AlertCircle } from 'lucide-react'
+import { Upload, FileDown, CheckCircle, AlertCircle, Key } from 'lucide-react'
 
 interface ImportState {
   jobId: string | null
@@ -24,6 +24,83 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // LLM Integration state
+  const [apiKeyInput, setApiKeyInput] = useState('')
+  const [maskedKey, setMaskedKey] = useState<string | null>(null)
+  const [hasKey, setHasKey] = useState(false)
+  const [keyStatus, setKeyStatus] = useState<'idle' | 'saving' | 'removing' | 'error'>('idle')
+  const [keyError, setKeyError] = useState<string | null>(null)
+  const [keyLoaded, setKeyLoaded] = useState(false)
+
+  // Fetch current key status on mount
+  useEffect(() => {
+    fetch('/api/settings/api-key')
+      .then((res) => res.json())
+      .then((data: { hasKey: boolean; maskedKey?: string }) => {
+        if (data.hasKey) {
+          setHasKey(true)
+          setMaskedKey(data.maskedKey ?? null)
+        } else {
+          setHasKey(false)
+          setMaskedKey(null)
+        }
+      })
+      .catch(() => {
+        // On error, assume no key — don't block the UI
+        setHasKey(false)
+        setMaskedKey(null)
+      })
+      .finally(() => {
+        setKeyLoaded(true)
+      })
+  }, [])
+
+  const handleSaveKey = useCallback(async () => {
+    setKeyStatus('saving')
+    setKeyError(null)
+    try {
+      const res = await fetch('/api/settings/api-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: apiKeyInput }),
+      })
+      if (res.ok) {
+        const data = await res.json() as { maskedKey: string }
+        setHasKey(true)
+        setMaskedKey(data.maskedKey)
+        setApiKeyInput('')
+        setKeyStatus('idle')
+      } else {
+        const err = await res.json().catch(() => ({ error: 'Failed to save key' })) as { error?: string }
+        setKeyError(err.error ?? 'Failed to save key')
+        setKeyStatus('error')
+      }
+    } catch {
+      setKeyError('Network error. Please try again.')
+      setKeyStatus('error')
+    }
+  }, [apiKeyInput])
+
+  const handleRemoveKey = useCallback(async () => {
+    setKeyStatus('removing')
+    setKeyError(null)
+    try {
+      const res = await fetch('/api/settings/api-key', { method: 'DELETE' })
+      if (res.ok) {
+        setHasKey(false)
+        setMaskedKey(null)
+        setKeyStatus('idle')
+      } else {
+        const err = await res.json().catch(() => ({ error: 'Failed to remove key' })) as { error?: string }
+        setKeyError(err.error ?? 'Failed to remove key')
+        setKeyStatus('error')
+      }
+    } catch {
+      setKeyError('Network error. Please try again.')
+      setKeyStatus('error')
+    }
+  }, [])
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
@@ -277,6 +354,67 @@ export default function SettingsPage() {
           </Button>
         </div>
       </div>
+
+      {/* LLM Integration section */}
+      <h2 className="text-lg font-semibold mt-8 mb-4">
+        <span className="inline-flex items-center gap-2">
+          <Key className="size-5" />
+          LLM Integration
+        </span>
+      </h2>
+
+      {keyLoaded && (
+        <div className="bg-card rounded-lg border p-6">
+          <h3 className="font-semibold mb-1">Anthropic API Key</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Add your Anthropic API key to enable AI-powered tags and descriptions for newly saved links.
+          </p>
+
+          {!hasKey ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="password"
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                placeholder="sk-ant-..."
+                className="flex-1 min-w-[240px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                disabled={keyStatus === 'saving'}
+              />
+              <Button
+                variant="default"
+                onClick={handleSaveKey}
+                disabled={keyStatus === 'saving' || !apiKeyInput.trim()}
+              >
+                {keyStatus === 'saving' ? 'Saving...' : 'Save Key'}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-mono text-sm bg-muted px-3 py-2 rounded-md text-muted-foreground">
+                Current key: {maskedKey}
+              </span>
+              <Button
+                variant="destructive"
+                onClick={handleRemoveKey}
+                disabled={keyStatus === 'removing'}
+              >
+                {keyStatus === 'removing' ? 'Removing...' : 'Remove Key'}
+              </Button>
+            </div>
+          )}
+
+          {keyStatus === 'error' && keyError && (
+            <div className="mt-3 flex items-center gap-2 text-sm text-destructive">
+              <AlertCircle className="size-4" />
+              {keyError}
+            </div>
+          )}
+        </div>
+      )}
+
+      <p className="mt-3 text-xs text-muted-foreground">
+        Your key is encrypted at rest and never stored in plain text. Only newly saved links will use LLM enrichment.
+      </p>
     </div>
   )
 }
