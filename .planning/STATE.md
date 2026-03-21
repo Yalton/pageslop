@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Checkpoint: 05-02 Task 3 human-verify — awaiting end-to-end BYOK LLM flow verification"
-last_updated: "2026-03-21T16:11:13.395Z"
+stopped_at: Completed 05-byok-llm 05-02-PLAN.md
+last_updated: "2026-03-21T16:49:31.321Z"
 last_activity: 2026-03-16 — Auth system implemented (Better Auth, signup/login/onboarding, middleware, tests)
 progress:
   total_phases: 6
@@ -65,6 +65,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 04-monitoring P03 | 20min | 2 tasks | 8 files |
 | Phase 05-byok-llm P01 | 5min | 2 tasks | 10 files |
 | Phase 05-byok-llm P02 | 2min | 2 tasks | 2 files |
+| Phase 05-byok-llm P02 | 35min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,9 @@ Recent decisions affecting current work:
 - [Phase 05-byok-llm]: Worker LLM branch in try/catch for silent fallback to rule-based on any decrypt or API error
 - [Phase 05-byok-llm]: LLM enrichment always overwrites description; rule-based only fills null description
 - [Phase 05-byok-llm]: Settings page uses keyLoaded gate to avoid flashing input field when user already has a saved key
+- [Phase 05-byok-llm]: llmEnrich strips markdown code fences before JSON.parse — model occasionally wraps JSON in code blocks despite prompt
+- [Phase 05-byok-llm]: enrichmentSource tracked as 'rule'/'llm'/'llm_failed' in DB — enables future analytics or per-source filtering
+- [Phase 05-byok-llm]: EnrichmentBadge uses Tooltip for compact icon-only display — sparkle (llm) or warning (llm_failed)
 
 ### Pending Todos
 
@@ -134,6 +138,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T16:11:13.392Z
-Stopped at: Checkpoint: 05-02 Task 3 human-verify — awaiting end-to-end BYOK LLM flow verification
+Last session: 2026-03-21T16:49:31.318Z
+Stopped at: Completed 05-byok-llm 05-02-PLAN.md
 Resume file: None
