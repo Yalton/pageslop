@@ -46,7 +46,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Graph
 
 - [x] **GRPH-01**: User can view a relational graph showing connections between links based on shared tags/classification
-- [ ] **GRPH-02**: User can click a node in the graph to view link details
+- [x] **GRPH-02**: User can click a node in the graph to view link details
 - [x] **GRPH-03**: Graph performs smoothly with thousands of nodes (WebGL rendering)
 
 ### Monitoring
@@ -120,7 +120,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BYOK-02 | Phase 5 | Complete |
 | BYOK-03 | Phase 5 | Complete |
 | GRPH-01 | Phase 6 | Complete |
-| GRPH-02 | Phase 6 | Pending |
+| GRPH-02 | Phase 6 | Complete |
 | GRPH-03 | Phase 6 | Complete |
 
 **Coverage:**
