@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.planning
+.claude
+tests
+coverage
+*.md
+.env
+.env.local
+.DS_Store
+npm-debug.log*

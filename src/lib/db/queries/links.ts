@@ -96,6 +96,8 @@ export async function listLinksWithTags(userId: string): Promise<LinkWithTags[]>
   return userLinks.map((link) => ({
     ...link,
     status: link.status as LinkWithTags['status'],
+    enrichmentSource: link.enrichmentSource as LinkWithTags['enrichmentSource'],
+    uptimeStatus: link.uptimeStatus as LinkWithTags['uptimeStatus'],
     tags: tagMap.get(link.id) ?? [],
   }))
 }
@@ -124,6 +126,8 @@ export async function getLinkWithTags(userId: string, linkId: string): Promise<L
   return {
     ...link,
     status: link.status as LinkWithTags['status'],
+    enrichmentSource: link.enrichmentSource as LinkWithTags['enrichmentSource'],
+    uptimeStatus: link.uptimeStatus as LinkWithTags['uptimeStatus'],
     tags: tagRows as Tag[],
   }
 }

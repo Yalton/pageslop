@@ -35,7 +35,11 @@ export default function LoginPage() {
       })
 
       if (error) {
-        toast.error('Invalid email or password. Please try again.')
+        if (error.message?.toLowerCase().includes('verify') || error.code === 'EMAIL_NOT_VERIFIED') {
+          toast.error('Please verify your email before logging in. Check your inbox for the verification link.')
+        } else {
+          toast.error('Invalid email or password. Please try again.')
+        }
         return
       }
 
@@ -70,7 +74,15 @@ export default function LoginPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"
