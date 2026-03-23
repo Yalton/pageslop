@@ -64,6 +64,17 @@ export default async function MarketingPage() {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="border-t px-6 py-6">
+        <div className="mx-auto max-w-4xl flex items-center justify-between text-xs text-muted-foreground">
+          <span>Pageslop</span>
+          <div className="flex gap-4">
+            <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
+            <Link href="/terms" className="hover:text-foreground">Terms</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

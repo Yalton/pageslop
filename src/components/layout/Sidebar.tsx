@@ -140,6 +140,12 @@ function SidebarContent({
             {!collapsed && <span>Log Out</span>}
           </Button>
         </div>
+        {!collapsed && (
+          <div className="flex gap-3 px-2 pt-3 text-xs text-muted-foreground">
+            <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
+            <Link href="/terms" className="hover:text-foreground">Terms</Link>
+          </div>
+        )}
       </div>
     </div>
   )

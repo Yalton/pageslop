@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Upload, FileDown, CheckCircle, AlertCircle, Key } from 'lucide-react'
+import { Upload, FileDown, CheckCircle, AlertCircle, Key, Trash2, Lock } from 'lucide-react'
 
 interface ImportState {
   jobId: string | null
@@ -13,6 +14,17 @@ interface ImportState {
 }
 
 export default function SettingsPage() {
+  const router = useRouter()
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleteStatus, setDeleteStatus] = useState<'idle' | 'deleting'>('idle')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  // Change password state
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmNewPassword, setConfirmNewPassword] = useState('')
+  const [passwordStatus, setPasswordStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
+  const [passwordError, setPasswordError] = useState<string | null>(null)
   const [importState, setImportState] = useState<ImportState>({
     jobId: null,
     status: 'idle',
@@ -415,6 +427,175 @@ export default function SettingsPage() {
       <p className="mt-3 text-xs text-muted-foreground">
         Your key is encrypted at rest and never stored in plain text. Only newly saved links will use LLM enrichment.
       </p>
+
+      {/* Change Password */}
+      <h2 className="text-lg font-semibold mt-8 mb-4">
+        <span className="inline-flex items-center gap-2">
+          <Lock className="size-5" />
+          Account Security
+        </span>
+      </h2>
+
+      <div className="bg-card rounded-lg border p-6">
+        <h3 className="font-semibold mb-1">Change Password</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Update your account password.
+        </p>
+        <form
+          className="flex flex-col gap-3 max-w-sm"
+          onSubmit={async (e) => {
+            e.preventDefault()
+            setPasswordError(null)
+
+            if (newPassword.length < 8) {
+              setPasswordError('New password must be at least 8 characters.')
+              setPasswordStatus('error')
+              return
+            }
+            if (newPassword !== confirmNewPassword) {
+              setPasswordError('Passwords do not match.')
+              setPasswordStatus('error')
+              return
+            }
+
+            setPasswordStatus('saving')
+            try {
+              const { error } = await (await import('@/lib/auth/client')).authClient.changePassword({
+                currentPassword,
+                newPassword,
+                revokeOtherSessions: true,
+              })
+
+              if (error) {
+                setPasswordError(error.message || 'Failed to change password.')
+                setPasswordStatus('error')
+                return
+              }
+
+              setPasswordStatus('success')
+              setCurrentPassword('')
+              setNewPassword('')
+              setConfirmNewPassword('')
+              setTimeout(() => setPasswordStatus('idle'), 5000)
+            } catch {
+              setPasswordError('Something went wrong. Please try again.')
+              setPasswordStatus('error')
+            }
+          }}
+        >
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Current password"
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            disabled={passwordStatus === 'saving'}
+            required
+          />
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="New password (min. 8 characters)"
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            disabled={passwordStatus === 'saving'}
+            required
+          />
+          <input
+            type="password"
+            value={confirmNewPassword}
+            onChange={(e) => setConfirmNewPassword(e.target.value)}
+            placeholder="Confirm new password"
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            disabled={passwordStatus === 'saving'}
+            required
+          />
+          <Button type="submit" disabled={passwordStatus === 'saving'} className="w-fit">
+            {passwordStatus === 'saving' ? 'Updating...' : 'Update Password'}
+          </Button>
+
+          {passwordStatus === 'success' && (
+            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+              <CheckCircle className="size-4" />
+              Password updated successfully.
+            </div>
+          )}
+          {passwordStatus === 'error' && passwordError && (
+            <div className="flex items-center gap-2 text-sm text-destructive">
+              <AlertCircle className="size-4" />
+              {passwordError}
+            </div>
+          )}
+        </form>
+      </div>
+
+      {/* Danger Zone */}
+      <h2 className="text-lg font-semibold mt-8 mb-4 text-destructive">
+        <span className="inline-flex items-center gap-2">
+          <Trash2 className="size-5" />
+          Danger Zone
+        </span>
+      </h2>
+
+      <div className="bg-card rounded-lg border border-destructive/30 p-6">
+        <h3 className="font-semibold mb-1">Delete Account</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Permanently delete your account and all your data. This includes all saved links, tags, and settings. This action cannot be undone.
+        </p>
+
+        {!showDeleteConfirm ? (
+          <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
+            Delete My Account
+          </Button>
+        ) : (
+          <div className="flex flex-col gap-3 max-w-sm">
+            <p className="text-sm font-medium">
+              Type <strong>DELETE</strong> to confirm:
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Type DELETE"
+              className="rounded-md border border-destructive/50 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
+              disabled={deleteStatus === 'deleting'}
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="destructive"
+                disabled={deleteConfirmText !== 'DELETE' || deleteStatus === 'deleting'}
+                onClick={async () => {
+                  setDeleteStatus('deleting')
+                  try {
+                    const res = await fetch('/api/settings/account', {
+                      method: 'DELETE',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ confirm: 'DELETE' }),
+                    })
+                    if (res.ok) {
+                      router.push('/login')
+                    }
+                  } catch {
+                    setDeleteStatus('idle')
+                  }
+                }}
+              >
+                {deleteStatus === 'deleting' ? 'Deleting...' : 'Permanently Delete'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false)
+                  setDeleteConfirmText('')
+                }}
+                disabled={deleteStatus === 'deleting'}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
