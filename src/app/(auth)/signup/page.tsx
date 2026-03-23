@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
-import { Loader2, Mail } from 'lucide-react'
+import { Loader2, Mail, RefreshCw } from 'lucide-react'
 import { authClient } from '@/lib/auth/client'
 import { signupSchema, type SignupInput } from '@/lib/validations/auth'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,8 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [sentTo, setSentTo] = useState('')
+  const [resending, setResending] = useState(false)
+  const [resent, setResent] = useState(false)
 
   const {
     register,
@@ -61,9 +63,34 @@ export default function SignupPage() {
             <p className="text-sm text-muted-foreground max-w-sm">
               We sent a verification link to <strong className="text-foreground">{sentTo}</strong>. Click the link in the email to activate your account.
             </p>
-            <p className="text-xs text-muted-foreground">
-              Didn&apos;t receive it? Check your spam folder.
-            </p>
+            <div className="flex flex-col items-center gap-2">
+              {resent ? (
+                <p className="text-xs text-green-600">Verification email resent!</p>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={resending}
+                  onClick={async () => {
+                    setResending(true)
+                    try {
+                      await authClient.sendVerificationEmail({ email: sentTo, callbackURL: '/login' })
+                      setResent(true)
+                      setTimeout(() => setResent(false), 10000)
+                    } catch {
+                      toast.error('Failed to resend. Try again.')
+                    } finally {
+                      setResending(false)
+                    }
+                  }}
+                >
+                  {resending ? <><RefreshCw className="size-3 animate-spin" /> Resending...</> : 'Resend verification email'}
+                </Button>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Also check your spam folder.
+              </p>
+            </div>
           </CardContent>
         </Card>
         <p className="text-muted-foreground text-center text-sm">

@@ -32,18 +32,18 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Copy worker + dependencies it needs
+# Copy full node_modules for worker (tsx + all transitive deps)
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy worker source + libs it imports
 COPY --from=builder /app/src/workers ./src/workers
 COPY --from=builder /app/src/lib ./src/lib
 COPY --from=builder /app/src/types ./src/types
-COPY --from=builder /app/node_modules/tsx ./node_modules/tsx
-COPY --from=builder /app/node_modules/@anthropic-ai ./node_modules/@anthropic-ai
-COPY --from=builder /app/node_modules/cheerio ./node_modules/cheerio
-COPY --from=builder /app/node_modules/pg-boss ./node_modules/pg-boss
-COPY --from=builder /app/node_modules/nodemailer ./node_modules/nodemailer
 
 # Copy drizzle config for db:push
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder /app/src/lib/db/schema.ts ./src/lib/db/schema.ts
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 USER nextjs
 

@@ -17,10 +17,17 @@ interface SendEmailOptions {
 }
 
 export async function sendEmail({ to, subject, html }: SendEmailOptions) {
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
-    to,
-    subject,
-    html,
-  })
+  console.log(`[email] Sending "${subject}" to ${to} via ${process.env.SMTP_USER}`)
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to,
+      subject,
+      html,
+    })
+    console.log(`[email] Sent successfully: ${info.messageId}`)
+  } catch (err) {
+    console.error(`[email] Failed to send:`, err)
+    throw err
+  }
 }

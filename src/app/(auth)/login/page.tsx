@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Mail, RefreshCw } from 'lucide-react'
 import { authClient } from '@/lib/auth/client'
 import { loginSchema, type LoginInput } from '@/lib/validations/auth'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,9 @@ import { Card, CardContent } from '@/components/ui/card'
 export default function LoginPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
+  const [resending, setResending] = useState(false)
+  const [resent, setResent] = useState(false)
 
   const {
     register,
@@ -28,6 +31,7 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginInput) => {
     setIsLoading(true)
+    setUnverifiedEmail(null)
     try {
       const { error } = await authClient.signIn.email({
         email: data.email,
@@ -36,7 +40,7 @@ export default function LoginPage() {
 
       if (error) {
         if (error.message?.toLowerCase().includes('verify') || error.code === 'EMAIL_NOT_VERIFIED') {
-          toast.error('Please verify your email before logging in. Check your inbox for the verification link.')
+          setUnverifiedEmail(data.email)
         } else {
           toast.error('Invalid email or password. Please try again.')
         }
@@ -51,9 +55,45 @@ export default function LoginPage() {
     }
   }
 
+  async function handleResend() {
+    if (!unverifiedEmail) return
+    setResending(true)
+    try {
+      await authClient.sendVerificationEmail({ email: unverifiedEmail, callbackURL: '/login' })
+      setResent(true)
+      toast.success('Verification email sent!')
+      setTimeout(() => setResent(false), 10000)
+    } catch {
+      toast.error('Failed to resend. Try again.')
+    } finally {
+      setResending(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-center text-[20px] font-semibold">Welcome back</h1>
+
+      {unverifiedEmail && (
+        <Card className="border-amber-500/50">
+          <CardContent className="py-4 flex flex-col items-center gap-3 text-center">
+            <div className="size-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <Mail className="size-5 text-amber-500" />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Your email <strong className="text-foreground">{unverifiedEmail}</strong> hasn&apos;t been verified yet.
+            </p>
+            {resent ? (
+              <p className="text-xs text-green-600">Verification email sent! Check your inbox.</p>
+            ) : (
+              <Button variant="outline" size="sm" disabled={resending} onClick={handleResend}>
+                {resending ? <><RefreshCw className="size-3 animate-spin" /> Sending...</> : 'Resend verification email'}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardContent className="py-6">
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
