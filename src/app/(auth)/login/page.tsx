@@ -33,23 +33,28 @@ export default function LoginPage() {
     setIsLoading(true)
     setUnverifiedEmail(null)
     try {
-      const { error } = await authClient.signIn.email({
+      const result = await authClient.signIn.email({
         email: data.email,
         password: data.password,
       })
 
-      if (error) {
-        if (error.message?.toLowerCase().includes('verify') || error.code === 'EMAIL_NOT_VERIFIED') {
+      if (result.error) {
+        const msg = result.error.message?.toLowerCase() ?? ''
+        if (msg.includes('verify') || msg.includes('email') && msg.includes('not') || result.error.code === 'EMAIL_NOT_VERIFIED') {
           setUnverifiedEmail(data.email)
-        } else {
+        } else if (msg.includes('invalid') || msg.includes('credentials') || msg.includes('password')) {
           toast.error('Invalid email or password. Please try again.')
+        } else {
+          toast.error(result.error.message || 'Login failed. Please try again.')
         }
         return
       }
 
-      router.push('/dashboard')
-    } catch {
-      toast.error('Invalid email or password. Please try again.')
+      // Force a hard navigation to ensure cookies are picked up
+      window.location.href = '/dashboard'
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong.'
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }

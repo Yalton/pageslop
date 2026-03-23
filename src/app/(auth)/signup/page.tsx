@@ -74,7 +74,7 @@ export default function SignupPage() {
                   onClick={async () => {
                     setResending(true)
                     try {
-                      await authClient.sendVerificationEmail({ email: sentTo, callbackURL: '/login' })
+                      await authClient.sendVerificationEmail({ email: sentTo, callbackURL: '/dashboard' })
                       setResent(true)
                       setTimeout(() => setResent(false), 10000)
                     } catch {

@@ -17,7 +17,11 @@ export const auth = betterAuth({
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
-      const { subject, html } = verificationEmail(url)
+      // Ensure callback goes to /dashboard (not /) after verification
+      const verifyUrl = url.includes('callbackURL=')
+        ? url
+        : url + (url.includes('?') ? '&' : '?') + 'callbackURL=%2Fdashboard'
+      const { subject, html } = verificationEmail(verifyUrl)
       await sendEmail({ to: user.email, subject, html })
     },
     sendOnSignUp: true,
