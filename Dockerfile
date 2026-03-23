@@ -17,15 +17,12 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# --- Runner (Next.js app) ---
+# --- Runner (Next.js app + worker) ---
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
 
 # Copy standalone output
 COPY --from=builder /app/.next/standalone ./
@@ -42,13 +39,15 @@ COPY --from=builder /app/src/types ./src/types
 
 # Copy drizzle config for db:push
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
-COPY --from=builder /app/src/lib/db/schema.ts ./src/lib/db/schema.ts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
-USER nextjs
+# Copy entrypoint script
+COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"]
