@@ -9,7 +9,7 @@ services:
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pageslop"]
       interval: 5s
@@ -20,7 +20,7 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3847:3000"
     env_file: .env
     environment:
       DATABASE_URL: postgresql://pageslop:pageslop@db:5432/pageslop
