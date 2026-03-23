@@ -33,5 +33,8 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 30, // 30 days
     updateAge: 60 * 60 * 24, // refresh if >24h old
   },
+  advanced: {
+    useSecureCookies: false, // reverse proxy handles TLS — don't use __Secure- prefix
+  },
   plugins: [nextCookies()], // must be last plugin
 })
