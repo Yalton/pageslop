@@ -27,9 +27,26 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
     || $('meta[name="description"]').attr('content')
     || ''
 
-  const ogImage = $('meta[property="og:image"]').attr('content') || null
+  // Try multiple image meta tags in priority order
+  let ogImage = $('meta[property="og:image"]').attr('content')
+    || $('meta[property="og:image:url"]').attr('content')
+    || $('meta[name="twitter:image"]').attr('content')
+    || $('meta[name="twitter:image:src"]').attr('content')
+    || null
 
-  let favicon = $('link[rel="icon"]').attr('href')
+  // Resolve relative og:image URLs
+  if (ogImage && !ogImage.startsWith('http')) {
+    const base = new URL(url)
+    ogImage = new URL(ogImage, base.origin).href
+  }
+
+  // Prefer high-res icons, then fall back to standard favicon
+  let favicon = $('link[rel="apple-touch-icon"]').attr('href')
+    || $('link[rel="apple-touch-icon-precomposed"]').attr('href')
+    || $('link[rel="icon"][sizes="192x192"]').attr('href')
+    || $('link[rel="icon"][sizes="180x180"]').attr('href')
+    || $('link[rel="icon"][sizes="128x128"]').attr('href')
+    || $('link[rel="icon"]').attr('href')
     || $('link[rel="shortcut icon"]').attr('href')
     || null
 

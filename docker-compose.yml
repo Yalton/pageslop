@@ -25,6 +25,8 @@ services:
     environment:
       DATABASE_URL: postgresql://pageslop:pageslop@db:5432/pageslop
       DATABASE_URL_DIRECT: postgresql://pageslop:pageslop@db:5432/pageslop
+    volumes:
+      - screenshots:/app/data/screenshots
     depends_on:
       db:
         condition: service_healthy
@@ -37,6 +39,11 @@ services:
     environment:
       DATABASE_URL: postgresql://pageslop:pageslop@db:5432/pageslop
       DATABASE_URL_DIRECT: postgresql://pageslop:pageslop@db:5432/pageslop
+    volumes:
+      - screenshots:/app/data/screenshots
     depends_on:
       db:
         condition: service_healthy
+
+volumes:
+  screenshots:

@@ -1,6 +1,14 @@
 # --- Base ---
-FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat
+FROM node:20-slim AS base
+RUN apt-get update && apt-get install -y \
+  chromium \
+  fonts-liberation \
+  libgbm1 \
+  --no-install-recommends \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # --- Dependencies ---
 FROM base AS deps
@@ -44,6 +52,10 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 # Copy entrypoint script
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
+
+# Create screenshot storage directory
+RUN mkdir -p /app/data/screenshots
+VOLUME /app/data
 
 EXPOSE 3000
 ENV PORT=3000

@@ -1,5 +1,6 @@
 import { PgBoss } from 'pg-boss'
 import { scrapeUrl } from '../lib/scraper/cheerio'
+import { screenshotUrl } from '../lib/scraper/screenshot'
 import { checkUrl } from '../lib/monitor/check-url'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
@@ -61,9 +62,10 @@ async function main() {
   await boss.start()
   await boss.createQueue('scrape')
   await boss.createQueue('enrich')
+  await boss.createQueue('screenshot')
   await boss.createQueue('monitor-sweep')
   await boss.createQueue('monitor')
-  console.log('[worker] pg-boss started, listening for scrape, enrich, monitor-sweep, and monitor jobs...')
+  console.log('[worker] pg-boss started, listening for scrape, enrich, screenshot, monitor-sweep, and monitor jobs...')
 
   // Register 24-hour cron for monitor sweep at 02:00 UTC (pg-boss upserts on restart)
   await boss.schedule('monitor-sweep', '0 2 * * *', {}, { tz: 'UTC' })
@@ -104,6 +106,15 @@ async function main() {
         retryDelay: 10,
         expireInSeconds: 120,
       })
+
+      // Chain screenshot job if no og:image was found
+      if (!result.ogImage) {
+        await boss.send('screenshot', { linkId, url }, {
+          retryLimit: 1,
+          retryDelay: 30,
+          expireInSeconds: 60,
+        })
+      }
 
       // Update import job progress if this scrape is part of a bulk import
       if (importJobId) {
@@ -240,6 +251,20 @@ async function main() {
       console.log(`[worker] LLM enriched link ${linkId}: category=${result.category}, tags=${result.tags.join(', ')}`)
     } else {
       console.log(`[worker] enriched link ${linkId}: category=${result.category}, tags=${result.tags.join(', ')}`)
+    }
+  })
+
+  // screenshot: take a browser screenshot for links with no og:image
+  await boss.work<{ linkId: string; url: string }>('screenshot', { localConcurrency: 2 }, async ([job]) => {
+    const { linkId, url } = job.data!
+    console.log(`[worker] screenshotting ${url} for link ${linkId}`)
+
+    const screenshotPath = await screenshotUrl(url, linkId)
+    if (screenshotPath) {
+      await db.update(schema.links)
+        .set({ ogImage: screenshotPath, updatedAt: new Date() })
+        .where(eq(schema.links.id, linkId))
+      console.log(`[worker] screenshot saved for ${url}`)
     }
   })
 

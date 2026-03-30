@@ -47,6 +47,7 @@ function LinkDetailContent({
   const hue = domainToHue(link.domain || '')
   const domainInitial = (link.domain || link.url).charAt(0).toUpperCase()
   const [checking, setChecking] = useState(false)
+  const [imgError, setImgError] = useState(false)
 
   async function handleCheckNow() {
     setChecking(true)
@@ -93,11 +94,12 @@ function LinkDetailContent({
     <div className="flex flex-col gap-4">
       {/* Hero image */}
       <div className="w-full h-[200px] overflow-hidden rounded-md">
-        {link.ogImage ? (
+        {link.ogImage && !imgError ? (
           <img
             src={link.ogImage}
             alt={link.title || ''}
             className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
           />
         ) : (
           <div

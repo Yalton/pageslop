@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -30,6 +31,7 @@ export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail, onTagClic
     return <LinkSkeleton variant="grid" />
   }
 
+  const [imgError, setImgError] = useState(false)
   const hue = domainToHue(link.domain || '')
   const domainInitial = (link.domain || link.url).charAt(0).toUpperCase()
   const visibleTags = link.tags?.slice(0, 3) ?? []
@@ -57,11 +59,12 @@ export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail, onTagClic
     >
       {/* Hero image */}
       <div className="h-[160px] w-full overflow-hidden">
-        {link.ogImage ? (
+        {link.ogImage && !imgError ? (
           <img
             src={link.ogImage}
             alt={link.title || ''}
             className="w-full h-[160px] object-cover"
+            onError={() => setImgError(true)}
           />
         ) : (
           <div
