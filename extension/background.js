@@ -1,5 +1,11 @@
 // Background event page (MV3, ES module). Wires browser APIs into sweep.js.
-import { countKept, setKept, targetTabs, withKeptFlag } from "./keep.js";
+import {
+	countKept,
+	createMenuGuard,
+	setKept,
+	targetTabs,
+	withKeptFlag,
+} from "./keep.js";
 import { loadSettings, saveSettings } from "./settings.js";
 import { runSweep, stashTab } from "./sweep.js";
 
@@ -60,19 +66,26 @@ async function createMenus() {
 }
 
 browser.runtime.onInstalled.addListener(createMenus);
+browser.runtime.onStartup.addListener(createMenus);
+
+const menuGuard = createMenuGuard();
 
 // Re-read the stored mark each time, so the checkbox also self-corrects
 // after a failed write.
 browser.menus.onShown.addListener(async (info, tab) => {
 	if (!tab || !info.menuIds.includes(KEEP_MENU_ID)) return;
+	const menuId = menuGuard.open();
 	try {
 		const checked = (await countKept(browser.sessions, [tab])) > 0;
+		if (!menuGuard.isCurrent(menuId)) return;
 		await browser.menus.update(KEEP_MENU_ID, { checked });
 		await browser.menus.refresh();
 	} catch (error) {
 		console.error("Could not show the keep mark", error);
 	}
 });
+
+browser.menus.onHidden.addListener(() => menuGuard.close());
 
 // A click applies to the whole highlighted selection when the clicked tab
 // is part of it, otherwise only to the clicked tab.

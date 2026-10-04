@@ -63,3 +63,23 @@ export function targetTabs(clickedTab, highlightedTabs) {
 	const list = Array.isArray(highlightedTabs) ? highlightedTabs : [];
 	return list.some((tab) => tab.id === clickedTab.id) ? list : [clickedTab];
 }
+
+// menus.onShown handlers are async, so a later menu can open (or this one
+// close) before the stored mark has been read. Each shown menu gets an id;
+// update the checkbox only while that id is still the current menu.
+export function createMenuGuard() {
+	let current = 0;
+	let next = 1;
+	return {
+		open() {
+			current = next++;
+			return current;
+		},
+		isCurrent(id) {
+			return id === current;
+		},
+		close() {
+			current = 0;
+		},
+	};
+}

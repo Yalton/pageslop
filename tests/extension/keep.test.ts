@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	KEEP_KEY,
 	countKept,
+	createMenuGuard,
 	setKept,
 	targetTabs,
 	withKeptFlag,
@@ -168,5 +169,28 @@ describe("targetTabs", () => {
 		expect(targetTabs(clicked, undefined as unknown as FakeTab[])).toEqual([
 			clicked,
 		]);
+	});
+});
+
+describe("createMenuGuard", () => {
+	it("treats the latest shown menu as current", () => {
+		const guard = createMenuGuard();
+		const id = guard.open();
+		expect(guard.isCurrent(id)).toBe(true);
+	});
+
+	it("drops an older menu once a newer one opens", () => {
+		const guard = createMenuGuard();
+		const first = guard.open();
+		const second = guard.open();
+		expect(guard.isCurrent(first)).toBe(false);
+		expect(guard.isCurrent(second)).toBe(true);
+	});
+
+	it("drops the menu once it is hidden", () => {
+		const guard = createMenuGuard();
+		const id = guard.open();
+		guard.close();
+		expect(guard.isCurrent(id)).toBe(false);
 	});
 });
