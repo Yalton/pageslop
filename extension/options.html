@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pageslop Tab Stash Options</title>
+    <style>
+      body { font: 14px/1.5 system-ui, sans-serif; max-width: 640px; margin: 24px auto; padding: 0 16px; }
+      fieldset { border: 1px solid #ccc; border-radius: 6px; margin: 0 0 16px; padding: 12px 16px; }
+      label { display: block; margin: 8px 0 2px; font-weight: 600; }
+      input[type="url"], input[type="password"], input[type="number"], textarea { width: 100%; box-sizing: border-box; padding: 6px; font: inherit; }
+      textarea { min-height: 6em; }
+      .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+      .hint { color: #666; font-size: 12px; margin: 2px 0; }
+      .result { margin-left: 8px; }
+      ul { padding-left: 20px; }
+    </style>
+  </head>
+  <body>
+    <h1>Pageslop Tab Stash</h1>
+
+    <fieldset>
+      <legend>Server</legend>
+      <label for="serverUrl">Server URL</label>
+      <input id="serverUrl" type="url" placeholder="https://pageslop.example.com" autocomplete="off" />
+      <label for="token">API token</label>
+      <input id="token" type="password" placeholder="ps_…" autocomplete="off" />
+      <p class="hint">Create a token in Pageslop under Settings → Browser extension.</p>
+      <div class="row">
+        <button id="test" type="button">Test connection</button>
+        <span id="ping-result" class="result" role="status"></span>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Auto-close</legend>
+      <label for="idleHours">Close tabs idle longer than (hours)</label>
+      <input id="idleHours" type="number" min="0.01" step="0.01" />
+      <label for="maxTabs">Keep at most this many tabs open</label>
+      <input id="maxTabs" type="number" min="1" step="1" />
+      <label for="excludeDomains">Never close these domains (one per line, subdomains included)</label>
+      <textarea id="excludeDomains" spellcheck="false"></textarea>
+      <div class="row">
+        <input id="enabled" type="checkbox" disabled />
+        <label for="enabled" style="margin: 0">Auto-close idle tabs</label>
+      </div>
+      <p id="enabled-hint" class="hint">Run "Test connection" successfully to enable auto-close.</p>
+    </fieldset>
+
+    <div class="row">
+      <button id="save" type="button">Save</button>
+      <span id="save-result" class="result" role="status"></span>
+    </div>
+
+    <fieldset style="margin-top: 16px">
+      <legend>Preview</legend>
+      <p class="hint">Lists the tabs the next sweep would close with the values above. Nothing is closed.</p>
+      <button id="preview" type="button">Preview next sweep</button>
+      <ul id="preview-list"></ul>
+    </fieldset>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>
