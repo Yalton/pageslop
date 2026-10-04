@@ -98,6 +98,8 @@ export async function listLinksWithTags(userId: string): Promise<LinkWithTags[]>
     status: link.status as LinkWithTags['status'],
     enrichmentSource: link.enrichmentSource as LinkWithTags['enrichmentSource'],
     uptimeStatus: link.uptimeStatus as LinkWithTags['uptimeStatus'],
+    source: link.source as LinkWithTags['source'],
+    stashState: link.stashState as LinkWithTags['stashState'],
     tags: tagMap.get(link.id) ?? [],
   }))
 }
@@ -128,6 +130,8 @@ export async function getLinkWithTags(userId: string, linkId: string): Promise<L
     status: link.status as LinkWithTags['status'],
     enrichmentSource: link.enrichmentSource as LinkWithTags['enrichmentSource'],
     uptimeStatus: link.uptimeStatus as LinkWithTags['uptimeStatus'],
+    source: link.source as LinkWithTags['source'],
+    stashState: link.stashState as LinkWithTags['stashState'],
     tags: tagRows as Tag[],
   }
 }

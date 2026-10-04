@@ -73,12 +73,27 @@ export const links = pgTable('links', {
   lastStatusCode: integer('last_status_code'),
   lastCheckedAt: timestamp('last_checked_at'),
   consecutiveFailures: integer('consecutive_failures').notNull().default(0),
+  // Tab stash columns
+  source: text('source').notNull().default('manual'), // 'manual' | 'import' | 'stash'
+  stashState: text('stash_state'), // null | 'inbox' | 'read' | 'kept' | 'archived'
+  stashedAt: timestamp('stashed_at'), // set on each stash, including re-stash
 }, (table) => ({
   uniqueUserUrl: unique().on(table.userId, table.url),
   userIdIdx: index('links_user_id_idx').on(table.userId),
   statusIdx: index('links_status_idx').on(table.status),
   createdIdx: index('links_created_at_idx').on(table.createdAt),
+  userStashStateIdx: index('links_user_stash_state_idx').on(table.userId, table.stashState),
 }))
+
+// Bearer tokens for the browser extension. Only the SHA-256 hex hash of the raw token is stored.
+export const apiTokens = pgTable('api_tokens', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  lastUsedAt: timestamp('last_used_at'),
+})
 
 export const rawContent = pgTable('raw_content', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
