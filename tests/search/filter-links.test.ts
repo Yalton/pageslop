@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { LINK_DEFAULTS } from '../fixtures/link-defaults'
 import { filterLinks } from '@/lib/utils/search'
 import type { LinkWithTags } from '@/types'
 
@@ -17,6 +18,7 @@ const fixtures: LinkWithTags[] = [
     category: 'Technology',
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
+    ...LINK_DEFAULTS,
     tags: [{ id: 't1', userId: 'u1', name: 'javascript', source: 'llm' }],
   },
   {
@@ -32,6 +34,7 @@ const fixtures: LinkWithTags[] = [
     category: 'Technology',
     createdAt: new Date('2024-01-02'),
     updatedAt: new Date('2024-01-02'),
+    ...LINK_DEFAULTS,
     tags: [
       { id: 't2', userId: 'u1', name: 'typescript', source: 'llm' },
       { id: 't3', userId: 'u1', name: 'React', source: 'user' },
@@ -50,6 +53,7 @@ const fixtures: LinkWithTags[] = [
     category: 'News',
     createdAt: new Date('2024-01-03'),
     updatedAt: new Date('2024-01-03'),
+    ...LINK_DEFAULTS,
     tags: [],
   },
   {
@@ -65,6 +69,7 @@ const fixtures: LinkWithTags[] = [
     category: 'Shopping',
     createdAt: new Date('2024-01-04'),
     updatedAt: new Date('2024-01-04'),
+    ...LINK_DEFAULTS,
     tags: [{ id: 't4', userId: 'u1', name: 'reactive', source: 'llm' }],
   },
   {
@@ -80,6 +85,7 @@ const fixtures: LinkWithTags[] = [
     category: null,
     createdAt: new Date('2024-01-05'),
     updatedAt: new Date('2024-01-05'),
+    ...LINK_DEFAULTS,
     tags: [],
   },
 ]

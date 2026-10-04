@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { LINK_DEFAULTS } from '../fixtures/link-defaults'
 // Load the routes up front, outside any test's timeout. vi.mock is hoisted,
 // so they still get the mocks, and the tests' dynamic imports hit the cache.
 import '@/app/api/export/json/route'
@@ -40,6 +41,7 @@ describe('generateNetscapeHTML', () => {
         category: null,
         createdAt,
         updatedAt: createdAt,
+        ...LINK_DEFAULTS,
         tags: [],
       },
     ]
@@ -69,6 +71,7 @@ describe('generateNetscapeHTML', () => {
         category: null,
         createdAt,
         updatedAt: createdAt,
+        ...LINK_DEFAULTS,
         tags: [],
       },
     ]
@@ -93,6 +96,7 @@ describe('generateNetscapeHTML', () => {
         category: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        ...LINK_DEFAULTS,
         tags: [],
       },
     ]
@@ -117,6 +121,7 @@ describe('generateNetscapeHTML', () => {
         category: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        ...LINK_DEFAULTS,
         tags: [],
       },
     ]
@@ -181,6 +186,7 @@ describe('GET /api/export/json', () => {
       category: 'Technology',
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date('2024-01-02'),
+      ...LINK_DEFAULTS,
       tags: [{ id: 'tag-1', userId: 'user-1', name: 'react', source: 'user' }],
     }
 

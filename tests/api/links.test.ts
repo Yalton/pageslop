@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { LINK_DEFAULTS } from '../fixtures/link-defaults'
 import { parseUrls } from '@/lib/links/parse-urls'
 
 // Mock database layer
@@ -70,7 +71,7 @@ describe('POST /api/links', () => {
 
   it('duplicate detection — findDuplicate is called before insertLink', async () => {
     const { findDuplicate, insertLink } = await import('@/lib/db/queries/links')
-    const mockLink = { id: '1', userId: 'u1', url: 'https://example.com', status: 'pending', domain: 'example.com', title: null, description: null, ogImage: null, favicon: null, category: null, createdAt: new Date(), updatedAt: new Date() }
+    const mockLink = { ...LINK_DEFAULTS, id: '1', userId: 'u1', url: 'https://example.com', status: 'pending', domain: 'example.com', title: null, description: null, ogImage: null, favicon: null, category: null, createdAt: new Date(), updatedAt: new Date() }
 
     vi.mocked(findDuplicate).mockResolvedValueOnce(mockLink)
 
@@ -83,7 +84,7 @@ describe('POST /api/links', () => {
   it('force save — bypasses duplicate check', async () => {
     const { findDuplicate, insertLink } = await import('@/lib/db/queries/links')
     const { enqueueScrapeJob } = await import('@/lib/queue/boss')
-    const newLink = { id: '2', userId: 'u1', url: 'https://example.com', status: 'pending', domain: 'example.com', title: null, description: null, ogImage: null, favicon: null, category: null, createdAt: new Date(), updatedAt: new Date() }
+    const newLink = { ...LINK_DEFAULTS, id: '2', userId: 'u1', url: 'https://example.com', status: 'pending', domain: 'example.com', title: null, description: null, ogImage: null, favicon: null, category: null, createdAt: new Date(), updatedAt: new Date() }
 
     vi.mocked(insertLink).mockResolvedValueOnce(newLink)
     vi.mocked(enqueueScrapeJob).mockResolvedValueOnce(undefined)

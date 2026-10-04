@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+import { LINK_DEFAULTS } from '../../fixtures/link-defaults'
 
 // Mock database layer
 vi.mock('@/lib/db/queries/links', () => ({
@@ -30,6 +31,7 @@ describe('DELETE /api/links/[id]', () => {
       category: null,
       createdAt: new Date(),
       updatedAt: new Date(),
+      ...LINK_DEFAULTS,
     }
 
     vi.mocked(deleteLink).mockResolvedValueOnce(deletedLink)

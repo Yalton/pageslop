@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { LINK_DEFAULTS } from '../fixtures/link-defaults'
 import { groupLinks } from '@/lib/utils/group-links'
 import type { LinkWithTags } from '@/types'
 
@@ -20,6 +21,7 @@ const makeLink = (
   category,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
+  ...LINK_DEFAULTS,
   tags,
 })
 

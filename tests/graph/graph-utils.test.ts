@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { LINK_DEFAULTS } from '../fixtures/link-defaults'
 import {
   buildGraphData,
   crossLinkNodes,
@@ -30,12 +31,7 @@ function makeLink(
     category,
     createdAt: new Date(),
     updatedAt: new Date(),
-    enrichmentSource: null,
-    enrichmentError: null,
-    uptimeStatus: 'unchecked',
-    lastStatusCode: null,
-    lastCheckedAt: null,
-    consecutiveFailures: 0,
+    ...LINK_DEFAULTS,
     tags: tags.map((name, i) => ({
       id: `tag-${id}-${i}`,
       userId: 'user-1',

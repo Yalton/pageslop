@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { LINK_DEFAULTS } from '../fixtures/link-defaults'
 // Load the routes up front, outside any test's timeout. vi.mock is hoisted,
 // so they still get the mocks, and the tests' dynamic imports hit the cache.
 import '@/app/api/links/[id]/check/route'
@@ -40,6 +41,7 @@ const mockLink = {
   category: null,
   createdAt: new Date(),
   updatedAt: new Date(),
+  ...LINK_DEFAULTS,
   tags: [],
 }
 
