@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { KEEP_KEY, withKeptFlag } from "../../extension/keep.js";
 import { DEFAULTS } from "../../extension/settings.js";
 import {
 	ERROR_BADGE_COLOR,
@@ -63,7 +64,20 @@ type Opts = {
 	// What getTab returns at close time. An Error value makes getTab reject.
 	current?: Record<number, FakeTab | Error>;
 	force?: boolean;
+	// Tab IDs marked "keep", and IDs whose mark read rejects.
+	kept?: number[];
+	keptReadFails?: number[];
 };
+
+// Stand-in for browser.sessions, read through the real withKeptFlag.
+function fakeSessions(kept: number[], failing: number[]) {
+	return {
+		getTabValue: vi.fn(async (id: number, key: string) => {
+			if (failing.includes(id)) throw new Error(`Invalid tab ID: ${id}`);
+			return key === KEEP_KEY && kept.includes(id) ? true : undefined;
+		}),
+	};
+}
 
 // biome-ignore lint/suspicious/noExplicitAny: test double bag
 function makeDeps(opts: Opts = {}): Record<string, any> {
@@ -72,6 +86,7 @@ function makeDeps(opts: Opts = {}): Record<string, any> {
 		idleTab(2, "https://b.com/2"),
 	];
 	const current = opts.current ?? {};
+	const sessions = fakeSessions(opts.kept ?? [], opts.keptReadFails ?? []);
 	return {
 		queryTabs: vi.fn(async () => tabs),
 		getTab: vi.fn(async (id: number) => {
@@ -94,6 +109,7 @@ function makeDeps(opts: Opts = {}): Record<string, any> {
 		setBadge: vi.fn(async (_text: string, _color?: string) => {}),
 		recordError: vi.fn(async (_message: string) => {}),
 		recordSuccess: vi.fn(async (_stashed: number) => {}),
+		withKeptFlag: vi.fn((list: FakeTab[]) => withKeptFlag(sessions, list)),
 		now: () => NOW,
 		force: opts.force,
 	};
@@ -397,6 +413,50 @@ describe("runSweep: skip conditions and settings", () => {
 	});
 });
 
+describe("runSweep: kept tabs", () => {
+	let warn: ReturnType<typeof vi.spyOn>;
+	beforeEach(() => {
+		warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+	});
+	afterEach(() => {
+		warn.mockRestore();
+	});
+
+	const threeTabs = () => [
+		idleTab(1, "https://a.com/1"),
+		idleTab(2, "https://b.com/2"),
+		idleTab(3, "https://c.com/3"),
+	];
+
+	it("never posts or closes a kept tab", async () => {
+		const deps = makeDeps({ tabs: threeTabs(), kept: [2] });
+		expect(await runSweep(deps)).toEqual({ stashed: 2 });
+		expect(closedIds(deps)).toEqual([1, 3]);
+		const posted = JSON.parse(deps.fetch.mock.calls[0][1].body).tabs.map(
+			(t: { url: string }) => t.url,
+		);
+		expect(posted).toEqual(["https://a.com/1", "https://c.com/3"]);
+		expect(deps.withKeptFlag).toHaveBeenCalledTimes(1);
+	});
+
+	it("closes nothing and skips the server when every idle tab is kept", async () => {
+		const deps = makeDeps({ tabs: threeTabs(), kept: [1, 2, 3] });
+		expect(await runSweep(deps)).toEqual({ stashed: 0 });
+		expect(deps.fetch).not.toHaveBeenCalled();
+		expect(deps.removeTabs).not.toHaveBeenCalled();
+		expect(deps.recordSuccess).toHaveBeenCalledWith(0);
+	});
+
+	it("leaves a tab open when its mark cannot be read, and stashes the rest", async () => {
+		const deps = makeDeps({ tabs: threeTabs(), keptReadFails: [1] });
+		expect(await runSweep(deps)).toEqual({ stashed: 2 });
+		expect(closedIds(deps)).toEqual([2, 3]);
+		expect(deps.recordSuccess).toHaveBeenCalledWith(2);
+		expect(deps.setBadge).not.toHaveBeenCalledWith("!", expect.anything());
+		expect(warn).toHaveBeenCalled();
+	});
+});
+
 describe("stashTab", () => {
 	it("stashes and closes a protected (active, pinned) tab", async () => {
 		const tab = idleTab(7, "https://a.com/x", {
@@ -414,6 +474,13 @@ describe("stashTab", () => {
 				closedAt: new Date(NOW).toISOString(),
 			},
 		]);
+	});
+
+	it("stashes a kept tab anyway, without reading keep marks", async () => {
+		const deps = makeDeps({ tabs: [idleTab(7, "https://a.com/x")], kept: [7] });
+		expect(await stashTab(deps, 7)).toEqual({ stashed: 1 });
+		expect(closedIds(deps)).toEqual([7]);
+		expect(deps.withKeptFlag).not.toHaveBeenCalled();
 	});
 
 	it("refuses non-http tabs without calling the server", async () => {

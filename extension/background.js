@@ -1,4 +1,5 @@
 // Background event page (MV3, ES module). Wires browser APIs into sweep.js.
+import { withKeptFlag } from "./keep.js";
 import { loadSettings, saveSettings } from "./settings.js";
 import { runSweep, stashTab } from "./sweep.js";
 
@@ -25,6 +26,7 @@ function makeDeps(extra = {}) {
 		recordSuccess: async (stashed) => {
 			await saveSettings(storage, { lastSweep: { at: Date.now(), stashed } });
 		},
+		withKeptFlag: (tabs) => withKeptFlag(browser.sessions, tabs),
 		now: () => Date.now(),
 		...extra,
 	};

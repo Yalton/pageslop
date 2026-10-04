@@ -90,7 +90,8 @@ export async function runSweep(deps) {
 		if (!deps.force && now < settings.pausedUntil)
 			return { stashed: 0, skipped: "paused" };
 
-		const tabs = await deps.queryTabs();
+		// Read keep marks fresh on every run; the event page may have been unloaded.
+		const tabs = await deps.withKeptFlag(await deps.queryTabs());
 		const selected = selectTabsToStash(tabs, settings, now);
 		const result = await stashInBatches(deps, settings, selected, true);
 		if (result.error) return await fail(deps, result.error);
