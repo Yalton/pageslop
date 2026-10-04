@@ -1,9 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	KEEP_KEY,
+	KEPT_URLS_KEY,
 	countKept,
 	createMenuGuard,
+	keepUrlKey,
+	loadKeptUrls,
+	refreshKeptUrls,
 	setKept,
+	setKeptUrls,
 	targetTabs,
 	withKeptFlag,
 } from "../../extension/keep.js";
@@ -196,5 +201,142 @@ describe("createMenuGuard", () => {
 		const id = guard.open();
 		guard.close();
 		expect(guard.isCurrent(id)).toBe(false);
+	});
+});
+
+// In-memory stand-in for browser.storage.local.
+function fakeStorage(initial: Record<string, unknown> = {}) {
+	const data: Record<string, unknown> = { ...initial };
+	return {
+		data,
+		get: vi.fn(async (key: string) =>
+			key in data ? { [key]: data[key] } : {},
+		),
+		set: vi.fn(async (items: Record<string, unknown>) => {
+			Object.assign(data, items);
+		}),
+	};
+}
+
+const DAY_MS = 86_400_000;
+
+describe("keepUrlKey", () => {
+	it("drops the fragment so a restored page still matches", () => {
+		expect(keepUrlKey("https://example.net/a?q=1#section")).toBe(
+			"https://example.net/a?q=1",
+		);
+	});
+
+	it("is null for non-http pages and junk", () => {
+		expect(keepUrlKey("about:blank")).toBeNull();
+		expect(keepUrlKey("moz-extension://abc/popup.html")).toBeNull();
+		expect(keepUrlKey("not a url")).toBeNull();
+		expect(keepUrlKey(undefined)).toBeNull();
+	});
+});
+
+describe("loadKeptUrls", () => {
+	it("is empty when nothing is stored", async () => {
+		expect(await loadKeptUrls(fakeStorage())).toEqual({});
+	});
+
+	it("drops entries that are not timestamps", async () => {
+		const storage = fakeStorage({
+			[KEPT_URLS_KEY]: { "https://a.test/": 5, "https://b.test/": "x" },
+		});
+		expect(await loadKeptUrls(storage)).toEqual({ "https://a.test/": 5 });
+	});
+
+	it("is empty when the stored value is not an object", async () => {
+		const storage = fakeStorage({ [KEPT_URLS_KEY]: ["https://a.test/"] });
+		expect(await loadKeptUrls(storage)).toEqual({});
+	});
+});
+
+describe("setKeptUrls", () => {
+	it("adds URLs without their fragment, stamped with now", async () => {
+		const storage = fakeStorage();
+		await setKeptUrls(
+			storage,
+			["https://a.test/x#y", "about:blank"],
+			true,
+			100,
+		);
+		expect(storage.data[KEPT_URLS_KEY]).toEqual({ "https://a.test/x": 100 });
+	});
+
+	it("removes URLs when unticked", async () => {
+		const storage = fakeStorage({
+			[KEPT_URLS_KEY]: { "https://a.test/": 1, "https://b.test/": 1 },
+		});
+		await setKeptUrls(storage, ["https://a.test/#top"], false, 100);
+		expect(storage.data[KEPT_URLS_KEY]).toEqual({ "https://b.test/": 1 });
+	});
+});
+
+describe("withKeptFlag with kept URLs", () => {
+	it("keeps an unmarked tab whose URL is kept, as after a restore by another add-on", async () => {
+		const restored = { id: 7, windowId: 1, url: "https://example.net/7#frag" };
+		const result = await withKeptFlag(fakeSessions(), [restored, tab(8)], {
+			"https://example.net/7": 1,
+		});
+		expect(result.map((t) => t.kept)).toEqual([true, false]);
+	});
+
+	it("still uses kept URLs when browser.sessions is missing", async () => {
+		const result = await withKeptFlag(undefined, [tab(1), tab(2)], {
+			"https://example.net/2": 1,
+		});
+		expect(result.map((t) => t.kept)).toEqual([false, true]);
+	});
+});
+
+describe("countKept with kept URLs", () => {
+	it("counts tabs kept by mark or by URL once each", async () => {
+		const count = await countKept(fakeSessions([1]), [tab(1), tab(2), tab(3)], {
+			"https://example.net/1": 1,
+			"https://example.net/2": 1,
+		});
+		expect(count).toBe(2);
+	});
+});
+
+describe("refreshKeptUrls", () => {
+	const now = 100 * DAY_MS;
+
+	it("records the current URL of every marked tab", async () => {
+		const storage = fakeStorage();
+		await refreshKeptUrls(storage, fakeSessions([1]), [tab(1), tab(2)], now);
+		expect(storage.data[KEPT_URLS_KEY]).toEqual({
+			"https://example.net/1": now,
+		});
+	});
+
+	it("refreshes kept URLs that are open and keeps recent closed ones", async () => {
+		const storage = fakeStorage({
+			[KEPT_URLS_KEY]: {
+				"https://example.net/2": now - 40 * DAY_MS,
+				"https://closed.test/": now - 10 * DAY_MS,
+			},
+		});
+		await refreshKeptUrls(storage, fakeSessions(), [tab(2)], now);
+		expect(storage.data[KEPT_URLS_KEY]).toEqual({
+			"https://example.net/2": now,
+			"https://closed.test/": now - 10 * DAY_MS,
+		});
+	});
+
+	it("forgets URLs no open tab has shown for 30 days", async () => {
+		const storage = fakeStorage({
+			[KEPT_URLS_KEY]: { "https://old.test/": now - 31 * DAY_MS },
+		});
+		await refreshKeptUrls(storage, fakeSessions(), [tab(1)], now);
+		expect(storage.data[KEPT_URLS_KEY]).toEqual({});
+	});
+
+	it("does not write when nothing changed", async () => {
+		const storage = fakeStorage();
+		await refreshKeptUrls(storage, fakeSessions(), [tab(1)], now);
+		expect(storage.set).not.toHaveBeenCalled();
 	});
 });

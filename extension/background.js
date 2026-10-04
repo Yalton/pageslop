@@ -2,7 +2,10 @@
 import {
 	countKept,
 	createMenuGuard,
+	loadKeptUrls,
+	refreshKeptUrls,
 	setKept,
+	setKeptUrls,
 	targetTabs,
 	withKeptFlag,
 } from "./keep.js";
@@ -39,7 +42,8 @@ function makeDeps(extra = {}) {
 		recordSuccess: async (stashed) => {
 			await saveSettings(storage, { lastSweep: { at: Date.now(), stashed } });
 		},
-		withKeptFlag: (tabs) => withKeptFlag(browser.sessions, tabs),
+		withKeptFlag: async (tabs) =>
+			withKeptFlag(browser.sessions, tabs, await loadKeptUrls(storage)),
 		now: () => Date.now(),
 		...extra,
 	};
@@ -94,7 +98,8 @@ browser.menus.onShown.addListener(async (info, tab) => {
 	if (!tab || !info.menuIds.includes(KEEP_MENU_ID)) return;
 	const menuId = menuGuard.open();
 	try {
-		const checked = (await countKept(browser.sessions, [tab])) > 0;
+		const keptUrls = await loadKeptUrls(storage);
+		const checked = (await countKept(browser.sessions, [tab], keptUrls)) > 0;
 		if (!menuGuard.isCurrent(menuId)) return;
 		await browser.menus.update(KEEP_MENU_ID, { checked });
 		await browser.menus.refresh();
@@ -114,20 +119,45 @@ browser.menus.onClicked.addListener(async (info, tab) => {
 			windowId: tab.windowId,
 			highlighted: true,
 		});
-		const ids = targetTabs(tab, highlighted).map((t) => t.id);
-		await setKept(browser.sessions, ids, info.checked);
+		const targets = targetTabs(tab, highlighted);
+		await setKept(
+			browser.sessions,
+			targets.map((t) => t.id),
+			info.checked,
+		);
+		await setKeptUrls(
+			storage,
+			targets.map((t) => t.url),
+			info.checked,
+			Date.now(),
+		);
 	} catch (error) {
 		console.error("Could not update the keep mark", error);
 	}
 });
 
 async function keptCount() {
-	return countKept(browser.sessions, await browser.tabs.query({}));
+	return countKept(
+		browser.sessions,
+		await browser.tabs.query({}),
+		await loadKeptUrls(storage),
+	);
+}
+
+// Keep the stored kept URLs in step with open tabs before each sweep.
+async function refreshAndSweep() {
+	try {
+		const tabs = await browser.tabs.query({});
+		await refreshKeptUrls(storage, browser.sessions, tabs, Date.now());
+	} catch (error) {
+		console.error("Could not refresh kept URLs", error);
+	}
+	await runSweep(makeDeps());
 }
 
 browser.alarms.onAlarm.addListener((alarm) => {
 	if (alarm.name === ALARM_NAME)
-		runSweep(makeDeps()).catch(logError("Sweep failed"));
+		refreshAndSweep().catch(logError("Sweep failed"));
 });
 
 // Returning a Promise from onMessage sends its value back to the sender.

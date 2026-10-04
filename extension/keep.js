@@ -1,7 +1,15 @@
 // Per-tab "keep" marks, stored with browser.sessions so they survive restarts
 // and session restore. The sessions API is injected, as settings.js takes storage.
+//
+// Firefox carries session values over only through its own restore, undo
+// close and duplicate. Session-manager add-ons restore by opening new tabs,
+// so kept URLs are also stored in storage.local, and a tab whose URL is kept
+// counts as kept too.
 
 export const KEEP_KEY = "kept";
+export const KEPT_URLS_KEY = "keptUrls";
+// A kept URL that no open tab has shown for this long is forgotten.
+export const KEPT_URL_TTL_MS = 30 * 86_400_000;
 
 function messageOf(error) {
 	return error instanceof Error ? error.message : String(error);
@@ -23,6 +31,69 @@ async function readMark(sessions, tabId) {
 	}
 }
 
+// The stored form of a URL: http(s) only, without the fragment, so a page
+// restored at a different #anchor still matches. null for anything else.
+export function keepUrlKey(url) {
+	if (typeof url !== "string") return null;
+	let parsed;
+	try {
+		parsed = new URL(url);
+	} catch {
+		return null;
+	}
+	if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+	parsed.hash = "";
+	return parsed.href;
+}
+
+// { [url]: lastSeenMs }. Malformed storage reads as empty.
+export async function loadKeptUrls(storage) {
+	const stored = (await storage.get(KEPT_URLS_KEY))?.[KEPT_URLS_KEY];
+	if (!stored || typeof stored !== "object" || Array.isArray(stored)) return {};
+	const out = {};
+	for (const [url, seen] of Object.entries(stored)) {
+		if (Number.isFinite(seen)) out[url] = seen;
+	}
+	return out;
+}
+
+export async function setKeptUrls(storage, urls, kept, now) {
+	const stored = await loadKeptUrls(storage);
+	for (const url of urls) {
+		const key = keepUrlKey(url);
+		if (key === null) continue;
+		if (kept) stored[key] = now;
+		else delete stored[key];
+	}
+	await storage.set({ [KEPT_URLS_KEY]: stored });
+}
+
+function keptByUrl(keptUrls, tab) {
+	const key = keepUrlKey(tab.url);
+	return key !== null && Object.hasOwn(keptUrls, key);
+}
+
+// Records the current URL of every marked tab, refreshes kept URLs that are
+// still open, and forgets those unseen for KEPT_URL_TTL_MS.
+export async function refreshKeptUrls(storage, sessions, tabs, now) {
+	const list = Array.isArray(tabs) ? tabs : [];
+	const stored = await loadKeptUrls(storage);
+	const before = JSON.stringify(stored);
+	const marks = hasSessions(sessions)
+		? await Promise.all(list.map((tab) => readMark(sessions, tab.id)))
+		: list.map(() => false);
+	list.forEach((tab, i) => {
+		const key = keepUrlKey(tab.url);
+		if (key === null) return;
+		if (marks[i] === true || Object.hasOwn(stored, key)) stored[key] = now;
+	});
+	for (const [url, seen] of Object.entries(stored)) {
+		if (now - seen > KEPT_URL_TTL_MS) delete stored[url];
+	}
+	if (JSON.stringify(stored) !== before)
+		await storage.set({ [KEPT_URLS_KEY]: stored });
+}
+
 export async function setKept(sessions, tabIds, kept) {
 	await Promise.all(
 		tabIds.map((id) =>
@@ -35,26 +106,30 @@ export async function setKept(sessions, tabIds, kept) {
 
 // Returns copies of `tabs` with `kept: boolean`. A mark that cannot be read
 // counts as kept, so the sweep fails safe and leaves that tab open.
-export async function withKeptFlag(sessions, tabs) {
+// A tab whose URL is in `keptUrls` counts as kept as well.
+export async function withKeptFlag(sessions, tabs, keptUrls = {}) {
 	const list = Array.isArray(tabs) ? tabs : [];
 	if (!hasSessions(sessions)) {
-		console.warn("browser.sessions is unavailable; keep marks are ignored");
-		return list.map((tab) => ({ ...tab, kept: false }));
+		console.warn("browser.sessions is unavailable; only kept URLs are used");
+		return list.map((tab) => ({ ...tab, kept: keptByUrl(keptUrls, tab) }));
 	}
 	const marks = await Promise.all(
 		list.map((tab) => readMark(sessions, tab.id)),
 	);
-	return list.map((tab, i) => ({ ...tab, kept: marks[i] !== false }));
+	return list.map((tab, i) => ({
+		...tab,
+		kept: marks[i] !== false || keptByUrl(keptUrls, tab),
+	}));
 }
 
-// Counts only marks that were read successfully.
-export async function countKept(sessions, tabs) {
+// Counts tabs with a mark that was read successfully, or a kept URL.
+export async function countKept(sessions, tabs, keptUrls = {}) {
 	const list = Array.isArray(tabs) ? tabs : [];
-	if (!hasSessions(sessions)) return 0;
-	const marks = await Promise.all(
-		list.map((tab) => readMark(sessions, tab.id)),
-	);
-	return marks.filter((mark) => mark === true).length;
+	const marks = hasSessions(sessions)
+		? await Promise.all(list.map((tab) => readMark(sessions, tab.id)))
+		: list.map(() => false);
+	return list.filter((tab, i) => marks[i] === true || keptByUrl(keptUrls, tab))
+		.length;
 }
 
 // The tabs a context-menu click applies to: the whole highlighted selection

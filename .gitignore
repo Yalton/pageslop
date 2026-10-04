@@ -45,3 +45,6 @@ next-env.d.ts
 
 # web-ext build output
 /web-ext-artifacts/
+
+# web-ext sign upload tracking
+/extension/.amo-upload-uuid
