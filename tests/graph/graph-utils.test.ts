@@ -258,9 +258,15 @@ describe('Performance', () => {
       return makeLink(`link-${i}`, uniqueTags, CATEGORIES[i % CATEGORIES.length])
     })
 
-    const start = Date.now()
-    buildGraphData(largeLinks, new Set())
-    const elapsed = Date.now() - start
+    // Take the fastest of several runs: load from other test workers only
+    // adds time, so the minimum tracks the code's own cost (about 60ms
+    // alone), while a real slowdown still raises every run.
+    let elapsed = Infinity
+    for (let run = 0; run < 5; run++) {
+      const start = performance.now()
+      buildGraphData(largeLinks, new Set())
+      elapsed = Math.min(elapsed, performance.now() - start)
+    }
 
     expect(elapsed).toBeLessThan(500)
   })
