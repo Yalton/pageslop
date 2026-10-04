@@ -41,3 +41,16 @@ export async function clearEncryptedApiKey(userId: string): Promise<void> {
     .set({ encryptedApiKey: null })
     .where(eq(user.id, userId))
 }
+
+/**
+ * Returns the user's email, or null if the user does not exist.
+ * Used by GET /api/stash/ping to show which account a token belongs to.
+ */
+export async function getUserEmail(userId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ email: user.email })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1)
+  return row?.email ?? null
+}

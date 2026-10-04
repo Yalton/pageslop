@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const publicPaths = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/about', '/api/auth']
+// /api/stash (and /api/stash/*) uses bearer-token auth and does its own 401s,
+// so it must not be redirected for lacking a session cookie.
+const publicPaths = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/about', '/api/auth', '/api/stash']
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
