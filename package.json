@@ -11,7 +11,10 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "ext:run": "web-ext run --source-dir extension",
+    "ext:lint": "web-ext lint --source-dir extension",
+    "ext:build": "web-ext build --source-dir extension --overwrite-dest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
@@ -55,6 +58,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.0",
+    "web-ext": "^10.7.0"
   }
 }

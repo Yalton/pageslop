@@ -1,7 +1,7 @@
 'use client'
 
 import { formatDistanceToNow } from 'date-fns'
-import { ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react'
+import { ArchiveRestore, ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +15,7 @@ import {
 import { LinkSkeleton } from '@/components/links/LinkSkeleton'
 import { UptimeDot } from '@/components/links/UptimeDot'
 import { EnrichmentBadge } from '@/components/links/EnrichmentBadge'
+import { isArchived } from '@/lib/utils/all-links-filter'
 import type { LinkWithTags } from '@/types'
 
 interface LinkCardListProps {
@@ -23,9 +24,10 @@ interface LinkCardListProps {
   onUndoDelete: (link: LinkWithTags) => void
   onOpenDetail: (link: LinkWithTags) => void
   onTagClick?: (tagName: string) => void
+  onRestore?: (id: string) => void
 }
 
-export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail, onTagClick }: LinkCardListProps) {
+export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail, onTagClick, onRestore }: LinkCardListProps) {
   if (link.status === 'pending') {
     return <LinkSkeleton variant="list" />
   }
@@ -85,6 +87,13 @@ export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail, onTag
         </div>
       )}
 
+      {/* Archived badge */}
+      {isArchived(link) && (
+        <Badge variant="secondary" className="text-xs shrink-0">
+          Archived
+        </Badge>
+      )}
+
       {/* Category badge (hidden on small screens) */}
       {link.category && link.category !== 'Other' && (
         <Badge variant="outline" className="text-xs shrink-0 hidden sm:flex">
@@ -118,6 +127,12 @@ export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail, onTag
               <ExternalLink className="size-4" />
               Visit Link
             </DropdownMenuItem>
+            {onRestore && isArchived(link) && (
+              <DropdownMenuItem onSelect={() => onRestore(link.id)}>
+                <ArchiveRestore className="size-4" />
+                Restore to inbox
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem variant="destructive" onSelect={handleDelete}>
               <Trash2 className="size-4" />
               Delete

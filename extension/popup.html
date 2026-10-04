@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Pageslop Tab Stash</title>
+    <style>
+      body { font: 13px/1.4 system-ui, sans-serif; width: 300px; margin: 0; padding: 12px; }
+      h1 { font-size: 14px; margin: 0 0 8px; }
+      p { margin: 4px 0; }
+      .muted { color: #666; }
+      .buttons { display: grid; gap: 6px; margin-top: 10px; }
+      button { padding: 6px 8px; font: inherit; cursor: pointer; }
+      #message { min-height: 1.4em; margin-top: 8px; font-weight: 600; }
+      .links { display: flex; justify-content: space-between; margin-top: 10px; }
+    </style>
+  </head>
+  <body>
+    <h1>Pageslop Tab Stash</h1>
+    <p id="status">Loading…</p>
+    <p id="auto" class="muted"></p>
+    <p id="last-sweep" class="muted"></p>
+    <div class="buttons">
+      <button id="sweep-now" type="button">Stash idle now</button>
+      <button id="stash-tab" type="button">Stash this tab</button>
+      <button id="pause" type="button">Pause 1h</button>
+      <button id="exclude-domain" type="button">Never close this domain</button>
+    </div>
+    <p id="message" role="status"></p>
+    <div class="links">
+      <button id="open-revisit" type="button">Open To Revisit</button>
+      <button id="open-options" type="button">Options</button>
+    </div>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

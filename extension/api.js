@@ -1,0 +1,59 @@
+// Thin fetch wrappers for the pageslop stash API. fetchFn is injected for tests.
+
+export const BATCH_SIZE = 100;
+
+const UNAUTHORIZED =
+	"Unauthorized (401): the token is missing, wrong or revoked";
+
+export function apiUrl(serverUrl, path) {
+	return serverUrl.replace(/\/+$/, "") + path;
+}
+
+function messageOf(error) {
+	return error instanceof Error ? error.message : String(error);
+}
+
+async function request(fetchFn, url, init) {
+	let res;
+	try {
+		res = await fetchFn(url, init);
+	} catch (error) {
+		return { ok: false, error: `Network error: ${messageOf(error)}` };
+	}
+	if (res.status === 401) return { ok: false, error: UNAUTHORIZED };
+	if (!res.ok) return { ok: false, error: `Server returned ${res.status}` };
+	try {
+		return { ok: true, body: await res.json() };
+	} catch {
+		return { ok: false, error: "Invalid response from server (not JSON)" };
+	}
+}
+
+export async function postStash(fetchFn, serverUrl, token, tabs) {
+	const result = await request(fetchFn, apiUrl(serverUrl, "/api/stash"), {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Authorization: `Bearer ${token}`,
+		},
+		body: JSON.stringify({ tabs }),
+	});
+	if (!result.ok) return result;
+	const saved = result.body?.saved;
+	if (!Array.isArray(saved) || !saved.every((url) => typeof url === "string")) {
+		return { ok: false, error: "Invalid response from server (no saved list)" };
+	}
+	return { ok: true, saved };
+}
+
+export async function ping(fetchFn, serverUrl, token) {
+	const result = await request(fetchFn, apiUrl(serverUrl, "/api/stash/ping"), {
+		headers: { Authorization: `Bearer ${token}` },
+	});
+	if (!result.ok) return result;
+	const email = result.body?.user?.email;
+	if (result.body?.ok !== true || typeof email !== "string") {
+		return { ok: false, error: "Invalid response from server" };
+	}
+	return { ok: true, email };
+}

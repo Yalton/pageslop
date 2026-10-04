@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     const existing = await findDuplicate(userId, bookmark.url)
     if (existing) continue
 
-    const link = await insertLink(userId, bookmark.url)
+    const link = await insertLink(userId, bookmark.url, { source: 'import' })
     await enqueueScrapeJob(link.id, bookmark.url, jobId)
   }
 

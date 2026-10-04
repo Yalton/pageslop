@@ -71,6 +71,46 @@ node --env-file=.env --import tsx src/workers/scrape.worker.ts
 | `SMTP_USER` | SMTP login email |
 | `SMTP_PASS` | SMTP password or app-specific password |
 | `SMTP_FROM` | Sender display (e.g., `Pageslop <noreply@yourdomain.com>`) |
+| `ALLOW_SIGNUP` | `false` disables new account sign-up server-side. Default `true` |
+| `NEXT_PUBLIC_ALLOW_SIGNUP` | `false` hides sign-up links in the UI. Inlined at build time, so rebuild after changing. Default `true` |
+| `STASH_EXPIRE_DAYS` | Days before stashed links in the inbox or read state are auto-archived (never deleted). Default `14` |
+
+## Browser extension
+
+The Firefox extension in `extension/` closes idle tabs and saves them to the **To Revisit** inbox of your Pageslop instance. A tab is closed only after the server confirms it saved that URL. If the server is unreachable, nothing closes and the toolbar badge shows a red `!`.
+
+### Connect it
+
+1. In Pageslop, open **Settings → Browser extension**, enter a name such as "Firefox laptop" and create a token. Copy it right away: the token is shown only once. Revoke it from the same card at any time.
+2. Load the extension (see below), open its **Options** page, and enter your server URL (for example `https://pageslop.example.com`) and the token.
+3. Click **Test connection**. Firefox asks for permission to access your server. Grant it. You should see ✓ with your account email.
+4. Set the idle hours (default 6), the maximum number of open tabs (default 25) and any domains that must never close, then enable **Auto-close idle tabs** and save. Use **Preview next sweep** to see what would close.
+
+Pinned, active, audible and private-window tabs, non-http pages and your Pageslop server's own pages are never closed. Sweeps run every 5 minutes. The popup can also stash on demand, stash the current tab, pause for an hour, or exclude the current domain. Stashed items you don't act on are archived after `STASH_EXPIRE_DAYS` days (default 14). Nothing is deleted.
+
+### Development
+
+```bash
+npm run ext:run    # launches a temporary Firefox profile with the extension loaded
+npm run ext:lint   # web-ext lint
+npm run ext:build  # zip in web-ext-artifacts/
+```
+
+You can also load it into your normal Firefox from `about:debugging` → **This Firefox** → **Load Temporary Add-on…** by selecting `extension/manifest.json`. Temporary add-ons are removed when Firefox restarts.
+
+### Permanent install
+
+Release Firefox only installs signed add-ons permanently. Submit the zip from `npm run ext:build` to [addons.mozilla.org](https://addons.mozilla.org/developers/) as an **unlisted** add-on. Signing is free and automatic, and unlisted add-ons are not shown publicly. Alternatively, sign from the command line with your AMO API credentials:
+
+```bash
+npx web-ext sign --source-dir extension --channel unlisted --api-key "$AMO_JWT_ISSUER" --api-secret "$AMO_JWT_SECRET"
+```
+
+Install the signed `.xpi` it produces by opening it in Firefox.
+
+### Self-hosting
+
+Each Pageslop instance belongs to a single owner. The extension talks only to the server URL you configure, and it asks for host permission for that origin alone. To run your own: deploy Pageslop, create your account, then set `ALLOW_SIGNUP=false` so nobody else can sign up, and point the extension at your instance.
 
 ## Architecture
 

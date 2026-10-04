@@ -2,6 +2,12 @@ export type LinkStatus = 'pending' | 'ready' | 'error'
 export type UptimeStatus = 'unchecked' | 'up' | 'down'
 export type EnrichmentSource = 'rule' | 'llm' | 'llm_failed' | null
 
+export type LinkSource = 'manual' | 'import' | 'stash'
+
+export const STASH_STATES = ['inbox', 'read', 'kept', 'archived'] as const
+
+export type StashState = typeof STASH_STATES[number]
+
 export const CATEGORIES = [
   'Technology',
   'News',
@@ -37,6 +43,9 @@ export interface Link {
   lastStatusCode: number | null
   lastCheckedAt: Date | null
   consecutiveFailures: number
+  source: LinkSource
+  stashState: StashState | null
+  stashedAt: Date | null
 }
 
 export interface LinkWithDuplicate extends Link {

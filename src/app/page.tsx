@@ -5,6 +5,7 @@ import { Zap, Sparkles, Cloud } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/layout/ThemeToggle"
 import { auth } from "@/lib/auth/server"
+import { signupAllowed } from "@/lib/auth/signup"
 
 export default async function MarketingPage() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -29,10 +30,16 @@ export default async function MarketingPage() {
           Pageslop automatically organizes your bookmarks — no folders, no tags, no effort.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <Button asChild variant="default" size="lg">
-            <Link href="/signup">Start Saving Links</Link>
-          </Button>
-          <Button asChild variant="outline" size="lg">
+          {signupAllowed(process.env.ALLOW_SIGNUP) && (
+            <Button asChild variant="default" size="lg">
+              <Link href="/signup">Start Saving Links</Link>
+            </Button>
+          )}
+          <Button
+            asChild
+            variant={signupAllowed(process.env.ALLOW_SIGNUP) ? "outline" : "default"}
+            size="lg"
+          >
             <Link href="/login">Log In</Link>
           </Button>
         </div>

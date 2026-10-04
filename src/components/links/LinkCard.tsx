@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react'
+import { ArchiveRestore, ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -16,6 +16,7 @@ import { LinkSkeleton } from '@/components/links/LinkSkeleton'
 import { UptimeDot } from '@/components/links/UptimeDot'
 import { EnrichmentBadge } from '@/components/links/EnrichmentBadge'
 import { domainToHue } from '@/lib/utils/domain-color'
+import { isArchived } from '@/lib/utils/all-links-filter'
 import type { LinkWithTags } from '@/types'
 
 interface LinkCardProps {
@@ -24,9 +25,10 @@ interface LinkCardProps {
   onUndoDelete: (link: LinkWithTags) => void
   onOpenDetail: (link: LinkWithTags) => void
   onTagClick?: (tagName: string) => void
+  onRestore?: (id: string) => void
 }
 
-export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail, onTagClick }: LinkCardProps) {
+export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail, onTagClick, onRestore }: LinkCardProps) {
   if (link.status === 'pending') {
     return <LinkSkeleton variant="grid" />
   }
@@ -95,8 +97,13 @@ export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail, onTagClic
           <UptimeDot status={link.uptimeStatus} lastCheckedAt={link.lastCheckedAt} lastStatusCode={link.lastStatusCode} />
           <span className="text-sm text-muted-foreground truncate">{link.domain || ''}</span>
           <EnrichmentBadge source={link.enrichmentSource} error={link.enrichmentError} />
+          {isArchived(link) && (
+            <Badge variant="secondary" className="text-xs ml-auto shrink-0">
+              Archived
+            </Badge>
+          )}
           {link.category && link.category !== 'Other' && (
-            <Badge variant="outline" className="text-xs ml-auto shrink-0">
+            <Badge variant="outline" className={`text-xs shrink-0${isArchived(link) ? '' : ' ml-auto'}`}>
               {link.category}
             </Badge>
           )}
@@ -152,6 +159,12 @@ export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail, onTagClic
               <ExternalLink className="size-4" />
               Visit Link
             </DropdownMenuItem>
+            {onRestore && isArchived(link) && (
+              <DropdownMenuItem onSelect={() => onRestore(link.id)}>
+                <ArchiveRestore className="size-4" />
+                Restore to inbox
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem variant="destructive" onSelect={handleDelete}>
               <Trash2 className="size-4" />
               Delete
