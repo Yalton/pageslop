@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Upload, FileDown, CheckCircle, AlertCircle, Key, Trash2, Lock } from 'lucide-react'
+import { ExtensionTokensCard } from '@/components/settings/ExtensionTokensCard'
 
 interface ImportState {
   jobId: string | null
@@ -427,6 +428,9 @@ export default function SettingsPage() {
       <p className="mt-3 text-xs text-muted-foreground">
         Your key is encrypted at rest and never stored in plain text. Only newly saved links will use LLM enrichment.
       </p>
+
+      {/* Browser Extension */}
+      <ExtensionTokensCard />
 
       {/* Change Password */}
       <h2 className="text-lg font-semibold mt-8 mb-4">
