@@ -13,6 +13,8 @@ import { SearchInput } from '@/components/links/SearchInput'
 import { TagFilterChip } from '@/components/links/TagFilterChip'
 import { GroupedView } from '@/components/links/GroupedView'
 import { filterLinks } from '@/lib/utils/search'
+import { filterAllLinksView } from '@/lib/utils/all-links-filter'
+import { toast } from 'sonner'
 import { useLinks } from '@/lib/hooks/useLinks'
 import type { LinkWithTags } from '@/types'
 
@@ -20,7 +22,7 @@ type ViewMode = 'grid' | 'list' | 'grouped'
 const STORAGE_KEY = 'pageslop-view-mode'
 
 export function LinkGrid() {
-  const { links, isLoading, deleteLink, undoDelete, mutate } = useLinks()
+  const { links, isLoading, deleteLink, undoDelete, setStashState, mutate } = useLinks()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
@@ -33,11 +35,23 @@ export function LinkGrid() {
   // Derive selectedLink from SWR data so it stays in sync after mutations
   const selectedLink = selectedLinkId ? links.find(l => l.id === selectedLinkId) ?? null : null
 
+  // inbox/read links live on /dashboard/revisit; hide them here
+  const visibleLinks = useMemo(() => filterAllLinksView(links), [links])
+
   // Filter links client-side using search query and tag filter
   const filteredLinks = useMemo(
-    () => filterLinks(links, searchQuery, tagFilter),
-    [links, searchQuery, tagFilter]
+    () => filterLinks(visibleLinks, searchQuery, tagFilter),
+    [visibleLinks, searchQuery, tagFilter]
   )
+
+  async function handleRestore(id: string) {
+    try {
+      await setStashState([id], 'inbox')
+      toast.success('Restored to inbox')
+    } catch {
+      toast.error('Could not restore link. Please try again.')
+    }
+  }
 
   // Load view mode from localStorage on mount
   useEffect(() => {
@@ -114,7 +128,7 @@ export function LinkGrid() {
       )}
 
       {/* Empty state */}
-      {links.length === 0 && !isLoading && (
+      {visibleLinks.length === 0 && !isLoading && (
         <div className="flex flex-col items-center justify-center flex-1 py-24 text-center">
           <h2 className="text-[20px] font-semibold leading-[1.2] mb-2">No links yet</h2>
           <p className="text-sm text-muted-foreground max-w-sm">
@@ -124,7 +138,7 @@ export function LinkGrid() {
       )}
 
       {/* No results state */}
-      {links.length > 0 && filteredLinks.length === 0 && (
+      {visibleLinks.length > 0 && filteredLinks.length === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 py-16 text-center gap-3">
           {searchQuery ? (
             <>
@@ -165,6 +179,7 @@ export function LinkGrid() {
               onUndoDelete={undoDelete}
               onOpenDetail={handleOpenDetail}
               onTagClick={handleTagClick}
+          onRestore={handleRestore}
             />
           ))}
         </div>
@@ -181,6 +196,7 @@ export function LinkGrid() {
               onUndoDelete={undoDelete}
               onOpenDetail={handleOpenDetail}
               onTagClick={handleTagClick}
+          onRestore={handleRestore}
             />
           ))}
         </div>
@@ -195,6 +211,7 @@ export function LinkGrid() {
           onUndoDelete={undoDelete}
           onOpenDetail={handleOpenDetail}
           onTagClick={handleTagClick}
+          onRestore={handleRestore}
         />
       )}
 

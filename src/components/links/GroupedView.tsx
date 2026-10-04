@@ -15,6 +15,7 @@ interface GroupedViewProps {
   onUndoDelete: (link: LinkWithTags) => void
   onOpenDetail: (link: LinkWithTags) => void
   onTagClick?: (tagName: string) => void
+  onRestore?: (id: string) => void
 }
 
 export function GroupedView({
@@ -24,6 +25,7 @@ export function GroupedView({
   onUndoDelete,
   onOpenDetail,
   onTagClick,
+  onRestore,
 }: GroupedViewProps) {
   const grouped = groupLinks(links)
 
@@ -90,6 +92,7 @@ export function GroupedView({
                       onUndoDelete={onUndoDelete}
                       onOpenDetail={onOpenDetail}
                       onTagClick={onTagClick}
+                      onRestore={onRestore}
                     />
                   ))}
                 </div>
@@ -103,6 +106,7 @@ export function GroupedView({
                       onUndoDelete={onUndoDelete}
                       onOpenDetail={onOpenDetail}
                       onTagClick={onTagClick}
+                      onRestore={onRestore}
                     />
                   ))}
                 </div>
