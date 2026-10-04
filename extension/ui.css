@@ -1,0 +1,179 @@
+/* Shared look for the popup and options page. Colors and radius follow the
+   Pageslop app theme in src/app/globals.css: dark by default, light palette
+   when the browser prefers it. */
+
+:root {
+	color-scheme: dark;
+	--background: 240 10% 4%;
+	--foreground: 0 0% 98%;
+	--card: 240 6% 10%;
+	--muted-foreground: 240 5% 65%;
+	--primary: 263 70% 58%;
+	--primary-foreground: 0 0% 98%;
+	--accent: 240 6% 16%;
+	--destructive: 0 72% 51%;
+	--success: 142 69% 45%;
+	--border: 240 6% 16%;
+	--input: 240 6% 16%;
+	--ring: 263 70% 58%;
+	--radius: 0.5rem;
+}
+
+@media (prefers-color-scheme: light) {
+	:root {
+		color-scheme: light;
+		--background: 0 0% 100%;
+		--foreground: 240 10% 4%;
+		--card: 240 5% 96%;
+		--muted-foreground: 240 4% 46%;
+		--primary: 263 70% 50%;
+		--accent: 240 6% 90%;
+		--success: 142 72% 29%;
+		--border: 240 6% 90%;
+		--input: 240 6% 90%;
+		--ring: 263 70% 50%;
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: hsl(var(--background));
+	color: hsl(var(--foreground));
+	font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+h1 {
+	font-size: 18px;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	margin: 0;
+}
+
+p {
+	margin: 0;
+}
+
+.muted,
+.hint {
+	color: hsl(var(--muted-foreground));
+}
+
+.hint {
+	font-size: 12px;
+	margin-top: 6px;
+}
+
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.brand img {
+	width: 20px;
+	height: 20px;
+}
+
+.card {
+	background: hsl(var(--card));
+	border: 1px solid hsl(var(--border));
+	border-radius: var(--radius);
+}
+
+/* Buttons: secondary by default, .primary for the main action, .ghost for links */
+button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	height: 34px;
+	padding: 0 14px;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 500;
+	color: hsl(var(--foreground));
+	background: hsl(var(--card));
+	border: 1px solid hsl(var(--border));
+	border-radius: calc(var(--radius) - 2px);
+	cursor: pointer;
+	transition:
+		background-color 0.15s,
+		border-color 0.15s;
+}
+
+button:hover {
+	background: hsl(var(--accent));
+}
+
+button.primary {
+	color: hsl(var(--primary-foreground));
+	background: hsl(var(--primary));
+	border-color: transparent;
+}
+
+button.primary:hover {
+	background: hsl(var(--primary) / 0.9);
+}
+
+button.ghost {
+	background: transparent;
+	border-color: transparent;
+	color: hsl(var(--muted-foreground));
+}
+
+button.ghost:hover {
+	background: hsl(var(--accent));
+	color: hsl(var(--foreground));
+}
+
+button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+	outline: 2px solid hsl(var(--ring));
+	outline-offset: 2px;
+}
+
+input[type="url"],
+input[type="password"],
+input[type="number"],
+textarea {
+	width: 100%;
+	padding: 8px 12px;
+	font: inherit;
+	color: hsl(var(--foreground));
+	background: hsl(var(--background));
+	border: 1px solid hsl(var(--input));
+	border-radius: calc(var(--radius) - 2px);
+}
+
+input::placeholder,
+textarea::placeholder {
+	color: hsl(var(--muted-foreground));
+}
+
+input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	accent-color: hsl(var(--primary));
+}
+
+textarea {
+	min-height: 6em;
+	resize: vertical;
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 13px;
+}
+
+[role="status"]:empty {
+	display: none;
+}

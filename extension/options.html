@@ -3,60 +3,78 @@
   <head>
     <meta charset="utf-8" />
     <title>Pageslop Tab Stash Options</title>
+    <link rel="stylesheet" href="ui.css" />
     <style>
-      body { font: 14px/1.5 system-ui, sans-serif; max-width: 640px; margin: 24px auto; padding: 0 16px; }
-      fieldset { border: 1px solid #ccc; border-radius: 6px; margin: 0 0 16px; padding: 12px 16px; }
-      label { display: block; margin: 8px 0 2px; font-weight: 600; }
-      input[type="url"], input[type="password"], input[type="number"], textarea { width: 100%; box-sizing: border-box; padding: 6px; font: inherit; }
-      textarea { min-height: 6em; }
-      .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-      .hint { color: #666; font-size: 12px; margin: 2px 0; }
-      .result { margin-left: 8px; }
-      ul { padding-left: 20px; }
+      main { max-width: 640px; margin: 0 auto; padding: 32px 16px 48px; }
+      .page-head { margin-bottom: 24px; }
+      .page-head h1 { font-size: 24px; }
+      .page-head .brand img { width: 28px; height: 28px; }
+      .page-head p { margin-top: 4px; }
+      fieldset { margin: 0 0 16px; padding: 20px 24px 24px; min-width: 0; }
+      legend { float: left; width: 100%; padding: 0; margin-bottom: 4px; font-size: 16px; font-weight: 600; }
+      legend + * { clear: both; }
+      label { display: block; margin: 14px 0 6px; font-size: 13px; font-weight: 500; }
+      .row { display: flex; gap: 10px; align-items: center; margin-top: 14px; }
+      .row label { margin: 0; }
+      .result { font-size: 13px; }
+      #preview-list { margin: 12px 0 0; padding-left: 20px; font-size: 13px; }
+      #preview-list:empty { display: none; }
+      #preview-list li { margin: 4px 0; word-break: break-all; }
+      .actions { margin-bottom: 16px; }
     </style>
   </head>
   <body>
-    <h1>Pageslop Tab Stash</h1>
-
-    <fieldset>
-      <legend>Server</legend>
-      <label for="serverUrl">Server URL</label>
-      <input id="serverUrl" type="url" placeholder="https://pageslop.example.com" autocomplete="off" />
-      <label for="token">API token</label>
-      <input id="token" type="password" placeholder="ps_…" autocomplete="off" />
-      <p class="hint">Create a token in Pageslop under Settings → Browser extension.</p>
-      <div class="row">
-        <button id="test" type="button">Test connection</button>
-        <span id="ping-result" class="result" role="status"></span>
+    <main>
+      <div class="page-head">
+        <div class="brand">
+          <img src="icons/icon.svg" alt="" />
+          <h1>Pageslop Tab Stash</h1>
+        </div>
+        <p class="muted">Save idle tabs to your To Revisit list and close them.</p>
       </div>
-    </fieldset>
 
-    <fieldset>
-      <legend>Auto-close</legend>
-      <label for="idleHours">Close tabs idle longer than (hours)</label>
-      <input id="idleHours" type="number" min="0.01" step="0.01" />
-      <label for="maxTabs">Keep at most this many tabs open</label>
-      <input id="maxTabs" type="number" min="1" step="1" />
-      <label for="excludeDomains">Never close these domains (one per line, subdomains included)</label>
-      <textarea id="excludeDomains" spellcheck="false"></textarea>
-      <div class="row">
-        <input id="enabled" type="checkbox" disabled />
-        <label for="enabled" style="margin: 0">Auto-close idle tabs</label>
+      <fieldset class="card">
+        <legend>Server</legend>
+        <label for="serverUrl">Server URL</label>
+        <input id="serverUrl" type="url" placeholder="https://pageslop.example.com" autocomplete="off" />
+        <label for="token">API token</label>
+        <input id="token" type="password" placeholder="ps_…" autocomplete="off" />
+        <p class="hint">Create a token in Pageslop under Settings → Browser extension.</p>
+        <div class="row">
+          <button id="test" type="button">Test connection</button>
+          <span id="ping-result" class="result" role="status"></span>
+        </div>
+      </fieldset>
+
+      <fieldset class="card">
+        <legend>Auto-close</legend>
+        <label for="idleHours">Close tabs idle longer than (hours)</label>
+        <input id="idleHours" type="number" min="0.01" step="0.01" />
+        <label for="maxTabs">Keep at most this many tabs open</label>
+        <input id="maxTabs" type="number" min="1" step="1" />
+        <label for="excludeDomains">Never close these domains (one per line, subdomains included)</label>
+        <textarea id="excludeDomains" spellcheck="false"></textarea>
+        <div class="row">
+          <input id="enabled" type="checkbox" disabled />
+          <label for="enabled">Auto-close idle tabs</label>
+        </div>
+        <p id="enabled-hint" class="hint">Run "Test connection" successfully to enable auto-close.</p>
+      </fieldset>
+
+      <div class="row actions">
+        <button id="save" type="button" class="primary">Save</button>
+        <span id="save-result" class="result muted" role="status"></span>
       </div>
-      <p id="enabled-hint" class="hint">Run "Test connection" successfully to enable auto-close.</p>
-    </fieldset>
 
-    <div class="row">
-      <button id="save" type="button">Save</button>
-      <span id="save-result" class="result" role="status"></span>
-    </div>
-
-    <fieldset style="margin-top: 16px">
-      <legend>Preview</legend>
-      <p class="hint">Lists the tabs the next sweep would close with the values above. Nothing is closed.</p>
-      <button id="preview" type="button">Preview next sweep</button>
-      <ul id="preview-list"></ul>
-    </fieldset>
+      <fieldset class="card">
+        <legend>Preview</legend>
+        <p class="hint">Lists the tabs the next sweep would close with the values above. Nothing is closed.</p>
+        <div class="row">
+          <button id="preview" type="button">Preview next sweep</button>
+        </div>
+        <ul id="preview-list"></ul>
+      </fieldset>
+    </main>
 
     <script type="module" src="options.js"></script>
   </body>

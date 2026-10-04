@@ -3,34 +3,47 @@
   <head>
     <meta charset="utf-8" />
     <title>Pageslop Tab Stash</title>
+    <link rel="stylesheet" href="ui.css" />
     <style>
-      body { font: 13px/1.4 system-ui, sans-serif; width: 300px; margin: 0; padding: 12px; }
-      h1 { font-size: 14px; margin: 0 0 8px; }
-      p { margin: 4px 0; }
-      .muted { color: #666; }
-      .buttons { display: grid; gap: 6px; margin-top: 10px; }
-      button { padding: 6px 8px; font: inherit; cursor: pointer; }
-      #message { min-height: 1.4em; margin-top: 8px; font-weight: 600; }
-      .links { display: flex; justify-content: space-between; margin-top: 10px; }
+      body { width: 300px; padding: 14px; }
+      header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+      header h1 { font-size: 15px; }
+      .info { padding: 10px 12px; display: grid; gap: 2px; font-size: 12px; }
+      .info p:empty { display: none; }
+      #status { font-size: 13px; font-weight: 500; }
+      .tag { font-size: 12px; }
+      .buttons { display: grid; gap: 6px; margin-top: 12px; }
+      .buttons button { width: 100%; }
+      #message { margin-top: 10px; font-size: 12px; font-weight: 500; }
+      footer { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid hsl(var(--border)); }
+      footer button { height: 30px; padding: 0 10px; }
     </style>
   </head>
   <body>
-    <h1>Pageslop Tab Stash</h1>
-    <p id="status">Loading…</p>
-    <p id="auto" class="muted"></p>
-    <p id="last-sweep" class="muted"></p>
-    <p id="kept" class="muted"></p>
+    <header>
+      <div class="brand">
+        <img src="icons/icon.svg" alt="" />
+        <h1>Pageslop</h1>
+      </div>
+      <span class="muted tag">Tab Stash</span>
+    </header>
+    <div class="card info">
+      <p id="status">Loading…</p>
+      <p id="auto" class="muted"></p>
+      <p id="last-sweep" class="muted"></p>
+      <p id="kept" class="muted"></p>
+    </div>
     <div class="buttons">
-      <button id="sweep-now" type="button">Stash idle now</button>
+      <button id="sweep-now" type="button" class="primary">Stash idle now</button>
       <button id="stash-tab" type="button">Stash this tab</button>
       <button id="pause" type="button">Pause 1h</button>
       <button id="exclude-domain" type="button">Never close this domain</button>
     </div>
     <p id="message" role="status"></p>
-    <div class="links">
-      <button id="open-revisit" type="button">Open To Revisit</button>
-      <button id="open-options" type="button">Options</button>
-    </div>
+    <footer>
+      <button id="open-revisit" type="button" class="ghost">Open To Revisit</button>
+      <button id="open-options" type="button" class="ghost">Options</button>
+    </footer>
     <script type="module" src="popup.js"></script>
   </body>
 </html>
