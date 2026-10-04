@@ -1,9 +1,10 @@
 // Background event page (MV3, ES module). Wires browser APIs into sweep.js.
-import { withKeptFlag } from "./keep.js";
+import { countKept, setKept, targetTabs, withKeptFlag } from "./keep.js";
 import { loadSettings, saveSettings } from "./settings.js";
 import { runSweep, stashTab } from "./sweep.js";
 
 const ALARM_NAME = "pageslop-sweep";
+const KEEP_MENU_ID = "pageslop-keep";
 const SWEEP_PERIOD_MINUTES = 5;
 const storage = browser.storage.local;
 
@@ -46,6 +47,53 @@ browser.runtime.onInstalled.addListener(ensureAlarm);
 browser.runtime.onStartup.addListener(ensureAlarm);
 ensureAlarm();
 
+// Menu items persist with the extension, so create them on install or update.
+// removeAll first keeps an update from leaving a duplicate item behind.
+async function createMenus() {
+	await browser.menus.removeAll();
+	browser.menus.create({
+		id: KEEP_MENU_ID,
+		type: "checkbox",
+		contexts: ["tab"],
+		title: "Keep tab (never auto-close)",
+	});
+}
+
+browser.runtime.onInstalled.addListener(createMenus);
+
+// Re-read the stored mark each time, so the checkbox also self-corrects
+// after a failed write.
+browser.menus.onShown.addListener(async (info, tab) => {
+	if (!tab || !info.menuIds.includes(KEEP_MENU_ID)) return;
+	try {
+		const checked = (await countKept(browser.sessions, [tab])) > 0;
+		await browser.menus.update(KEEP_MENU_ID, { checked });
+		await browser.menus.refresh();
+	} catch (error) {
+		console.error("Could not show the keep mark", error);
+	}
+});
+
+// A click applies to the whole highlighted selection when the clicked tab
+// is part of it, otherwise only to the clicked tab.
+browser.menus.onClicked.addListener(async (info, tab) => {
+	if (info.menuItemId !== KEEP_MENU_ID || !tab) return;
+	try {
+		const highlighted = await browser.tabs.query({
+			windowId: tab.windowId,
+			highlighted: true,
+		});
+		const ids = targetTabs(tab, highlighted).map((t) => t.id);
+		await setKept(browser.sessions, ids, info.checked);
+	} catch (error) {
+		console.error("Could not update the keep mark", error);
+	}
+});
+
+async function keptCount() {
+	return countKept(browser.sessions, await browser.tabs.query({}));
+}
+
 browser.alarms.onAlarm.addListener((alarm) => {
 	if (alarm.name === ALARM_NAME) runSweep(makeDeps());
 });
@@ -54,6 +102,7 @@ browser.alarms.onAlarm.addListener((alarm) => {
 browser.runtime.onMessage.addListener((message) => {
 	if (!message || typeof message !== "object") return undefined;
 	if (message.type === "sweep-now") return runSweep(makeDeps({ force: true }));
+	if (message.type === "kept-count") return keptCount();
 	if (message.type === "stash-tab" && Number.isInteger(message.tabId)) {
 		return stashTab(makeDeps(), message.tabId);
 	}

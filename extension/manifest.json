@@ -16,7 +16,7 @@
 			}
 		}
 	},
-	"permissions": ["tabs", "alarms", "storage"],
+	"permissions": ["tabs", "alarms", "storage", "menus", "sessions"],
 	"optional_host_permissions": ["*://*/*"],
 	"background": {
 		"scripts": ["background.js"],
