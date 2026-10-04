@@ -16,6 +16,14 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# --- Production dependencies (runtime image only) ---
+# tsx (worker) and drizzle-kit (entrypoint schema push) are regular
+# dependencies so they survive --omit=dev.
+FROM base AS prod-deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
 # --- Builder ---
 FROM base AS builder
 WORKDIR /app
@@ -41,8 +49,8 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Copy full node_modules for worker (tsx + all transitive deps)
-COPY --from=deps /app/node_modules ./node_modules
+# Production node_modules for the worker and drizzle-kit, no devDependencies
+COPY --from=prod-deps /app/node_modules ./node_modules
 
 # Copy worker source + libs it imports
 COPY --from=builder /app/src/workers ./src/workers
