@@ -90,6 +90,8 @@ Pinned, active, audible and private-window tabs, kept tabs, non-http pages and y
 
 Version 0.2.0 adds keep tabs and asks for two new permissions on update: tab context menus, and access to recently closed tabs (Firefox's wording for the `sessions` API, which stores the keep mark).
 
+Version 0.3.0 asks for no new permissions. A sweep also leaves tabs open that started playing audio or that you used while it was saving them, requests to the server time out after 30 seconds, and excluded domains accept IPv6 addresses. On Firefox for Android it needs version 142 or later.
+
 ### Development
 
 ```bash
