@@ -14,7 +14,9 @@ import {
 } from '@/lib/settings/token-format'
 
 const TOKENS_URL = '/api/settings/tokens'
-const README_EXTENSION_URL = 'https://github.com/Citreum-LLC/pageslop#browser-extension'
+// Self-hosters of a fork can point this at their own docs.
+const README_EXTENSION_URL =
+  process.env.NEXT_PUBLIC_EXTENSION_DOCS_URL || 'https://github.com/Citreum-LLC/pageslop#browser-extension'
 
 async function fetchTokens(url: string): Promise<ApiTokenSummary[]> {
   const res = await fetch(url)
@@ -35,7 +37,7 @@ export function ExtensionTokensCard() {
   const [copied, setCopied] = useState(false)
   const [revokingId, setRevokingId] = useState<string | null>(null)
 
-  async function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     const validation = validateTokenName(name)
     if (validation) {
@@ -125,7 +127,7 @@ export function ExtensionTokensCard() {
         </form>
 
         {formError && (
-          <div className="mt-3 flex items-center gap-2 text-sm text-destructive">
+          <div role="alert" className="mt-3 flex items-center gap-2 text-sm text-destructive">
             <AlertCircle className="size-4" />
             {formError}
           </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { filterAllLinksView, isArchived, isVisibleInAllLinks } from '@/lib/utils/all-links-filter'
+import { allLinksEmptyState, filterAllLinksView, isArchived, isVisibleInAllLinks } from '@/lib/utils/all-links-filter'
 import type { LinkWithTags, StashState } from '@/types'
 
 function makeLink(id: string, stashState: StashState | null): LinkWithTags {
@@ -58,5 +58,19 @@ describe('isArchived', () => {
     expect(isArchived({ stashState: 'archived' })).toBe(true)
     expect(isArchived({ stashState: 'kept' })).toBe(false)
     expect(isArchived({ stashState: null })).toBe(false)
+  })
+})
+
+describe('allLinksEmptyState', () => {
+  it('is null when All Links has something to show', () => {
+    expect(allLinksEmptyState([makeLink('a', null), makeLink('b', 'inbox')])).toBeNull()
+  })
+
+  it("is 'no-links' when the user has no links at all", () => {
+    expect(allLinksEmptyState([])).toBe('no-links')
+  })
+
+  it("is 'all-in-revisit' when every link is waiting in To Revisit", () => {
+    expect(allLinksEmptyState([makeLink('a', 'inbox'), makeLink('b', 'read')])).toBe('all-in-revisit')
   })
 })

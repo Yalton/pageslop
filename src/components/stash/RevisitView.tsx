@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Archive, Bookmark, ExternalLink, Inbox } from 'lucide-react'
+import { AlertCircle, Archive, Bookmark, ExternalLink, Inbox, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -36,7 +36,7 @@ function openTab(url: string): Window | null {
 }
 
 export function RevisitView() {
-  const { links, isLoading, setStashState } = useLinks()
+  const { links, isLoading, error, setStashState } = useLinks()
   const [mode, setMode] = useState<GroupMode>('domain')
   const [query, setQuery] = useState('')
 
@@ -85,7 +85,26 @@ export function RevisitView() {
     )
   }
 
-  if (!isLoading && revisitLinks.length === 0) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center flex-1 py-24 text-sm text-muted-foreground gap-2" role="status">
+        <Loader2 className="size-4 animate-spin" />
+        Loading links...
+      </div>
+    )
+  }
+
+  if (error && revisitLinks.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center flex-1 py-24 text-center" role="alert">
+        <AlertCircle className="size-10 text-destructive mb-4" />
+        <h2 className="text-[20px] font-semibold leading-[1.2] mb-2">Could not load your links</h2>
+        <p className="text-sm text-muted-foreground max-w-sm">Check your connection and reload the page.</p>
+      </div>
+    )
+  }
+
+  if (revisitLinks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 py-24 text-center">
         <Inbox className="size-10 text-muted-foreground mb-4" />

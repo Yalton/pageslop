@@ -2,7 +2,12 @@
 import useSWR from 'swr'
 import type { Link, LinkWithDuplicate, LinkWithTags, SaveLinksRequest, StashState } from '@/types'
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+// Throw on HTTP errors so SWR reports them in `error` instead of caching an error body.
+const fetcher = async (url: string) => {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Could not load links (${res.status})`)
+  return res.json()
+}
 
 export function useLinks() {
   const { data, error, isLoading, mutate } = useSWR<LinkWithTags[]>('/api/links', fetcher, {
