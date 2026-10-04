@@ -47,9 +47,9 @@ export async function deleteApiToken(userId: string, id: string): Promise<boolea
 
 export async function findTokenByHash(
   tokenHash: string
-): Promise<{ id: string; userId: string } | null> {
+): Promise<{ id: string; userId: string; lastUsedAt: Date | null } | null> {
   const [row] = await db
-    .select({ id: apiTokens.id, userId: apiTokens.userId })
+    .select({ id: apiTokens.id, userId: apiTokens.userId, lastUsedAt: apiTokens.lastUsedAt })
     .from(apiTokens)
     .where(eq(apiTokens.tokenHash, tokenHash))
     .limit(1)

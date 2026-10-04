@@ -37,7 +37,12 @@ vi.mock('@/lib/db/client', () => ({
   db: { select: h.select, insert: h.insert, update: h.update, transaction: h.transaction },
 }))
 
+import { PgDialect } from 'drizzle-orm/pg-core'
+import type { SQL } from 'drizzle-orm'
 import { insertLink, stashTabs, bulkSetStashState, updateLinkFields } from '@/lib/db/queries/links'
+
+// Render a drizzle SQL fragment, so a test can check what it filters or sets.
+const render = (fragment: unknown) => new PgDialect().sqlToQuery(fragment as SQL)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -120,7 +125,7 @@ describe('stashTabs', () => {
 
   it('re-stashes an existing link to inbox without inserting, and fills a missing title', async () => {
     h.limit.mockResolvedValueOnce([
-      { id: 'link-9', userId: 'user-1', url: 'https://old.com/', title: null, stashState: 'kept' },
+      { id: 'link-9', userId: 'user-1', url: 'https://old.com/', title: null, stashState: 'read' },
     ])
 
     const result = await stashTabs('user-1', [{ url: 'https://old.com/', title: 'Old', closedAt }])
@@ -134,6 +139,18 @@ describe('stashTabs', () => {
     })
     expect(h.updateWhere).toHaveBeenCalledOnce()
     expect(result).toEqual({ saved: ['https://old.com/'], inserted: [] })
+  })
+
+  it('leaves a kept link kept on re-stash, so it never becomes eligible for expiry', async () => {
+    h.limit.mockResolvedValueOnce([
+      { id: 'link-9', userId: 'user-1', url: 'https://old.com/', title: 'T', stashState: 'kept' },
+    ])
+
+    await stashTabs('user-1', [{ url: 'https://old.com/', closedAt }])
+
+    const setArg = h.set.mock.calls[0][0] as Record<string, unknown>
+    expect(setArg).not.toHaveProperty('stashState')
+    expect(setArg).toMatchObject({ stashedAt: closedAt })
   })
 
   it('does not overwrite an existing title on re-stash', async () => {
@@ -222,6 +239,21 @@ describe('bulkSetStashState', () => {
     expect(h.updateWhere).toHaveBeenCalledOnce()
   })
 
+  it("filters on the owner's userId as well as the ids", async () => {
+    h.updateReturning.mockResolvedValueOnce([])
+    await bulkSetStashState('user-1', ['a'], 'kept')
+    const where = render((h.updateWhere.mock.calls[0] as unknown[])[0])
+    expect(where.sql).toContain('"user_id" = $1')
+    expect(where.params).toEqual(['user-1', 'a'])
+  })
+
+  it('starts the expiry clock for a never-stashed link marked read', async () => {
+    h.updateReturning.mockResolvedValueOnce([{ id: 'a' }])
+    await bulkSetStashState('user-1', ['a'], 'read')
+    const setArg = h.set.mock.calls[0][0] as Record<string, unknown>
+    expect(render(setArg.stashedAt).sql).toBe('coalesce("links"."stashed_at", now())')
+  })
+
   it('resets stashedAt when moving back to inbox', async () => {
     h.updateReturning.mockResolvedValueOnce([{ id: 'a' }])
     await bulkSetStashState('user-1', ['a'], 'inbox')
@@ -234,6 +266,13 @@ describe('bulkSetStashState', () => {
 })
 
 describe('updateLinkFields', () => {
+  it('starts the expiry clock for a never-stashed link marked read', async () => {
+    h.updateReturning.mockResolvedValueOnce([{ id: 'l1' }])
+    await updateLinkFields('user-1', 'l1', { stashState: 'read' })
+    const setArg = h.set.mock.calls[0][0] as Record<string, unknown>
+    expect(render(setArg.stashedAt).sql).toBe('coalesce("links"."stashed_at", now())')
+  })
+
   it('accepts stashState and stashedAt', async () => {
     const at = new Date('2026-10-03T00:00:00Z')
     h.updateReturning.mockResolvedValueOnce([{ id: 'l1', stashState: 'inbox', stashedAt: at }])

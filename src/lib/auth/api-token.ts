@@ -7,6 +7,9 @@ export const TOKEN_PREFIX = 'ps_'
 // 32 random bytes encode to exactly 43 unpadded base64url characters.
 const BEARER_RE = /^bearer\s+(ps_[A-Za-z0-9_-]{43})\s*$/i
 
+// The extension calls the API every few minutes; record use at most this often.
+const TOUCH_INTERVAL_MS = 5 * 60_000
+
 export function hashToken(raw: string): string {
   return createHash('sha256').update(raw, 'utf8').digest('hex')
 }
@@ -31,7 +34,9 @@ export async function authenticateBearer(req: Request): Promise<{ userId: string
   if (!row) return null
 
   // lastUsedAt is informational. A failed update must not reject a valid token.
-  await touchApiToken(row.id).catch(() => undefined)
+  if (!row.lastUsedAt || Date.now() - row.lastUsedAt.getTime() >= TOUCH_INTERVAL_MS) {
+    await touchApiToken(row.id).catch(() => undefined)
+  }
 
   return { userId: row.userId }
 }

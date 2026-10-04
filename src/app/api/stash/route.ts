@@ -12,6 +12,8 @@ import { stashTabs } from '@/lib/db/queries/links'
 import { enqueueScrapeJob } from '@/lib/queue/boss'
 
 const MAX_TABS = 100
+const MAX_URL_LENGTH = 2048
+const MAX_TITLE_LENGTH = 500
 
 const stashBodySchema = z.object({
   tabs: z
@@ -26,9 +28,10 @@ const stashBodySchema = z.object({
     .max(MAX_TABS),
 })
 
-type RejectReason = 'invalid_url' | 'unsupported_protocol'
+type RejectReason = 'invalid_url' | 'unsupported_protocol' | 'url_too_long'
 
 function checkUrl(raw: string): RejectReason | null {
+  if (raw.length > MAX_URL_LENGTH) return 'url_too_long'
   let parsed: URL
   try {
     parsed = new URL(raw)
@@ -81,7 +84,7 @@ export async function POST(req: Request): Promise<Response> {
     }
     valid.push({
       url: tab.url,
-      title: tab.title ?? undefined,
+      title: tab.title?.slice(0, MAX_TITLE_LENGTH) ?? undefined,
       closedAt: parseClosedAt(tab.closedAt, now),
     })
   }

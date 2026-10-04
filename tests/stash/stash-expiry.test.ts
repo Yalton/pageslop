@@ -49,4 +49,10 @@ describe('stashExpireDays', () => {
   it('falls back to 14 for non-integer values', () => {
     expect(stashExpireDays('7.5')).toBe(14)
   })
+
+  // 1e300 is an integer to Number.isInteger, but it would make the cutoff an Invalid Date.
+  it('falls back to 14 for integers too large to be exact', () => {
+    expect(stashExpireDays('1e300')).toBe(14)
+    expect(stashExpireDays(String(2 ** 53))).toBe(14)
+  })
 })

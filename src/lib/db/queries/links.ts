@@ -1,6 +1,6 @@
 import { db } from '@/lib/db/client'
 import { links, rawContent, linkTags, tags } from '@/lib/db/schema'
-import { eq, and, desc, inArray, lt } from 'drizzle-orm'
+import { eq, and, desc, inArray, lt, sql, type SQL } from 'drizzle-orm'
 import type { LinkSource, LinkWithTags, StashState, Tag } from '@/types'
 
 /**
@@ -160,6 +160,10 @@ export async function getLinkWithTags(userId: string, linkId: string): Promise<L
   }
 }
 
+// Marking a never-stashed link 'read' starts its expiry clock, or it would
+// never expire. An existing stashedAt is kept.
+const startExpiryClock = sql`coalesce(${links.stashedAt}, now())`
+
 /**
  * Update user-editable fields on a link: description, category, and stash state.
  */
@@ -173,8 +177,10 @@ export async function updateLinkFields(
     stashedAt?: Date | null
   }
 ) {
+  const values: Record<string, unknown> = { ...data, updatedAt: new Date() }
+  if (data.stashState === 'read' && data.stashedAt === undefined) values.stashedAt = startExpiryClock
   const [updated] = await db.update(links)
-    .set({ ...data, updatedAt: new Date() })
+    .set(values)
     .where(and(eq(links.id, linkId), eq(links.userId, userId)))
     .returning()
   return updated
@@ -192,8 +198,9 @@ export interface StashTabInput {
  * - URLs repeated within the batch are collapsed first, so the same (userId, url)
  *   is never inserted twice in one call (no unique-constraint violation).
  *   The first non-empty title and the latest closedAt win.
- * - Existing links move to 'inbox' with stashedAt = closedAt. Their other fields are
- *   left alone, except that a missing title is filled from the tab.
+ * - Existing links move to 'inbox' with stashedAt = closedAt, except kept links,
+ *   which stay kept. Their other fields are left alone, except that a missing title
+ *   is filled from the tab.
  * - New links are inserted with source 'stash', stashState 'inbox'.
  *
  * The whole batch runs in one transaction. If any row fails, nothing is saved and
@@ -232,7 +239,7 @@ export async function stashTabs(
       if (existing) {
         await tx.update(links)
           .set({
-            stashState: 'inbox',
+            ...(existing.stashState === 'kept' ? {} : { stashState: 'inbox' as const }),
             stashedAt: tab.closedAt,
             updatedAt: new Date(),
             ...(!existing.title && tab.title ? { title: tab.title } : {}),
@@ -270,6 +277,7 @@ export async function bulkSetStashState(
       stashState: state,
       updatedAt: now,
       ...(state === 'inbox' ? { stashedAt: now } : {}),
+      ...(state === 'read' ? { stashedAt: startExpiryClock } : {}),
     })
     .where(and(eq(links.userId, userId), inArray(links.id, ids)))
     .returning({ id: links.id })

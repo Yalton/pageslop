@@ -31,6 +31,8 @@ vi.mock('@/lib/db/client', () => ({
   db: { select: h.select, insert: h.insert, update: h.update, delete: h.del },
 }))
 
+import { PgDialect } from 'drizzle-orm/pg-core'
+import type { SQL } from 'drizzle-orm'
 import {
   createApiToken,
   listApiTokens,
@@ -85,6 +87,14 @@ describe('deleteApiToken', () => {
     expect(h.deleteWhere).toHaveBeenCalledOnce()
   })
 
+  it("filters on the owner's userId as well as the token id", async () => {
+    h.deleteReturning.mockResolvedValueOnce([])
+    await deleteApiToken('user-1', 'tok-1')
+    const where = new PgDialect().sqlToQuery((h.deleteWhere.mock.calls[0] as unknown[])[0] as SQL)
+    expect(where.sql).toContain('"user_id" = $2')
+    expect(where.params).toEqual(['tok-1', 'user-1'])
+  })
+
   it('returns false when nothing matched (wrong owner or unknown id)', async () => {
     h.deleteReturning.mockResolvedValueOnce([])
     await expect(deleteApiToken('user-2', 'tok-1')).resolves.toBe(false)
@@ -92,11 +102,15 @@ describe('deleteApiToken', () => {
 })
 
 describe('findTokenByHash', () => {
-  it('returns {id, userId} when found', async () => {
-    h.limit.mockResolvedValueOnce([{ id: 'tok-1', userId: 'user-1' }])
-    await expect(findTokenByHash('b'.repeat(64))).resolves.toEqual({ id: 'tok-1', userId: 'user-1' })
+  it('returns {id, userId, lastUsedAt} when found', async () => {
+    h.limit.mockResolvedValueOnce([{ id: 'tok-1', userId: 'user-1', lastUsedAt: null }])
+    await expect(findTokenByHash('b'.repeat(64))).resolves.toEqual({
+      id: 'tok-1',
+      userId: 'user-1',
+      lastUsedAt: null,
+    })
     const selectArg = h.select.mock.calls.at(0)?.at(0) as unknown as Record<string, unknown>
-    expect(Object.keys(selectArg).sort()).toEqual(['id', 'userId'])
+    expect(Object.keys(selectArg).sort()).toEqual(['id', 'lastUsedAt', 'userId'])
   })
 
   it('returns null when not found', async () => {

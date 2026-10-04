@@ -166,6 +166,23 @@ describe('POST /api/stash', () => {
       expect(passedTabs.map((t) => t.url)).toEqual(['https://ok.example.com/'])
     })
 
+    it('rejects a URL longer than 2048 characters', async () => {
+      const { POST, stashTabs } = await setup()
+      const long = 'https://a.com/' + 'x'.repeat(2049 - 'https://a.com/'.length)
+      const exact = 'https://b.com/' + 'y'.repeat(2048 - 'https://b.com/'.length)
+      const res = await POST(stashReq({ tabs: [{ url: long }, { url: exact }] }))
+      const json = await res.json()
+      expect(json.saved).toEqual([exact])
+      expect(json.rejected).toEqual([{ url: long, reason: 'url_too_long' }])
+      expect(vi.mocked(stashTabs).mock.calls[0][1].map((t) => t.url)).toEqual([exact])
+    })
+
+    it('truncates a title to 500 characters', async () => {
+      const { POST, stashTabs } = await setup()
+      await POST(stashReq({ tabs: [{ url: 'https://a.com/', title: 't'.repeat(600) }] }))
+      expect(vi.mocked(stashTabs).mock.calls[0][1][0].title).toBe('t'.repeat(500))
+    })
+
     it('does not call stashTabs when every URL is rejected', async () => {
       const { POST, stashTabs } = await setup()
       const res = await POST(stashReq({ tabs: [{ url: 'file:///etc/passwd' }] }))

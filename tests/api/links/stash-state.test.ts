@@ -89,6 +89,22 @@ describe('PATCH /api/links/[id] with stashState', () => {
     })
   })
 
+  it('returns 400 for a body that is not JSON', async () => {
+    await signedIn()
+    const { updateLinkFields } = await import('@/lib/db/queries/links')
+    const { PATCH } = await import('@/app/api/links/[id]/route')
+    const res = await PATCH(
+      new Request('http://localhost/api/links/link-1', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: '{not json',
+      }),
+      { params: Promise.resolve({ id: 'link-1' }) },
+    )
+    expect(res.status).toBe(400)
+    expect(updateLinkFields).not.toHaveBeenCalled()
+  })
+
   it('accepts null to take a link out of the stash flow', async () => {
     await signedIn()
     const { updateLinkFields } = await import('@/lib/db/queries/links')

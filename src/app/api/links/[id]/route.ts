@@ -28,7 +28,15 @@ export async function PATCH(
   if (!session) return new Response('Unauthorized', { status: 401 })
 
   const { id } = await params
-  const body = await req.json() as { description?: string; category?: string; stashState?: unknown }
+  let body: { description?: string; category?: string; stashState?: unknown }
+  try {
+    body = await req.json()
+  } catch {
+    return Response.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  if (typeof body !== 'object' || body === null) {
+    return Response.json({ error: 'Body must be a JSON object' }, { status: 400 })
+  }
 
   // Validate category if provided
   if (body.category !== undefined && !CATEGORIES.includes(body.category as typeof CATEGORIES[number])) {

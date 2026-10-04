@@ -14,6 +14,8 @@ export default async function MarketingPage() {
     redirect("/dashboard")
   }
 
+  const canSignUp = signupAllowed(process.env.ALLOW_SIGNUP)
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top bar */}
@@ -30,14 +32,14 @@ export default async function MarketingPage() {
           Pageslop automatically organizes your bookmarks — no folders, no tags, no effort.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          {signupAllowed(process.env.ALLOW_SIGNUP) && (
+          {canSignUp && (
             <Button asChild variant="default" size="lg">
               <Link href="/signup">Start Saving Links</Link>
             </Button>
           )}
           <Button
             asChild
-            variant={signupAllowed(process.env.ALLOW_SIGNUP) ? "outline" : "default"}
+            variant={canSignUp ? "outline" : "default"}
             size="lg"
           >
             <Link href="/login">Log In</Link>
