@@ -58,7 +58,7 @@ describe('POST /api/import/bookmarks', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: 'user-1' }, session: {} } as any)
-    vi.mocked(findDuplicate).mockResolvedValue(null)
+    vi.mocked(findDuplicate).mockResolvedValue(null as never)
     vi.mocked(insertLink).mockImplementation(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async (_userId: string, url: string) => ({ id: `link-${url}`, url }) as any

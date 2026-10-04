@@ -2,24 +2,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const h = vi.hoisted(() => {
   // select().from().where().limit()
-  const limit = vi.fn()
+  const limit = vi.fn<() => Promise<unknown[]>>()
   const selectWhere = vi.fn(() => ({ limit }))
   const from = vi.fn(() => ({ where: selectWhere }))
   const select = vi.fn(() => ({ from }))
 
   // insert().values().returning()
-  const insertReturning = vi.fn()
+  const insertReturning = vi.fn<() => Promise<unknown[]>>()
   const values = vi.fn(() => ({ returning: insertReturning }))
   const insert = vi.fn(() => ({ values }))
 
   // update().set().where() is awaitable directly or via .returning()
-  const updateReturning = vi.fn(() => Promise.resolve([]))
+  const updateReturning = vi.fn<() => Promise<unknown[]>>(() => Promise.resolve([]))
   const updateWhere = vi.fn(() => {
-    const p = Promise.resolve([]) as Promise<unknown[]> & { returning: typeof updateReturning }
-    p.returning = updateReturning
-    return p
+    const p: Promise<unknown[]> = Promise.resolve([])
+    return Object.assign(p, { returning: updateReturning })
   })
-  const set = vi.fn(() => ({ where: updateWhere }))
+  const set = vi.fn((_values: Record<string, unknown>) => ({ where: updateWhere }))
   const update = vi.fn(() => ({ set }))
 
   return { limit, selectWhere, from, select, insertReturning, values, insert, updateReturning, updateWhere, set, update }
