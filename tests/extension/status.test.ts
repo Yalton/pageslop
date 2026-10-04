@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	describeKept,
 	describeLastSweep,
 	describeResult,
 	isPaused,
@@ -82,5 +83,21 @@ describe("pause helpers", () => {
 	it("nextPausedUntil toggles between one hour from now and 0", () => {
 		expect(nextPausedUntil({ pausedUntil: 0 }, NOW)).toBe(NOW + HOUR);
 		expect(nextPausedUntil({ pausedUntil: NOW + 10 * MIN }, NOW)).toBe(0);
+	});
+});
+
+describe("describeKept", () => {
+	it.each([
+		[0, "Kept tabs: 0"],
+		[1, "Kept tabs: 1"],
+		[10, "Kept tabs: 10"],
+		[undefined, "Kept tabs: unknown"],
+		[null, "Kept tabs: unknown"],
+		[-1, "Kept tabs: unknown"],
+		[1.5, "Kept tabs: unknown"],
+		["3", "Kept tabs: unknown"],
+		[{ error: "x" }, "Kept tabs: unknown"],
+	])("describes %p", (count, expected) => {
+		expect(describeKept(count)).toBe(expected);
 	});
 });

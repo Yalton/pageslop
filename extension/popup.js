@@ -1,6 +1,7 @@
 import { apiUrl, ping } from "./api.js";
 import { loadSettings, saveSettings } from "./settings.js";
 import {
+	describeKept,
 	describeLastSweep,
 	describeResult,
 	isPaused,
@@ -55,6 +56,16 @@ async function renderConnection(settings) {
 		: `Not connected: ${result.error}`;
 }
 
+async function renderKept() {
+	let count;
+	try {
+		count = await browser.runtime.sendMessage({ type: "kept-count" });
+	} catch {
+		count = undefined;
+	}
+	$("kept").textContent = describeKept(count);
+}
+
 $("sweep-now").addEventListener("click", async () => {
 	show("Stashing…");
 	const result = await browser.runtime.sendMessage({ type: "sweep-now" });
@@ -72,6 +83,7 @@ $("stash-tab").addEventListener("click", async () => {
 	});
 	show(describeResult(result));
 	await render();
+	await renderKept();
 });
 
 $("pause").addEventListener("click", async () => {
@@ -108,3 +120,4 @@ $("open-options").addEventListener("click", async () => {
 });
 
 render().then(renderConnection);
+renderKept();

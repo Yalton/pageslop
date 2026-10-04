@@ -48,3 +48,11 @@ export function isPaused(settings, now) {
 export function nextPausedUntil(settings, now) {
 	return isPaused(settings, now) ? 0 : now + HOUR_MS;
 }
+
+// The background answers kept-count with a number. Anything else (an error,
+// or an older background without the handler) is shown as unknown.
+export function describeKept(count) {
+	return Number.isInteger(count) && count >= 0
+		? `Kept tabs: ${count}`
+		: "Kept tabs: unknown";
+}
