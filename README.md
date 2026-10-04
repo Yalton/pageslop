@@ -86,7 +86,9 @@ The Firefox extension in `extension/` closes idle tabs and saves them to the **T
 3. Click **Test connection**. Firefox asks for permission to access your server. Grant it. You should see ✓ with your account email.
 4. Set the idle hours (default 6), the maximum number of open tabs (default 25) and any domains that must never close, then enable **Auto-close idle tabs** and save. Use **Preview next sweep** to see what would close.
 
-Pinned, active, audible and private-window tabs, non-http pages and your Pageslop server's own pages are never closed. Sweeps run every 5 minutes. The popup can also stash on demand, stash the current tab, pause for an hour, or exclude the current domain. Stashed items you don't act on are archived after `STASH_EXPIRE_DAYS` days (default 14). Nothing is deleted.
+Pinned, active, audible and private-window tabs, kept tabs, non-http pages and your Pageslop server's own pages are never closed. To keep a tab open regardless of idle time, right-click it and tick **Keep tab (never auto-close)**. With several tabs selected, the click applies to all of them. A kept tab stays kept across browser restarts until you close it, kept tabs do not count toward the maximum, and the popup shows how many tabs are kept. Sweeps run every 5 minutes. The popup can also stash on demand, stash the current tab, pause for an hour, or exclude the current domain. Stashed items you don't act on are archived after `STASH_EXPIRE_DAYS` days (default 14). Nothing is deleted.
+
+Version 0.2.0 adds keep tabs and asks for two new permissions on update: tab context menus, and access to recently closed tabs (Firefox's wording for the `sessions` API, which stores the keep mark).
 
 ### Development
 

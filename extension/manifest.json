@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Pageslop Tab Stash",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Saves idle tabs to your own Pageslop server, then closes them.",
 	"icons": {
 		"48": "icons/icon.svg",
