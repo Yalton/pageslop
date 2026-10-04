@@ -40,7 +40,8 @@ async function fail(deps, message) {
 	return { error: message };
 }
 
-// Re-read each tab and close it only if its CURRENT url was saved.
+// Re-read each tab and close it only if its CURRENT url was saved. For a sweep,
+// also skip a tab that became protected or was used while the request ran.
 async function closeConfirmed(deps, batch, saved, requireInactive) {
 	const savedUrls = new Set(saved);
 	const ids = [];
@@ -52,7 +53,14 @@ async function closeConfirmed(deps, batch, saved, requireInactive) {
 			continue;
 		}
 		if (!current || !savedUrls.has(current.url)) continue;
-		if (requireInactive && (current.active || current.pinned)) continue;
+		if (
+			requireInactive &&
+			(current.active ||
+				current.pinned ||
+				current.audible ||
+				current.lastAccessed !== tab.lastAccessed)
+		)
+			continue;
 		ids.push(tab.id);
 	}
 	if (ids.length > 0) await deps.removeTabs(ids);
@@ -107,7 +115,10 @@ export async function runSweep(deps) {
 }
 
 // "Stash this tab" from the popup: protections are bypassed except http/https.
+// It shares the sweep's lock, so the two never post or close the same tab at once.
 export async function stashTab(deps, tabId) {
+	if (running) return { error: "A sweep is running. Try again in a moment." };
+	running = true;
 	try {
 		const settings = normalizeSettings(await deps.getSettings());
 		if (settings.serverUrl === "" || settings.token === "") {
@@ -122,5 +133,7 @@ export async function stashTab(deps, tabId) {
 		return { stashed: result.closed };
 	} catch (error) {
 		return await fail(deps, `Stash failed: ${messageOf(error)}`);
+	} finally {
+		running = false;
 	}
 }

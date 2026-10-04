@@ -82,10 +82,28 @@ async function save(raw, permission) {
 		: "Saved, but permission to reach the server was not granted. Sweeps will fail until you allow it.";
 }
 
+// A passed test applies only to the server and token it ran with.
+for (const id of ["serverUrl", "token"]) {
+	$(id).addEventListener("input", () => {
+		setConnected(false);
+		$("ping-result").textContent = "";
+	});
+}
+
+function failed(target) {
+	return (error) => {
+		$(target).textContent =
+			`✗ ${error instanceof Error ? error.message : String(error)}`;
+	};
+}
+
 $("test").addEventListener("click", () => {
 	const form = normalizeSettings(readForm());
 	const permission = requestHostPermission(serverOrigin(form.serverUrl));
-	testConnection(form, permission);
+	testConnection(form, permission).catch((error) => {
+		setConnected(false);
+		failed("ping-result")(error);
+	});
 });
 
 $("save").addEventListener("click", () => {
@@ -93,10 +111,18 @@ $("save").addEventListener("click", () => {
 	const origin = serverOrigin(normalizeSettings(raw).serverUrl);
 	const permission =
 		origin === "" ? Promise.resolve(true) : requestHostPermission(origin);
-	save(raw, permission);
+	save(raw, permission).catch(failed("save-result"));
 });
 
-$("preview").addEventListener("click", async () => {
+$("preview").addEventListener("click", () => {
+	preview().catch((error) => {
+		const item = document.createElement("li");
+		item.textContent = `Could not preview: ${error instanceof Error ? error.message : String(error)}`;
+		$("preview-list").replaceChildren(item);
+	});
+});
+
+async function preview() {
 	const stored = await loadSettings(storage);
 	const settings = normalizeSettings({ ...stored, ...readForm() });
 	const tabs = await browser.tabs.query({});
@@ -114,7 +140,7 @@ $("preview").addEventListener("click", async () => {
 		item.textContent = tab.title ? `${tab.title} (${tab.url})` : tab.url;
 		list.append(item);
 	}
-});
+}
 
 async function init() {
 	const settings = await loadSettings(storage);
@@ -127,4 +153,4 @@ async function init() {
 		await showPing(settings);
 }
 
-init();
+init().catch(failed("ping-result"));

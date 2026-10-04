@@ -326,6 +326,22 @@ describe("runSweep: Review Focus #4, tabs that changed after selection", () => {
 		expect(closedIds(deps)).toEqual([2]);
 	});
 
+	it("keeps a tab open when it started playing audio", async () => {
+		const deps = makeDeps({
+			current: { 1: idleTab(1, "https://a.com/1", { audible: true }) },
+		});
+		expect(await runSweep(deps)).toEqual({ stashed: 1 });
+		expect(closedIds(deps)).toEqual([2]);
+	});
+
+	it("keeps a tab open when it was used during the request", async () => {
+		const deps = makeDeps({
+			current: { 1: idleTab(1, "https://a.com/1", { lastAccessed: NOW }) },
+		});
+		expect(await runSweep(deps)).toEqual({ stashed: 1 });
+		expect(closedIds(deps)).toEqual([2]);
+	});
+
 	it("skips a tab that no longer exists", async () => {
 		const deps = makeDeps({ current: { 1: new Error("Invalid tab ID: 1") } });
 		expect(await runSweep(deps)).toEqual({ stashed: 1 });
@@ -507,6 +523,48 @@ describe("stashTab", () => {
 		expect(deps.removeTabs).not.toHaveBeenCalled();
 		expect(deps.setBadge).toHaveBeenCalledWith("!", ERROR_BADGE_COLOR);
 		expect(deps.recordError).toHaveBeenCalledWith("Server returned 500");
+	});
+
+	it("refuses while a sweep is running, so the two never post the same tab", async () => {
+		let release: (r: Response) => void = () => {};
+		const sweepDeps = makeDeps({
+			fetch: vi.fn(
+				() =>
+					new Promise<Response>((resolve) => {
+						release = resolve;
+					}),
+			),
+		});
+		const sweep = runSweep(sweepDeps);
+		await vi.waitFor(() => expect(sweepDeps.fetch).toHaveBeenCalled());
+
+		const deps = makeDeps();
+		expect(await stashTab(deps, 1)).toEqual({
+			error: "A sweep is running. Try again in a moment.",
+		});
+		expect(deps.fetch).not.toHaveBeenCalled();
+
+		release(json({ saved: [], rejected: [] }));
+		await sweep;
+	});
+
+	it("blocks a sweep while it runs", async () => {
+		let release: (r: Response) => void = () => {};
+		const deps = makeDeps({
+			fetch: vi.fn(
+				() =>
+					new Promise<Response>((resolve) => {
+						release = resolve;
+					}),
+			),
+		});
+		const stash = stashTab(deps, 1);
+		await vi.waitFor(() => expect(deps.fetch).toHaveBeenCalled());
+
+		expect(await runSweep(makeDeps())).toEqual({ stashed: 0, skipped: "busy" });
+
+		release(json({ saved: [], rejected: [] }));
+		await stash;
 	});
 
 	it("keeps the tab open if it navigated while the request was in flight", async () => {

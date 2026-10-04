@@ -42,11 +42,22 @@ function normalizeMaxTabs(value) {
 		: DEFAULTS.maxTabs;
 }
 
+// IPv6 literals are returned bracketed and compressed, as URL.hostname has them.
+function normalizeIpv6(literal) {
+	try {
+		return new URL(`http://[${literal}]/`).hostname;
+	} catch {
+		return "";
+	}
+}
+
 function normalizeDomain(entry) {
 	if (typeof entry !== "string") return "";
 	let d = entry.trim().toLowerCase();
 	d = d.replace(/^[a-z][a-z0-9+.-]*:\/\//, "");
 	d = d.split(/[/?#]/)[0];
+	if (d.startsWith("[")) return normalizeIpv6(d.slice(1, d.indexOf("]")));
+	if (d.split(":").length > 2) return normalizeIpv6(d);
 	d = d.replace(/:\d+$/, "");
 	d = d.replace(/^\*\./, "").replace(/^\.+/, "").replace(/\.+$/, "");
 	return d;

@@ -82,7 +82,9 @@ describe("setKept", () => {
 		sessions.setTabValue = vi.fn(async () => {
 			throw new Error("Invalid tab ID: 9");
 		});
-		await expect(setKept(sessions, [9], true)).rejects.toThrow("Invalid tab ID");
+		await expect(setKept(sessions, [9], true)).rejects.toThrow(
+			"Invalid tab ID",
+		);
 	});
 });
 
@@ -142,7 +144,9 @@ describe("countKept", () => {
 	});
 
 	it("does not count a tab whose read rejects", async () => {
-		expect(await countKept(fakeSessions([1, 2], [2]), [tab(1), tab(2)])).toBe(1);
+		expect(await countKept(fakeSessions([1, 2], [2]), [tab(1), tab(2)])).toBe(
+			1,
+		);
 	});
 
 	it("returns 0 without a sessions API", async () => {

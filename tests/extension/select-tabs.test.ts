@@ -220,7 +220,9 @@ describe("cap pass", () => {
 			tab({ lastAccessed: NOW - (i + 1) * MIN }),
 		);
 		expect(
-			ids(selectTabsToStash([...kept, ...others], { ...base, maxTabs: 25 }, NOW)),
+			ids(
+				selectTabsToStash([...kept, ...others], { ...base, maxTabs: 25 }, NOW),
+			),
 		).toEqual([36]);
 	});
 

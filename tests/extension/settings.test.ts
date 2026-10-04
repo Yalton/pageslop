@@ -157,6 +157,22 @@ describe("normalizeSettings: excludeDomains", () => {
 		]);
 	});
 
+	it("keeps IPv6 literals in the bracketed form URL.hostname uses", () => {
+		const s = normalizeSettings({
+			excludeDomains: [
+				"::1",
+				"[::1]:8080",
+				"http://[2001:DB8::1]/x",
+				"2001:db8:0:0:0:0:0:2",
+			],
+		});
+		expect(s.excludeDomains).toEqual([
+			"[::1]",
+			"[2001:db8::1]",
+			"[2001:db8::2]",
+		]);
+	});
+
 	it("splits a textarea string on newlines, commas and spaces", () => {
 		const s = normalizeSettings({
 			excludeDomains: "a.com\nB.com, c.com  d.com\n\n",

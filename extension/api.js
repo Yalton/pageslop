@@ -2,6 +2,9 @@
 
 export const BATCH_SIZE = 100;
 
+// A hung server must not hold the sweep lock forever.
+export const REQUEST_TIMEOUT_MS = 30_000;
+
 const UNAUTHORIZED =
 	"Unauthorized (401): the token is missing, wrong or revoked";
 
@@ -14,11 +17,26 @@ function messageOf(error) {
 }
 
 async function request(fetchFn, url, init) {
+	const controller = new AbortController();
+	let timer;
+	// Race the timer as well as aborting, so a fetch that ignores the signal
+	// still cannot hang the caller.
+	const timeout = new Promise((_, reject) => {
+		timer = setTimeout(() => {
+			controller.abort();
+			reject(new Error(`no answer within ${REQUEST_TIMEOUT_MS / 1000}s`));
+		}, REQUEST_TIMEOUT_MS);
+	});
 	let res;
 	try {
-		res = await fetchFn(url, init);
+		res = await Promise.race([
+			fetchFn(url, { ...init, signal: controller.signal }),
+			timeout,
+		]);
 	} catch (error) {
 		return { ok: false, error: `Network error: ${messageOf(error)}` };
+	} finally {
+		clearTimeout(timer);
 	}
 	if (res.status === 401) return { ok: false, error: UNAUTHORIZED };
 	if (!res.ok) return { ok: false, error: `Server returned ${res.status}` };

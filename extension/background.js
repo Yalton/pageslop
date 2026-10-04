@@ -25,9 +25,15 @@ function makeDeps(extra = {}) {
 			await browser.action.setBadgeText({ text });
 			if (color) await browser.action.setBadgeBackgroundColor({ color });
 		},
+		// Keep the last successful count alongside the error.
 		recordError: async (message) => {
+			const { lastSweep } = await loadSettings(storage);
 			await saveSettings(storage, {
-				lastSweep: { at: Date.now(), stashed: 0, error: message },
+				lastSweep: {
+					at: Date.now(),
+					stashed: lastSweep?.stashed ?? 0,
+					error: message,
+				},
 			});
 		},
 		recordSuccess: async (stashed) => {
@@ -49,9 +55,17 @@ async function ensureAlarm() {
 		});
 }
 
-browser.runtime.onInstalled.addListener(ensureAlarm);
-browser.runtime.onStartup.addListener(ensureAlarm);
-ensureAlarm();
+function logError(what) {
+	return (error) => console.error(what, error);
+}
+
+function ensureAlarmLogged() {
+	ensureAlarm().catch(logError("Could not schedule the sweep alarm"));
+}
+
+browser.runtime.onInstalled.addListener(ensureAlarmLogged);
+browser.runtime.onStartup.addListener(ensureAlarmLogged);
+ensureAlarmLogged();
 
 // Menu items persist with the extension, so create them on install or update.
 // removeAll first keeps an update from leaving a duplicate item behind.
@@ -65,8 +79,12 @@ async function createMenus() {
 	});
 }
 
-browser.runtime.onInstalled.addListener(createMenus);
-browser.runtime.onStartup.addListener(createMenus);
+function createMenusLogged() {
+	createMenus().catch(logError("Could not create the keep menu"));
+}
+
+browser.runtime.onInstalled.addListener(createMenusLogged);
+browser.runtime.onStartup.addListener(createMenusLogged);
 
 const menuGuard = createMenuGuard();
 
@@ -108,7 +126,8 @@ async function keptCount() {
 }
 
 browser.alarms.onAlarm.addListener((alarm) => {
-	if (alarm.name === ALARM_NAME) runSweep(makeDeps());
+	if (alarm.name === ALARM_NAME)
+		runSweep(makeDeps()).catch(logError("Sweep failed"));
 });
 
 // Returning a Promise from onMessage sends its value back to the sender.

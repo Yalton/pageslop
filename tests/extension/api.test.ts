@@ -1,5 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
-import { apiUrl, BATCH_SIZE, ping, postStash } from "../../extension/api.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+	apiUrl,
+	BATCH_SIZE,
+	ping,
+	postStash,
+	REQUEST_TIMEOUT_MS,
+} from "../../extension/api.js";
 
 function json(body: unknown, status = 200) {
 	return new Response(JSON.stringify(body), {
@@ -153,5 +159,36 @@ describe("ping", () => {
 			ok: false,
 			error: "Invalid response from server",
 		});
+	});
+});
+
+describe("request timeout", () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it("gives up on a server that never answers, and aborts the fetch", async () => {
+		vi.useFakeTimers();
+		let signal: AbortSignal | undefined;
+		// Ignores the abort on purpose: the timeout must not rely on fetch honouring it.
+		const fetchFn = vi.fn((_url: string, init: RequestInit) => {
+			signal = init.signal ?? undefined;
+			return new Promise<Response>(() => {});
+		});
+		const pending = postStash(fetchFn, "https://s.example", "ps_x", []);
+		await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
+		expect(await pending).toEqual({
+			ok: false,
+			error: `Network error: no answer within ${REQUEST_TIMEOUT_MS / 1000}s`,
+		});
+		expect(signal?.aborted).toBe(true);
+	});
+
+	it("applies to ping too", async () => {
+		vi.useFakeTimers();
+		const fetchFn = vi.fn(() => new Promise<Response>(() => {}));
+		const pending = ping(fetchFn, "https://s.example", "ps_x");
+		await vi.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
+		expect((await pending).ok).toBe(false);
 	});
 });

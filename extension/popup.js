@@ -16,6 +16,15 @@ function show(message) {
 	$("message").textContent = message;
 }
 
+// Run a click handler and put any failure in the status line.
+function onClick(id, handler) {
+	$(id).addEventListener("click", () => {
+		handler().catch((error) => {
+			show(`Failed: ${error instanceof Error ? error.message : String(error)}`);
+		});
+	});
+}
+
 async function getActiveTab() {
 	const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
 	return tab;
@@ -66,14 +75,14 @@ async function renderKept() {
 	$("kept").textContent = describeKept(count);
 }
 
-$("sweep-now").addEventListener("click", async () => {
+onClick("sweep-now", async () => {
 	show("Stashing…");
 	const result = await browser.runtime.sendMessage({ type: "sweep-now" });
 	show(describeResult(result));
 	await render();
 });
 
-$("stash-tab").addEventListener("click", async () => {
+onClick("stash-tab", async () => {
 	const tab = await getActiveTab();
 	if (!tab) return show("No active tab");
 	show("Stashing…");
@@ -86,7 +95,7 @@ $("stash-tab").addEventListener("click", async () => {
 	await renderKept();
 });
 
-$("pause").addEventListener("click", async () => {
+onClick("pause", async () => {
 	const settings = await loadSettings(storage);
 	const pausedUntil = nextPausedUntil(settings, Date.now());
 	await saveSettings(storage, { pausedUntil });
@@ -94,7 +103,7 @@ $("pause").addEventListener("click", async () => {
 	await render();
 });
 
-$("exclude-domain").addEventListener("click", async () => {
+onClick("exclude-domain", async () => {
 	const tab = await getActiveTab();
 	const host = tab ? hostnameOf(tab.url) : "";
 	if (host === "") return show("This page has no domain to exclude");
@@ -105,7 +114,7 @@ $("exclude-domain").addEventListener("click", async () => {
 	show(`Will never close ${host}`);
 });
 
-$("open-revisit").addEventListener("click", async () => {
+onClick("open-revisit", async () => {
 	const settings = await loadSettings(storage);
 	if (settings.serverUrl === "") return;
 	await browser.tabs.create({
@@ -114,10 +123,15 @@ $("open-revisit").addEventListener("click", async () => {
 	window.close();
 });
 
-$("open-options").addEventListener("click", async () => {
+onClick("open-options", async () => {
 	await browser.runtime.openOptionsPage();
 	window.close();
 });
 
-render().then(renderConnection);
+render()
+	.then(renderConnection)
+	.catch((error) => {
+		$("status").textContent =
+			`Could not load settings: ${error instanceof Error ? error.message : String(error)}`;
+	});
 renderKept();

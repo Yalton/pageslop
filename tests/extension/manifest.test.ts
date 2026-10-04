@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const manifest = JSON.parse(
-	readFileSync(new URL("../../extension/manifest.json", import.meta.url), "utf8"),
+	readFileSync(
+		new URL("../../extension/manifest.json", import.meta.url),
+		"utf8",
+	),
 );
 
 describe("manifest", () => {
@@ -24,5 +27,12 @@ describe("manifest", () => {
 		expect(manifest.browser_specific_settings.gecko.strict_min_version).toBe(
 			"140.0",
 		);
+	});
+
+	// data_collection_permissions needs Firefox for Android 142.
+	it("requires Firefox for Android 142", () => {
+		expect(
+			manifest.browser_specific_settings.gecko_android?.strict_min_version,
+		).toBe("142.0");
 	});
 });
