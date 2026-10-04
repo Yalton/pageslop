@@ -18,6 +18,7 @@ function parseUrl(url) {
 
 // `settings` must already be normalized. `origin` is the server origin, or ''.
 export function isProtected(tab, settings, origin) {
+	if (tab.kept) return true;
 	if (tab.pinned || tab.active || tab.audible || tab.incognito) return true;
 	const url = parseUrl(tab.url);
 	if (!url || (url.protocol !== "http:" && url.protocol !== "https:"))
@@ -43,8 +44,9 @@ export function selectTabsToStash(tabs, rawSettings, now) {
 		candidates.filter((tab) => now - lastOf(tab) > idleMs),
 	);
 
-	// 2. Cap pass. Pinned tabs never count; idle-selected tabs are already leaving.
-	let remaining = list.filter((tab) => !tab.pinned).length - selected.size;
+	// 2. Cap pass. Pinned and kept tabs never count; idle-selected tabs are already leaving.
+	let remaining =
+		list.filter((tab) => !tab.pinned && !tab.kept).length - selected.size;
 	const oldestFirst = candidates
 		.filter((tab) => !selected.has(tab))
 		.sort(byAge);

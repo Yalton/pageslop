@@ -16,6 +16,7 @@ type FakeTab = {
 	audible: boolean;
 	incognito: boolean;
 	lastAccessed?: number;
+	kept?: boolean;
 };
 
 let nextId = 1;
@@ -51,6 +52,7 @@ const ids = (tabs: { id: number }[]) => tabs.map((t) => t.id);
 describe("protection rules", () => {
 	it.each([
 		["pinned", { pinned: true }],
+		["kept", { kept: true }],
 		["active", { active: true }],
 		["audible", { audible: true }],
 		["incognito", { incognito: true }],
@@ -78,6 +80,12 @@ describe("protection rules", () => {
 			idle({ url: "https://b.com/" }),
 		];
 		expect(ids(selectTabsToStash(tabs, base, NOW))).toEqual([1, 2]);
+	});
+
+	it("selects an idle tab whose kept flag is false", () => {
+		expect(ids(selectTabsToStash([idle({ kept: false })], base, NOW))).toEqual([
+			1,
+		]);
 	});
 });
 
@@ -191,6 +199,43 @@ describe("cap pass", () => {
 			tab(),
 		];
 		expect(selectTabsToStash(tabs, { ...base, maxTabs: 3 }, NOW)).toEqual([]);
+	});
+
+	it("does not count kept tabs toward the cap", () => {
+		const tabs = [
+			tab({ kept: true }),
+			tab({ kept: true }),
+			tab({ kept: true }),
+			tab(),
+			tab(),
+			tab(),
+		];
+		expect(selectTabsToStash(tabs, { ...base, maxTabs: 3 }, NOW)).toEqual([]);
+	});
+
+	it("lets maxTabs other tabs stay open next to 10 kept tabs", () => {
+		const kept = Array.from({ length: 10 }, () => tab({ kept: true }));
+		// Ids 11..36; id 36 is the oldest (26 minutes).
+		const others = Array.from({ length: 26 }, (_, i) =>
+			tab({ lastAccessed: NOW - (i + 1) * MIN }),
+		);
+		expect(
+			ids(selectTabsToStash([...kept, ...others], { ...base, maxTabs: 25 }, NOW)),
+		).toEqual([36]);
+	});
+
+	it("leaves a pinned and kept tab out of the count once, not twice", () => {
+		const tabs = [
+			tab({ pinned: true, kept: true }),
+			tab({ lastAccessed: NOW - 40 * MIN }),
+			tab({ lastAccessed: NOW - 30 * MIN }),
+			tab({ lastAccessed: NOW - 20 * MIN }),
+			tab({ lastAccessed: NOW - 10 * MIN }),
+		];
+		// 4 countable tabs, cap 3: exactly the oldest one goes.
+		expect(ids(selectTabsToStash(tabs, { ...base, maxTabs: 3 }, NOW))).toEqual([
+			2,
+		]);
 	});
 
 	it("counts protected unpinned tabs toward the cap but never selects them", () => {
