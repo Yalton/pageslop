@@ -10,6 +10,8 @@ import { importJobs } from '../lib/db/schema'
 import { enrich } from '../lib/enrichment/classify'
 import { decryptApiKey } from '../lib/enrichment/crypto'
 import { llmEnrich } from '../lib/enrichment/llm-enrich'
+import { archiveExpiredStash } from '../lib/db/queries/links'
+import { stashExpiryCutoff, stashExpireDays } from '../lib/stash/expiry'
 
 // DIRECT connection (no -pooler in hostname) — required for pg-boss LISTEN/NOTIFY
 const pool = new Pool({
@@ -65,10 +67,14 @@ async function main() {
   await boss.createQueue('screenshot')
   await boss.createQueue('monitor-sweep')
   await boss.createQueue('monitor')
-  console.log('[worker] pg-boss started, listening for scrape, enrich, screenshot, monitor-sweep, and monitor jobs...')
+  await boss.createQueue('stash-expire')
+  console.log('[worker] pg-boss started, listening for scrape, enrich, screenshot, monitor-sweep, monitor, and stash-expire jobs...')
 
   // Register 24-hour cron for monitor sweep at 02:00 UTC (pg-boss upserts on restart)
   await boss.schedule('monitor-sweep', '0 2 * * *', {}, { tz: 'UTC' })
+
+  // Register 24-hour cron for stash expiry at 03:00 UTC (pg-boss upserts on restart)
+  await boss.schedule('stash-expire', '0 3 * * *', {}, { tz: 'UTC' })
 
   // Run backfill for un-enriched links
   await backfillEnrichment()
@@ -347,6 +353,16 @@ async function main() {
     }
 
     console.log(`[worker] monitor ${linkId}: ${result.up ? 'up' : 'down'} (${result.statusCode})`)
+  })
+
+  // Stash expiry: archive inbox/read stashed links older than STASH_EXPIRE_DAYS (default 14). Never deletes.
+  await boss.work('stash-expire', { localConcurrency: 1 }, async ([_job]) => {
+    const days = stashExpireDays(process.env.STASH_EXPIRE_DAYS)
+    const cutoff = stashExpiryCutoff(new Date(), days)
+    const archived = await archiveExpiredStash(cutoff)
+    console.log(
+      `[worker] stash-expire: archived ${archived} stashed links older than ${days} days (cutoff ${cutoff.toISOString()})`
+    )
   })
 }
 

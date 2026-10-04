@@ -1,6 +1,6 @@
 import { db } from '@/lib/db/client'
 import { links, rawContent, linkTags, tags } from '@/lib/db/schema'
-import { eq, and, desc, inArray } from 'drizzle-orm'
+import { eq, and, desc, inArray, lt } from 'drizzle-orm'
 import type { LinkSource, LinkWithTags, StashState, Tag } from '@/types'
 
 /**
@@ -257,6 +257,20 @@ export async function bulkSetStashState(
       ...(state === 'inbox' ? { stashedAt: now } : {}),
     })
     .where(and(eq(links.userId, userId), inArray(links.id, ids)))
+    .returning({ id: links.id })
+  return rows.length
+}
+
+/**
+ * Moves stashed links in 'inbox' or 'read' whose stashedAt is older than the
+ * cutoff into 'archived'. Never deletes. Returns the number of rows changed.
+ * Links with a null stashedAt are never matched (NULL < cutoff is not true).
+ */
+export async function archiveExpiredStash(cutoff: Date): Promise<number> {
+  const rows = await db
+    .update(links)
+    .set({ stashState: 'archived', updatedAt: new Date() })
+    .where(and(inArray(links.stashState, ['inbox', 'read']), lt(links.stashedAt, cutoff)))
     .returning({ id: links.id })
   return rows.length
 }
