@@ -71,6 +71,9 @@ node --env-file=.env --import tsx src/workers/scrape.worker.ts
 | `SMTP_USER` | SMTP login email |
 | `SMTP_PASS` | SMTP password or app-specific password |
 | `SMTP_FROM` | Sender display (e.g., `Pageslop <noreply@yourdomain.com>`) |
+| `ALLOW_SIGNUP` | `false` disables new account sign-up server-side. Default `true` |
+| `NEXT_PUBLIC_ALLOW_SIGNUP` | `false` hides sign-up links in the UI. Inlined at build time, so rebuild after changing. Default `true` |
+| `STASH_EXPIRE_DAYS` | Days before stashed links in the inbox or read state are auto-archived (never deleted). Default `14` |
 
 ## Architecture
 

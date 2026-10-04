@@ -23,6 +23,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_ALLOW_SIGNUP=true
+ENV NEXT_PUBLIC_ALLOW_SIGNUP=$NEXT_PUBLIC_ALLOW_SIGNUP
 RUN npm run build
 
 # --- Runner (Next.js app + worker) ---

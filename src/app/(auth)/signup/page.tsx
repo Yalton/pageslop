@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { Loader2, Mail, RefreshCw } from 'lucide-react'
 import { authClient } from '@/lib/auth/client'
+import { signupAllowed } from '@/lib/auth/signup'
 import { signupSchema, type SignupInput } from '@/lib/validations/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,6 +50,23 @@ export default function SignupPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (!signupAllowed(process.env.NEXT_PUBLIC_ALLOW_SIGNUP)) {
+    return (
+      <div className="flex flex-col gap-6 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">Sign-ups are disabled</h1>
+        <p className="text-muted-foreground text-sm">
+          Sign-ups are disabled on this instance. Ask the administrator for an account.
+        </p>
+        <p className="text-muted-foreground text-sm">
+          Already have an account?{' '}
+          <Link href="/login" className="text-foreground underline-offset-4 hover:underline">
+            Log in
+          </Link>
+        </p>
+      </div>
+    )
   }
 
   if (emailSent) {

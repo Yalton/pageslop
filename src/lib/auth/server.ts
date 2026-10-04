@@ -4,6 +4,7 @@ import { nextCookies } from 'better-auth/next-js'
 import { db } from '@/lib/db/client'
 import { sendEmail } from '@/lib/email/send'
 import { verificationEmail, passwordResetEmail } from '@/lib/email/templates'
+import { signupAllowed } from '@/lib/auth/signup'
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -12,6 +13,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    disableSignUp: !signupAllowed(process.env.ALLOW_SIGNUP),
     sendResetPassword: async ({ user, url }) => {
       const { subject, html } = passwordResetEmail(url)
       await sendEmail({ to: user.email, subject, html })
