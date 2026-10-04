@@ -1,4 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+// Load the routes up front, outside any test's timeout. vi.mock is hoisted,
+// so they still get the mocks, and the tests' dynamic imports hit the cache.
+import '@/app/api/export/json/route'
+import '@/app/api/export/html/route'
 import type { LinkWithTags } from '@/types'
 
 // ---- generateNetscapeHTML tests ----

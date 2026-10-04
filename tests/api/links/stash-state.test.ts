@@ -1,4 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+// Load the routes up front, outside any test's timeout. vi.mock is hoisted,
+// so they still get the mocks, and the tests' dynamic imports hit the cache.
+import '@/app/api/links/[id]/route'
+import '@/app/api/links/bulk-stash-state/route'
 
 vi.mock('@/lib/db/queries/links', () => ({
   deleteLink: vi.fn(),
