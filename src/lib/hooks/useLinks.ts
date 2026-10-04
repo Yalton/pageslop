@@ -1,6 +1,6 @@
 'use client'
 import useSWR from 'swr'
-import type { Link, LinkWithDuplicate, LinkWithTags, SaveLinksRequest } from '@/types'
+import type { Link, LinkWithDuplicate, LinkWithTags, SaveLinksRequest, StashState } from '@/types'
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
@@ -91,7 +91,10 @@ export function useLinks() {
     mutate()
   }
 
-  async function updateLink(linkId: string, data: { description?: string; category?: string }): Promise<void> {
+  async function updateLink(
+    linkId: string,
+    data: { description?: string; category?: string; stashState?: StashState },
+  ): Promise<void> {
     // Optimistic: merge new fields
     mutate(
       (current) =>
@@ -107,10 +110,37 @@ export function useLinks() {
     mutate()
   }
 
+  async function setStashState(ids: string[], stashState: StashState): Promise<void> {
+    if (ids.length === 0) return
+    const idSet = new Set(ids)
+    const now = new Date()
+
+    // Optimistic: restoring to the inbox restarts the expiry clock
+    mutate(
+      (current) =>
+        current?.map((l) =>
+          idSet.has(l.id)
+            ? { ...l, stashState, ...(stashState === 'inbox' ? { stashedAt: now } : {}) }
+            : l,
+        ) ?? [],
+      false,
+    )
+
+    const res = await fetch('/api/links/bulk-stash-state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids, stashState }),
+    })
+    await mutate()
+    if (!res.ok) {
+      throw new Error(`Failed to update ${ids.length} link(s) to ${stashState}`)
+    }
+  }
+
   async function checkLink(linkId: string): Promise<void> {
     await fetch(`/api/links/${linkId}/check`, { method: 'POST' })
     mutate()
   }
 
-  return { links, isLoading, error, hasPending, saveLinks, deleteLink, undoDelete, addTag, removeTag, updateLink, checkLink, mutate }
+  return { links, isLoading, error, hasPending, saveLinks, deleteLink, undoDelete, addTag, removeTag, updateLink, setStashState, checkLink, mutate }
 }

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
   Link2,
+  Inbox,
   Tags,
   Network,
   Settings,
@@ -23,9 +24,15 @@ import {
 import { ThemeToggle } from "@/components/layout/ThemeToggle"
 import { authClient } from "@/lib/auth/client"
 import { cn } from "@/lib/utils"
+import { useLinks } from "@/lib/hooks/useLinks"
+import { countInbox } from "@/lib/stash/revisit"
+import { isNavActive } from "@/lib/nav/active"
+
+const REVISIT_HREF = "/dashboard/revisit"
 
 const navItems = [
   { label: "All Links", icon: Link2, href: "/dashboard", disabled: false },
+  { label: "To Revisit", icon: Inbox, href: REVISIT_HREF, disabled: false },
   { label: "Tags", icon: Tags, href: "/dashboard/tags", disabled: false },
   { label: "Graph", icon: Network, href: "/dashboard/graph", disabled: false },
   { label: "Settings", icon: Settings, href: "/dashboard/settings", disabled: false },
@@ -35,16 +42,21 @@ function NavItem({
   item,
   isActive,
   collapsed = false,
+  badge,
 }: {
   item: (typeof navItems)[number]
   isActive: boolean
   collapsed?: boolean
+  badge?: number
 }) {
+  const showBadge = typeof badge === "number" && badge > 0
+  const badgeText = showBadge && badge > 99 ? "99+" : String(badge ?? "")
+
   const content = (
     <Button
       variant="ghost"
       className={cn(
-        "w-full justify-start gap-3 text-sm font-semibold",
+        "relative w-full justify-start gap-3 text-sm font-semibold",
         collapsed && "justify-center px-0",
         isActive && "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
         item.disabled && "cursor-not-allowed opacity-50"
@@ -61,6 +73,20 @@ function NavItem({
         <Link href={item.href}>
           <item.icon className="size-5 shrink-0" />
           {!collapsed && <span>{item.label}</span>}
+          {showBadge && !collapsed && (
+            <span
+              className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium tabular-nums text-primary"
+              aria-label={`${badge} unread`}
+            >
+              {badgeText}
+            </span>
+          )}
+          {showBadge && collapsed && (
+            <span
+              className="absolute right-1.5 top-1.5 size-2 rounded-full bg-primary"
+              aria-label={`${badge} unread`}
+            />
+          )}
         </Link>
       )}
     </Button>
@@ -72,7 +98,9 @@ function NavItem({
         <TooltipTrigger asChild>
           <div>{content}</div>
         </TooltipTrigger>
-        <TooltipContent side="right">{item.label}</TooltipContent>
+        <TooltipContent side="right">
+          {showBadge ? `${item.label} (${badgeText})` : item.label}
+        </TooltipContent>
       </Tooltip>
     )
   }
@@ -90,6 +118,8 @@ function SidebarContent({
   collapsed?: boolean
 }) {
   const router = useRouter()
+  const { links } = useLinks()
+  const inboxCount = countInbox(links)
 
   async function handleLogOut() {
     await authClient.signOut()
@@ -113,9 +143,9 @@ function SidebarContent({
             <NavItem
               key={item.label}
               item={item}
-              isActive={pathname === item.href || (item.href !== "#" && pathname.startsWith(item.href))}
+              isActive={isNavActive(pathname, item.href)}
               collapsed={collapsed}
-              // onClick handler for mobile sheet close
+              badge={item.href === REVISIT_HREF ? inboxCount : undefined}
             />
           ))}
         </nav>
