@@ -14,6 +14,9 @@ export async function listLinksForMonitor(): Promise<{ id: string; url: string }
     .where(eq(links.status, 'ready'))
 }
 
+/** The db itself, or a transaction handle from db.transaction(). */
+type Executor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0]
+
 export interface InsertLinkOptions {
   source?: LinkSource
   stashState?: StashState | null
@@ -21,9 +24,14 @@ export interface InsertLinkOptions {
   title?: string | null
 }
 
-export async function insertLink(userId: string, url: string, opts: InsertLinkOptions = {}) {
+export async function insertLink(
+  userId: string,
+  url: string,
+  opts: InsertLinkOptions = {},
+  executor: Executor = db,
+) {
   const domain = new URL(url).hostname.replace(/^www\./, '')
-  const [link] = await db.insert(links)
+  const [link] = await executor.insert(links)
     .values({
       url,
       userId,
@@ -38,8 +46,8 @@ export async function insertLink(userId: string, url: string, opts: InsertLinkOp
   return link
 }
 
-export async function findDuplicate(userId: string, url: string) {
-  const result = await db.select().from(links)
+export async function findDuplicate(userId: string, url: string, executor: Executor = db) {
+  const result = await executor.select().from(links)
     .where(and(eq(links.userId, userId), eq(links.url, url)))
     .limit(1)
   return result[0] || null
@@ -188,6 +196,10 @@ export interface StashTabInput {
  *   left alone, except that a missing title is filled from the tab.
  * - New links are inserted with source 'stash', stashState 'inbox'.
  *
+ * The whole batch runs in one transaction. If any row fails, nothing is saved and
+ * the call rejects, so a link is never committed without reaching `inserted` (and
+ * so never left unscraped). The extension keeps the tabs open and retries.
+ *
  * `saved` echoes each distinct URL string exactly as given (no normalisation), so the
  * extension can match it against its open tabs. `inserted` lists only new links, which
  * the caller must enqueue for scraping.
@@ -212,29 +224,32 @@ export async function stashTabs(
 
   const saved: string[] = []
   const inserted: { id: string; url: string }[] = []
+  if (byUrl.size === 0) return { saved, inserted }
 
-  for (const [url, tab] of byUrl) {
-    const existing = await findDuplicate(userId, url)
-    if (existing) {
-      await db.update(links)
-        .set({
+  await db.transaction(async (tx) => {
+    for (const [url, tab] of byUrl) {
+      const existing = await findDuplicate(userId, url, tx)
+      if (existing) {
+        await tx.update(links)
+          .set({
+            stashState: 'inbox',
+            stashedAt: tab.closedAt,
+            updatedAt: new Date(),
+            ...(!existing.title && tab.title ? { title: tab.title } : {}),
+          })
+          .where(and(eq(links.id, existing.id), eq(links.userId, userId)))
+      } else {
+        const link = await insertLink(userId, url, {
+          source: 'stash',
           stashState: 'inbox',
           stashedAt: tab.closedAt,
-          updatedAt: new Date(),
-          ...(!existing.title && tab.title ? { title: tab.title } : {}),
-        })
-        .where(and(eq(links.id, existing.id), eq(links.userId, userId)))
-    } else {
-      const link = await insertLink(userId, url, {
-        source: 'stash',
-        stashState: 'inbox',
-        stashedAt: tab.closedAt,
-        title: tab.title ?? null,
-      })
-      inserted.push({ id: link.id, url })
+          title: tab.title ?? null,
+        }, tx)
+        inserted.push({ id: link.id, url })
+      }
+      saved.push(url)
     }
-    saved.push(url)
-  }
+  })
 
   return { saved, inserted }
 }

@@ -21,11 +21,20 @@ const h = vi.hoisted(() => {
   const set = vi.fn((_values: Record<string, unknown>) => ({ where: updateWhere }))
   const update = vi.fn(() => ({ set }))
 
-  return { limit, selectWhere, from, select, insertReturning, values, insert, updateReturning, updateWhere, set, update }
+  // The transaction handle forwards to the same chains, but through its own
+  // spies, so a test can tell which queries ran inside the transaction.
+  const tx = {
+    select: vi.fn(() => select()),
+    insert: vi.fn(() => insert()),
+    update: vi.fn(() => update()),
+  }
+  const transaction = vi.fn(async (fn: (t: typeof tx) => Promise<unknown>) => fn(tx))
+
+  return { limit, selectWhere, from, select, insertReturning, values, insert, updateReturning, updateWhere, set, update, tx, transaction }
 })
 
 vi.mock('@/lib/db/client', () => ({
-  db: { select: h.select, insert: h.insert, update: h.update },
+  db: { select: h.select, insert: h.insert, update: h.update, transaction: h.transaction },
 }))
 
 import { insertLink, stashTabs, bulkSetStashState, updateLinkFields } from '@/lib/db/queries/links'
@@ -152,10 +161,49 @@ describe('stashTabs', () => {
     expect(result.inserted.map((i) => i.url)).toEqual(urls)
   })
 
+  // pageslop-dpz: a failure part-way through must not leave earlier inserts
+  // committed but missing from `inserted`, where they would never be scraped.
+  it('runs every lookup and write for the batch inside one transaction', async () => {
+    h.limit
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 'link-9', userId: 'user-1', url: 'https://old.com/', title: 'T' }])
+    h.insertReturning.mockResolvedValueOnce([{ id: 'new-1', url: 'https://a.com/' }])
+
+    await stashTabs('user-1', [
+      { url: 'https://a.com/', closedAt },
+      { url: 'https://old.com/', closedAt },
+    ])
+
+    expect(h.transaction).toHaveBeenCalledOnce()
+    expect(h.tx.select).toHaveBeenCalledTimes(h.select.mock.calls.length)
+    expect(h.tx.insert).toHaveBeenCalledTimes(h.insert.mock.calls.length)
+    expect(h.tx.update).toHaveBeenCalledTimes(h.update.mock.calls.length)
+    expect(h.select).toHaveBeenCalledTimes(2)
+    expect(h.insert).toHaveBeenCalledTimes(1)
+    expect(h.update).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects from inside the transaction when a later insert fails, so it rolls back', async () => {
+    h.limit.mockResolvedValue([])
+    h.insertReturning
+      .mockResolvedValueOnce([{ id: 'new-1', url: 'https://a.com/' }])
+      .mockRejectedValueOnce(new Error('connection lost'))
+
+    const pending = stashTabs('user-1', [
+      { url: 'https://a.com/', closedAt },
+      { url: 'https://b.com/', closedAt },
+    ])
+
+    await expect(pending).rejects.toThrow('connection lost')
+    await expect(h.transaction.mock.results[0].value).rejects.toThrow('connection lost')
+    h.limit.mockReset()
+  })
+
   it('returns empty arrays for an empty batch without touching the db', async () => {
     await expect(stashTabs('user-1', [])).resolves.toEqual({ saved: [], inserted: [] })
     expect(h.select).not.toHaveBeenCalled()
     expect(h.insert).not.toHaveBeenCalled()
+    expect(h.transaction).not.toHaveBeenCalled()
   })
 })
 
