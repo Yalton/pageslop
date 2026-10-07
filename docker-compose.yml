@@ -2,14 +2,17 @@ services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    # POSTGRES_PASSWORD (bootstrap superuser 'pageslop') and PAGESLOP_DB_PASSWORD
+    # (app role 'pageslop_app') live in .env.db, which only this service reads.
+    env_file: .env.db
     environment:
       POSTGRES_USER: pageslop
-      POSTGRES_PASSWORD: pageslop
       POSTGRES_DB: pageslop
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
+      - ./docker/db-init:/docker-entrypoint-initdb.d:ro
+    # No published port: app and worker reach the database as db:5432 on the
+    # compose network. For admin work use `docker compose exec db psql -U pageslop`.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pageslop"]
       interval: 5s
@@ -25,9 +28,6 @@ services:
     ports:
       - "3847:3000"
     env_file: .env
-    environment:
-      DATABASE_URL: postgresql://pageslop:pageslop@db:5432/pageslop
-      DATABASE_URL_DIRECT: postgresql://pageslop:pageslop@db:5432/pageslop
     volumes:
       - screenshots:/app/data/screenshots
     depends_on:
@@ -39,9 +39,6 @@ services:
     restart: unless-stopped
     command: ["node", "--import", "tsx", "src/workers/scrape.worker.ts"]
     env_file: .env
-    environment:
-      DATABASE_URL: postgresql://pageslop:pageslop@db:5432/pageslop
-      DATABASE_URL_DIRECT: postgresql://pageslop:pageslop@db:5432/pageslop
     volumes:
       - screenshots:/app/data/screenshots
     depends_on:
