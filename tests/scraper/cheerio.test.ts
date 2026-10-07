@@ -1,5 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { configureSafeFetch, SsrfBlockedError } from '@/lib/net/ssrf-guard'
 import { scrapeUrl } from '@/lib/scraper/cheerio'
+
+// Route safeFetch through the stubbed global fetch and a fake public resolver
+let restoreSafeFetch: () => void
+beforeEach(() => {
+  restoreSafeFetch = configureSafeFetch({
+    fetch: (url, init) => fetch(url, init as RequestInit),
+    resolve: async () => [{ address: '93.184.215.14', family: 4 }],
+  })
+})
+afterEach(() => restoreSafeFetch())
 
 describe('scrapeUrl', () => {
   beforeEach(() => {
@@ -18,9 +29,7 @@ describe('scrapeUrl', () => {
         <body><p>Hello world</p></body>
       </html>
     `
-    vi.mocked(fetch).mockResolvedValueOnce({
-      text: async () => html,
-    } as Response)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
 
     const result = await scrapeUrl('https://example.com')
     expect(result.title).toBe('Test Title')
@@ -37,9 +46,7 @@ describe('scrapeUrl', () => {
         <body><p>Content</p></body>
       </html>
     `
-    vi.mocked(fetch).mockResolvedValueOnce({
-      text: async () => html,
-    } as Response)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
 
     const result = await scrapeUrl('https://example.com')
     expect(result.title).toBe('Fallback Title')
@@ -56,9 +63,7 @@ describe('scrapeUrl', () => {
         <body></body>
       </html>
     `
-    vi.mocked(fetch).mockResolvedValueOnce({
-      text: async () => html,
-    } as Response)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
 
     const result = await scrapeUrl('https://example.com/page')
     expect(result.favicon).toBe('https://example.com/favicon.ico')
@@ -71,9 +76,7 @@ describe('scrapeUrl', () => {
         <body><p>Hello world</p></body>
       </html>
     `
-    vi.mocked(fetch).mockResolvedValueOnce({
-      text: async () => html,
-    } as Response)
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
 
     const result = await scrapeUrl('https://example.com')
     expect(result.bodyText).toContain('Hello world')
@@ -83,5 +86,24 @@ describe('scrapeUrl', () => {
     vi.mocked(fetch).mockRejectedValueOnce(new DOMException('The operation was aborted', 'AbortError'))
 
     await expect(scrapeUrl('https://example.com')).rejects.toThrow()
+  })
+
+  it.each([
+    'http://192.168.50.78:81/',
+    'http://127.0.0.1:3000/',
+    'http://[::1]/',
+    'http://2130706433/',
+    'file:///etc/passwd',
+  ])('refuses internal URL %s without fetching', async (url) => {
+    await expect(scrapeUrl(url)).rejects.toThrow(SsrfBlockedError)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('refuses a public URL that 302s to 192.168.50.1', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(null, { status: 302, headers: { location: 'http://192.168.50.1/' } })
+    )
+    await expect(scrapeUrl('https://example.com')).rejects.toThrow(SsrfBlockedError)
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 })
