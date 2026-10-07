@@ -34,7 +34,9 @@ An intelligent bookmark manager that automatically classifies, tags, describes, 
 
 ```bash
 cp .env.example .env
-# Edit .env with your credentials
+cp .env.db.example .env.db
+# Edit both with your credentials (the pageslop_app password must match), then:
+chmod 600 .env .env.db
 docker compose up -d
 ```
 
@@ -149,7 +151,7 @@ Each Pageslop instance belongs to a single owner. The extension talks only to th
 |---------|------|-------------|
 | `app` | 3847 | Next.js web server |
 | `worker` | — | Background job processor (scrape, enrich, monitor) |
-| `db` | 5433 | PostgreSQL 16 |
+| `db` | — (internal only) | PostgreSQL 16 |
 
 ## License
 
