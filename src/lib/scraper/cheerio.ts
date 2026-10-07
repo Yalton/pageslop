@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio'
+import { safeFetch } from '../net/ssrf-guard'
 
 export interface ScrapeResult {
   title: string
@@ -10,10 +11,10 @@ export interface ScrapeResult {
 }
 
 export async function scrapeUrl(url: string): Promise<ScrapeResult> {
-  const res = await fetch(url, {
+  // safeFetch enforces the SSRF policy on the URL and every redirect hop
+  const { response: res } = await safeFetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Pageslop/1.0)' },
     signal: AbortSignal.timeout(8000), // 8s hard timeout
-    redirect: 'follow',
   })
 
   const rawHtml = await res.text()
