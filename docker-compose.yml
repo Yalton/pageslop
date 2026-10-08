@@ -26,7 +26,7 @@ services:
         NEXT_PUBLIC_ALLOW_SIGNUP: ${NEXT_PUBLIC_ALLOW_SIGNUP:-true}
     restart: unless-stopped
     ports:
-      - "3847:3000"
+      - "192.168.50.112:3847:3000"
     env_file: .env
     volumes:
       - screenshots:/app/data/screenshots
@@ -37,6 +37,7 @@ services:
   worker:
     build: .
     restart: unless-stopped
+    user: "1000:1000"
     command: ["node", "--import", "tsx", "src/workers/scrape.worker.ts"]
     env_file: .env
     volumes:

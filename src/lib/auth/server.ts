@@ -36,7 +36,10 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24, // refresh if >24h old
   },
   advanced: {
-    useSecureCookies: false, // reverse proxy handles TLS — don't use __Secure- prefix
+    useSecureCookies: true,
+    ipAddress: {
+      ipAddressHeaders: ['cf-connecting-ip'],
+    },
   },
   plugins: [nextCookies()], // must be last plugin
 })

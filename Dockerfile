@@ -66,7 +66,7 @@ COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
 # Create screenshot storage directory
-RUN mkdir -p /app/data/screenshots
+RUN mkdir -p /app/data/screenshots && chown -R node:node /app/data
 VOLUME /app/data
 
 EXPOSE 3000
