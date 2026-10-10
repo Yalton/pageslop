@@ -1,3 +1,6 @@
 {
-  "target": "webbox"
+  "target": "webbox",
+  "config_files": [
+    ".env.db"
+  ]
 }
