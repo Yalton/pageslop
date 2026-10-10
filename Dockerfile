@@ -2,6 +2,7 @@
 FROM node:22-slim AS base
 RUN apt-get update && apt-get install -y \
   chromium \
+  chromium-sandbox \
   fonts-liberation \
   libgbm1 \
   --no-install-recommends \

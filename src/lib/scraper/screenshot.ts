@@ -24,8 +24,6 @@ export async function screenshotUrl(url: string, linkId: string): Promise<string
     browser = await puppeteer.launch({
       headless: true,
       args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
         `--proxy-server=http://127.0.0.1:${proxy.port}`,
