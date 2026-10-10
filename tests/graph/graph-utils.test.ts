@@ -98,6 +98,19 @@ describe('buildGraphData', () => {
     expect(ids).toEqual(['a', 'b'].sort())
   })
 
+  it('leaves out stash links hidden from All Links, and their edges', () => {
+    const links = [
+      makeLink('saved', ['javascript']),
+      { ...makeLink('kept', ['javascript']), source: 'stash' as const, stashState: 'kept' as const },
+      { ...makeLink('inbox', ['javascript']), source: 'stash' as const, stashState: 'inbox' as const },
+      { ...makeLink('read', ['javascript']), source: 'stash' as const, stashState: 'read' as const },
+      { ...makeLink('archived', ['javascript']), source: 'stash' as const, stashState: 'archived' as const },
+    ]
+    const result = buildGraphData(links, new Set())
+    expect(result.nodes.map((n) => n.id)).toEqual(['saved', 'kept'])
+    expect(result.links).toHaveLength(1)
+  })
+
   it('produces zero edges when no links share tags', () => {
     const links = [
       makeLink('a', ['javascript']),

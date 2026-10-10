@@ -1,8 +1,12 @@
 import type { LinkWithTags } from '@/types'
 
-/** inbox and read links live on /dashboard/revisit, not in All Links. */
+/**
+ * All Links, the graph and tag counts show user-saved links and stash links the
+ * user chose to keep. inbox and read live on /dashboard/revisit; archived stash
+ * was dismissed or expired. listTagsWithCount mirrors this rule in SQL.
+ */
 export function isVisibleInAllLinks(link: Pick<LinkWithTags, 'stashState'>): boolean {
-  return link.stashState !== 'inbox' && link.stashState !== 'read'
+  return link.stashState === null || link.stashState === 'kept'
 }
 
 export function filterAllLinksView(links: LinkWithTags[]): LinkWithTags[] {

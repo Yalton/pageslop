@@ -82,6 +82,47 @@ describe('scrapeUrl', () => {
     expect(result.bodyText).toContain('Hello world')
   })
 
+  it('separates adjacent element text with whitespace', async () => {
+    const html = `
+      <html><head><title>Page</title></head>
+        <body><div><a href="/a">About</a><a href="/p">Press</a><a href="/c">Copyright</a><a href="/x">Contact</a></div><p>One</p>Loose<p>Two</p></body>
+      </html>
+    `
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
+
+    const result = await scrapeUrl('https://example.com')
+    expect(result.bodyText).toBe('About Press Copyright Contact One Loose Two')
+  })
+
+  it('drops noscript, svg, iframe, template content and collapses whitespace', async () => {
+    const html = `
+      <html><head><title>Page</title></head>
+        <body>
+          <noscript>Please enable JavaScript</noscript>
+          <svg><style>.a{fill:#221f1f}</style><text>svgtext</text></svg>
+          <iframe src="https://x.test">iframe fallback</iframe>
+          <template><p>templated</p></template>
+          <main>
+            <h1>Real</h1>
+            <p>Content   here</p>
+          </main>
+        </body>
+      </html>
+    `
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
+
+    const result = await scrapeUrl('https://example.com')
+    expect(result.bodyText).toBe('Real Content here')
+  })
+
+  it('caps body text at 5000 chars', async () => {
+    const html = `<html><body>${'<p>word</p>'.repeat(3000)}</body></html>`
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
+
+    const result = await scrapeUrl('https://example.com')
+    expect(result.bodyText!.length).toBeLessThanOrEqual(5000)
+  })
+
   it('handles timeout', async () => {
     vi.mocked(fetch).mockRejectedValueOnce(new DOMException('The operation was aborted', 'AbortError'))
 

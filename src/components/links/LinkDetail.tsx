@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { ExternalLink, RefreshCw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { UNDO_WINDOW_MS } from '@/lib/links/pending-deletes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -64,7 +65,7 @@ function LinkDetailContent({
     onClose()
     onDelete(link.id)
     toast('Link deleted', {
-      duration: 5000,
+      duration: UNDO_WINDOW_MS,
       action: {
         label: 'Undo',
         onClick: () => onUndoDelete(link),
