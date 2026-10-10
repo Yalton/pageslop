@@ -38,8 +38,14 @@ services:
     build: .
     restart: unless-stopped
     user: "1000:1000"
+    # Permit Chromium's namespace sandbox with a browser-specific seccomp profile.
+    # Source: https://github.com/microsoft/playwright/blob/main/utils/docker/seccomp_profile.json
+    security_opt:
+      - seccomp:./chromium-seccomp.json
     command: ["node", "--import", "tsx", "src/workers/scrape.worker.ts"]
     env_file: .env
+    environment:
+      HOME: /home/node
     volumes:
       - screenshots:/app/data/screenshots
     depends_on:
