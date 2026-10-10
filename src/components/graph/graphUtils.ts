@@ -1,4 +1,5 @@
 import { LinkWithTags, CATEGORIES } from '@/types'
+import { isVisibleInAllLinks } from '@/lib/utils/all-links-filter'
 
 export interface GraphNode {
   id: string
@@ -46,11 +47,12 @@ export function buildGraphData(
   links: LinkWithTags[],
   visibleCategories: Set<string>,
 ): GraphData {
-  // Filter links by visible categories (empty set = show all)
+  // Same links as All Links, then by visible categories (empty set = show all)
+  const shownLinks = links.filter(isVisibleInAllLinks)
   const filteredLinks =
     visibleCategories.size === 0
-      ? links
-      : links.filter((link) =>
+      ? shownLinks
+      : shownLinks.filter((link) =>
           link.category !== null && visibleCategories.has(link.category),
         )
 

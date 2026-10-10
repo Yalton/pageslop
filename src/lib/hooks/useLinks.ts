@@ -1,12 +1,28 @@
 'use client'
-import useSWR from 'swr'
+import useSWR, { mutate as mutateKey } from 'swr'
+import { toast } from 'sonner'
 import type { Link, LinkWithDuplicate, LinkWithTags, SaveLinksRequest, StashState } from '@/types'
+import { createPendingDeletes } from '@/lib/links/pending-deletes'
 
 // Throw on HTTP errors so SWR reports them in `error` instead of caching an error body.
 const fetcher = async (url: string) => {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Could not load links (${res.status})`)
   return res.json()
+}
+
+// Shared by every useLinks caller, so a delete started in one view stays
+// hidden in the others until it runs or is undone.
+const pendingDeletes = createPendingDeletes((id) => {
+  const failed = () => toast.error('Could not delete link. Please try again.')
+  // keepalive lets a delete flushed on pagehide outlive the page.
+  fetch(`/api/links/${id}`, { method: 'DELETE', keepalive: true })
+    .then((res) => { if (!res.ok) failed() }, failed)
+    .finally(() => void mutateKey('/api/links'))
+})
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', () => pendingDeletes.flush())
 }
 
 export function useLinks() {
@@ -24,7 +40,9 @@ export function useLinks() {
   )
 
   // Use polled data if available, otherwise main data
-  const links: LinkWithTags[] = (hasPending ? polledData : data) ?? data ?? []
+  // Revalidation would otherwise bring back links whose delete is still pending.
+  const links: LinkWithTags[] = ((hasPending ? polledData : data) ?? data ?? [])
+    .filter(l => !pendingDeletes.has(l.id))
 
   async function saveLinks(urls: string, force = false): Promise<LinkWithDuplicate[]> {
     const res = await fetch('/api/links', {
@@ -49,18 +67,17 @@ export function useLinks() {
   }
 
   async function deleteLink(id: string): Promise<void> {
-    // Optimistic removal
+    // Optimistic removal; the server delete waits out the undo window.
     mutate((current) => current?.filter(l => l.id !== id) ?? [], false)
-
-    await fetch(`/api/links/${id}`, { method: 'DELETE' })
-    mutate() // revalidate
+    pendingDeletes.schedule(id)
   }
 
   async function undoDelete(link: Link): Promise<void> {
-    // Re-add optimistically (cast Link to LinkWithTags with empty tags), then revalidate
-    const linkWithTags: LinkWithTags = { ...link, tags: [] }
-    mutate((current) => [linkWithTags, ...(current ?? [])], false)
-    mutate() // server revalidate
+    if (!pendingDeletes.cancel(link.id)) {
+      toast.error('Too late to undo, the link is already deleted.')
+      return
+    }
+    mutate() // the row was never deleted, so revalidating brings it back with its tags
   }
 
   async function addTag(linkId: string, name: string): Promise<void> {

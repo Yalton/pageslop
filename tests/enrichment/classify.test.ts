@@ -1,12 +1,21 @@
 import { describe, it, expect } from 'vitest'
-import { enrich, categorize, CATEGORIES } from '@/lib/enrichment/classify'
+import {
+  enrich,
+  categorize,
+  CATEGORIES,
+  extractKeywords,
+  buildTags,
+  normalizeTag,
+  isJunkToken,
+} from '@/lib/enrichment/classify'
 import { extractDescription } from '@/lib/enrichment/describe'
 import { getDomainHints, DOMAIN_HINTS } from '@/lib/enrichment/domain-hints'
 
 describe('enrich()', () => {
   it('returns 2-4 lowercase tags from bodyText with react/javascript', () => {
     const result = enrich({
-      bodyText: 'react javascript component hooks state management tutorial',
+      bodyText:
+        'react javascript component hooks. react state management with javascript tutorial',
       existingDescription: null,
       domain: null,
       title: null,
@@ -64,15 +73,17 @@ describe('enrich()', () => {
     })
   })
 
-  it('tags count is between 2 and 4', () => {
+  it('tags count is at most 4 and never padded with generic fallbacks', () => {
     const result = enrich({
       bodyText: 'simple content',
       existingDescription: null,
       domain: null,
       title: null,
     })
-    expect(result.tags.length).toBeGreaterThanOrEqual(2)
     expect(result.tags.length).toBeLessThanOrEqual(4)
+    for (const generic of ['link', 'saved', 'content', 'resource']) {
+      expect(result.tags).not.toContain(generic)
+    }
   })
 
   it('returns existing description without override', () => {
@@ -208,5 +219,158 @@ describe('getDomainHints()', () => {
     expect('github.com' in DOMAIN_HINTS).toBe(true)
     expect('youtube.com' in DOMAIN_HINTS).toBe(true)
     expect('wikipedia.org' in DOMAIN_HINTS).toBe(true)
+  })
+})
+
+describe('isJunkToken()', () => {
+  it.each([
+    'aboutpresscopyrightcontact', // concatenated footer links (>20 chars)
+    '0-29b-a4b',
+    '221f1f',
+    'a4b2c9',
+    'web3x9',
+    'challenge-error-text',
+    'a-b-c-d',
+    '-foo',
+    'foo-',
+    'class',
+    'iframe',
+    'src',
+    'href',
+    'https',
+    'http',
+    'www',
+    'html',
+    'div',
+    'span',
+    'cookie',
+    'cookies',
+    'javascript-disabled-warning',
+    'enable',
+    'browser',
+    'copyright',
+    'ago',
+    'please',
+    'make',
+    'need',
+    'updated',
+    'get',
+    'one',
+    'like',
+    'just',
+    '12345',
+    'ab',
+  ])('rejects %s', (token) => {
+    expect(isJunkToken(token)).toBe(true)
+  })
+
+  it.each([
+    'code',
+    'cloud',
+    'data',
+    'linux',
+    'python',
+    'react',
+    'agent',
+    'kubernetes',
+    'open-source',
+    'machine-learning',
+    'database',
+  ])('accepts %s', (token) => {
+    expect(isJunkToken(token)).toBe(false)
+  })
+})
+
+describe('normalizeTag()', () => {
+  it.each([
+    ['agents', 'agent'],
+    ['tools', 'tool'],
+    ['videos', 'video'],
+    ['databases', 'database'],
+    ['libraries', 'library'],
+    ['boxes', 'box'],
+    ['matches', 'match'],
+    ['classes', 'class'],
+    ['movies', 'movie'],
+    ['cookies', 'cookie'],
+    ['ai-agents', 'ai-agent'],
+    ['Agents', 'agent'],
+    ['  Tools ', 'tool'],
+  ])('folds %s -> %s', (input, expected) => {
+    expect(normalizeTag(input)).toBe(expected)
+  })
+
+  it.each([
+    'class',
+    'linux',
+    'news',
+    'analysis',
+    'status',
+    'physics',
+    'analytics',
+    'series',
+    'kubernetes',
+    'css',
+    'business',
+    'bus',
+  ])('leaves %s alone', (word) => {
+    expect(normalizeTag(word)).toBe(word)
+  })
+})
+
+describe('extractKeywords()', () => {
+  it('drops keywords that occur only once', () => {
+    const kws = extractKeywords('rust rust compiler borrow checker rust compiler')
+    expect(kws).toEqual(['rust', 'compiler'])
+  })
+
+  it('merges plurals when counting', () => {
+    const kws = extractKeywords('agents are great. an agent framework for building agent systems')
+    expect(kws).toContain('agent')
+    expect(kws).not.toContain('agents')
+  })
+
+  it('filters markup, hex and filler junk even when repeated', () => {
+    const text =
+      'class iframe src https 221f1f 0-29b-a4b challenge-error-text please make ago updated need enable ' +
+      'class iframe src https 221f1f 0-29b-a4b challenge-error-text please make ago updated need enable ' +
+      'kubernetes kubernetes'
+    expect(extractKeywords(text)).toEqual(['kubernetes'])
+  })
+})
+
+describe('buildTags()', () => {
+  it('produces no junk tags from a YouTube-style junk page', () => {
+    const text =
+      'About Press Copyright Contact us Creators Advertise Developers Terms Privacy Policy & Safety ' +
+      'How YouTube works Test new features 221f1f iframe src https class please enable javascript ' +
+      'About Press Copyright Contact us Terms Privacy 2 days ago'
+    const tags = buildTags(text, 'youtube.com')
+    expect(tags).toContain('video')
+    for (const junk of ['aboutpresscopyrightcontact', '221f1f', 'iframe', 'src', 'https', 'class', 'ago', 'please', 'enable', 'copyright', 'privacy', 'terms']) {
+      expect(tags).not.toContain(junk)
+    }
+  })
+
+  it('does not pad with generic fallback tags', () => {
+    expect(buildTags('one lonely word', null)).toEqual([])
+  })
+
+  it('keeps domain hints even when body text has nothing repeated', () => {
+    expect(buildTags('some content', 'github.com')).toEqual(['code', 'open-source'])
+  })
+
+  it('gives title words enough weight to become tags', () => {
+    const tags = buildTags('', null, 'Python Machine Learning Tutorial')
+    expect(tags).toContain('python')
+    expect(tags.length).toBeGreaterThanOrEqual(2)
+    expect(tags.length).toBeLessThanOrEqual(4)
+  })
+
+  it('returns no duplicate singular/plural tags', () => {
+    const tags = buildTags('agents agents agent tools tool tools', null)
+    expect(tags).toEqual(expect.arrayContaining(['agent', 'tool']))
+    expect(tags).not.toContain('agents')
+    expect(tags).not.toContain('tools')
   })
 })

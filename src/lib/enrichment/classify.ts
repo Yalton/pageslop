@@ -19,6 +19,7 @@ export interface EnrichmentResult {
 // Stop words — filtered out during keyword extraction
 // ---------------------------------------------------------------------------
 
+/** English function words and generic filler that never make useful tags. */
 export const STOP_WORDS = new Set([
   'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
   'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
@@ -29,9 +30,167 @@ export const STOP_WORDS = new Set([
   'not', 'no', 'nor', 'so', 'yet', 'both', 'either', 'neither', 'each',
   'more', 'most', 'other', 'such', 'than', 'too', 'very', 'can', 'just',
   'if', 'as', 'when', 'where', 'how', 'what', 'which', 'who', 'all', 'any',
-  'also', 'however', 'because', 'while', 'after', 'before', 'then', 'than',
+  'also', 'however', 'because', 'while', 'after', 'before', 'then',
   'here', 'there', 'only', 'new', 'get', 'use', 'using', 'used',
+  // pronouns / determiners / prepositions
+  'him', 'them', 'theirs', 'ours', 'yours', 'mine', 'whom', 'whose', 'why',
+  'itself', 'yourself', 'themselves', 'ourselves', 'myself', 'himself', 'herself',
+  'some', 'many', 'much', 'few', 'several', 'every', 'own', 'same', 'another',
+  'out', 'off', 'over', 'under', 'again', 'further', 'once', 'above', 'below',
+  'between', 'against', 'without', 'within', 'along', 'across', 'behind',
+  'beyond', 'around', 'among', 'toward', 'towards', 'upon', 'onto', 'via',
+  'per', 'until', 'since', 'though', 'although', 'unless', 'whether', 'whereas',
+  'shall', 'must', 'ought', 'cannot', 'cant', 'dont', 'doesnt', 'didnt',
+  'isnt', 'arent', 'wasnt', 'werent', 'wont', 'wouldnt', 'couldnt', 'shouldnt',
+  'ive', 'youre', 'youve', 'youll', 'theyre', 'thats', 'whats', 'lets', 'im',
+  // generic verbs / filler
+  'ago', 'please', 'make', 'makes', 'made', 'making', 'need', 'needs', 'needed',
+  'update', 'updated', 'updates', 'gets', 'got', 'getting', 'uses', 'one', 'two',
+  'three', 'first', 'second', 'last', 'next', 'like', 'likes', 'liked', 'well',
+  'even', 'still', 'really', 'actually', 'always', 'never', 'often', 'sometimes',
+  'now', 'today', 'yesterday', 'tomorrow', 'day', 'days', 'week', 'weeks',
+  'month', 'months', 'year', 'years', 'hour', 'hours', 'minute', 'minutes',
+  'time', 'times', 'way', 'ways', 'thing', 'things', 'lot', 'lots', 'kind',
+  'go', 'goes', 'going', 'went', 'gone', 'come', 'comes', 'coming', 'came',
+  'take', 'takes', 'taking', 'took', 'give', 'gives', 'given', 'gave',
+  'see', 'sees', 'seen', 'saw', 'look', 'looks', 'looking', 'know', 'knows',
+  'known', 'think', 'thinks', 'want', 'wants', 'wanted', 'say', 'says', 'said',
+  'tell', 'told', 'try', 'tries', 'tried', 'find', 'found', 'keep', 'keeps',
+  'let', 'put', 'set', 'sets', 'show', 'shows', 'shown', 'seem', 'seems',
+  'became', 'become', 'becomes', 'work', 'works', 'working', 'worked',
+  'start', 'started', 'starts', 'help', 'helps', 'call', 'called', 'read',
+  'good', 'great', 'best', 'better', 'bad', 'big', 'small', 'large', 'little',
+  'long', 'high', 'low', 'old', 'right', 'left', 'full', 'able', 'sure',
+  'yes', 'okay', 'thanks', 'thank', 'hello', 'welcome', 'via', 'etc',
+  'available', 'currently', 'recently', 'already', 'enough', 'almost',
+  'back', 'down', 'top', 'bottom', 'part', 'based', 'including', 'within',
+  'something', 'anything', 'everything', 'nothing', 'someone', 'anyone',
+  'everyone', 'people', 'without', 'maybe', 'perhaps', 'quite', 'rather',
+  'view', 'views', 'more', 'less', 'least', 'ever', 'far', 'almost',
 ])
+
+/**
+ * Markup, browser-chrome, and boilerplate words that leak out of page source
+ * (attributes, cookie banners, bot challenges, footers) and are never topics.
+ */
+export const WEB_NOISE_WORDS = new Set([
+  // markup / CSS / URLs
+  'class', 'iframe', 'src', 'href', 'https', 'http', 'www', 'html', 'htm',
+  'div', 'span', 'img', 'alt', 'width', 'height', 'style', 'styles', 'script',
+  'noscript', 'svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico', 'url', 'uri',
+  'rel', 'nofollow', 'noopener', 'noreferrer', 'target', 'blank', 'px', 'rem',
+  'font', 'align', 'margin', 'padding', 'border', 'display', 'none', 'flex',
+  'auto', 'solid', 'inherit', 'transparent', 'webkit', 'moz', 'important',
+  'null', 'undefined', 'true', 'false', 'var', 'const', 'function', 'return',
+  'amp', 'nbsp', 'quot', 'utf', 'charset', 'meta', 'viewport', 'json', 'xml',
+  'com', 'org', 'net', 'index', 'php', 'aspx',
+  // browser chrome / bot challenges
+  'cookie', 'cookies', 'warning', 'enable', 'enabled', 'disable', 'disabled',
+  'browser', 'browsers', 'error', 'errors', 'text', 'challenge', 'loading',
+  'loaded', 'load', 'reload', 'refresh', 'redirect', 'redirecting', 'captcha',
+  'verify', 'verifying', 'human', 'robot', 'cloudflare', 'ray', 'checking',
+  'continue', 'wait', 'moment', 'seconds', 'request', 'requests', 'blocked',
+  'access', 'denied', 'forbidden', 'unsupported', 'supported', 'outdated',
+  // navigation / footer boilerplate
+  'click', 'tap', 'menu', 'sign', 'signin', 'signup', 'login', 'logout', 'log',
+  'register', 'account', 'subscribe', 'subscription', 'newsletter-signup',
+  'privacy', 'terms', 'copyright', 'rights', 'reserved', 'policy', 'policies',
+  'legal', 'contact', 'skip', 'toggle', 'navigation', 'search', 'home',
+  'close', 'open-menu', 'accept', 'decline', 'consent', 'preferences',
+  'settings', 'cancel', 'submit', 'button', 'link', 'links', 'page', 'pages',
+  'site', 'website', 'learn-more', 'more-info', 'share', 'tweet', 'email',
+  'follow', 'press', 'advertise', 'advertising', 'ads', 'sponsored', 'feedback',
+  'help-center', 'faq', 'careers', 'jobs-at', 'sitemap', 'powered',
+])
+
+const MAX_TOKEN_LENGTH = 20
+
+/**
+ * True when a lower-cased token is not a plausible tag: too short/long,
+ * contains digits (hex colours, ids, hashes), malformed hyphenation,
+ * a stop word, or markup/boilerplate noise.
+ */
+export function isJunkToken(token: string): boolean {
+  const t = token.toLowerCase().trim()
+  if (t.length < 3 || t.length > MAX_TOKEN_LENGTH) return true
+  if (/\d/.test(t)) return true // digits: 221f1f, 0-29b-a4b, ids, years
+  if (!/^[a-z-]+$/.test(t)) return true
+  if (t.startsWith('-') || t.endsWith('-') || t.includes('--')) return true
+
+  const isNoise = (w: string) => STOP_WORDS.has(w) || WEB_NOISE_WORDS.has(w)
+  if (isNoise(t) || isNoise(normalizeTag(t))) return true
+
+  if (t.includes('-')) {
+    const segments = t.split('-')
+    if (segments.length > 3) return true // more than two hyphens
+    if (segments.some((s) => s.length < 2)) return true
+    const noisy = segments.filter(isNoise).length
+    if (noisy * 2 > segments.length) return true // e.g. challenge-error-text
+  }
+  return false
+}
+
+// ---------------------------------------------------------------------------
+// normalizeTag — lower-case and fold simple English plurals
+// ---------------------------------------------------------------------------
+
+/** Words ending in "s" that are not plurals (or whose plural we keep). */
+const NON_PLURAL_S = new Set([
+  'news', 'series', 'species', 'kubernetes', 'postgres', 'jenkins', 'always',
+  'perhaps', 'yes', 'thanks', 'chaos', 'ethos', 'pathos', 'cosmos', 'kudos',
+  'ios', 'macos', 'tvos', 'watchos', 'chromeos', 'centos', 'aws', 'gas',
+  'atlas', 'canvas', 'alias', 'bias', 'pancreas', 'lens', 'means', 'mars',
+  'christmas', 'texas', 'kansas', 'arkansas', 'vegas', 'ares', 'hermes',
+  'diabetes', 'herpes', 'rabies', 'scabies', 'measles', 'mumps', 'whereas',
+  'overseas', 'sometimes', 'nowadays', 'besides', 'towards', 'afterwards',
+  'backwards', 'forwards', 'upwards', 'downwards', 'sales', 'ones', 'yours',
+  'ours', 'theirs', 'hers', 'its', 'this', 'thus', 'paris', 'athens',
+  'wales', 'dallas', 'brussels', 'mercedes', 'adidas', 'pandas', 'numpy',
+])
+
+/** "-ies" words that pluralise a "-ie" singular, not a "-y" one. */
+const IE_PLURALS = new Set([
+  'movies', 'cookies', 'zombies', 'selfies', 'hippies', 'goodies', 'freebies',
+  'calories', 'smoothies', 'brownies', 'rookies', 'indies', 'aussies',
+  'pies', 'ties', 'lies', 'dies', 'genies', 'hoodies', 'techies', 'newbies',
+  'foodies', 'roomies', 'birdies', 'boogies', 'collies', 'veggies',
+])
+
+/** "-ches" words whose singular ends in "-che". */
+const CHE_PLURALS = new Set([
+  'caches', 'niches', 'aches', 'headaches', 'avalanches', 'mustaches',
+  'moustaches', 'cliches', 'quiches', 'psyches', 'creches', 'apaches',
+])
+
+function singularize(word: string): string {
+  if (word.length <= 3) return word
+  if (NON_PLURAL_S.has(word)) return word
+  if (!word.endsWith('s')) return word
+  if (/(ss|us|is|ics|ous|sis)$/.test(word)) return word
+
+  if (word.endsWith('ies')) {
+    if (IE_PLURALS.has(word)) return word.slice(0, -1)
+    return word.length > 4 ? word.slice(0, -3) + 'y' : word
+  }
+  if (word.endsWith('sses')) return word.slice(0, -2) // classes -> class
+  if (/(xes|zzes|shes)$/.test(word)) return word.slice(0, -2) // boxes, buzzes, dishes
+  if (word.endsWith('ches')) {
+    return CHE_PLURALS.has(word) ? word.slice(0, -1) : word.slice(0, -2)
+  }
+  return word.slice(0, -1)
+}
+
+/**
+ * Canonical tag form: lower-cased, trimmed, with simple English plurals folded
+ * to singular (agents -> agent, libraries -> library). For hyphenated tags only
+ * the final segment is singularized (ai-agents -> ai-agent).
+ */
+export function normalizeTag(name: string): string {
+  const t = name.toLowerCase().trim()
+  const idx = t.lastIndexOf('-')
+  if (idx === -1) return singularize(t)
+  return t.slice(0, idx + 1) + singularize(t.slice(idx + 1))
+}
 
 // ---------------------------------------------------------------------------
 // Category signals — words that indicate each category
@@ -98,33 +257,42 @@ export const CATEGORY_SIGNALS: Record<string, string[]> = {
 // extractKeywords — frequency-based top-N keyword extraction
 // ---------------------------------------------------------------------------
 
-/**
- * Tokenizes text, filters stop words, counts frequency, returns top-N keywords.
- */
-export function extractKeywords(text: string, limit = 10): string[] {
-  if (!text || text.trim().length === 0) return []
+/** A keyword must occur at least this many times to become a tag. */
+export const MIN_KEYWORD_FREQUENCY = 2
 
-  const tokens = text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, ' ')
-    .split(/\s+/)
-    .filter((token) => {
-      return (
-        token.length >= 3 &&
-        !STOP_WORDS.has(token) &&
-        !/^\d+$/.test(token)
-      )
-    })
-
-  const freq = new Map<string, number>()
+/** Adds normalized, non-junk token counts from `text` into `freq`. */
+function countKeywords(text: string, freq: Map<string, number>, weight = 1): void {
+  if (!text) return
+  const tokens = text.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/)
   for (const token of tokens) {
-    freq.set(token, (freq.get(token) ?? 0) + 1)
+    if (isJunkToken(token)) continue
+    const tag = normalizeTag(token)
+    freq.set(tag, (freq.get(tag) ?? 0) + weight)
   }
+}
 
+function topKeywords(freq: Map<string, number>, limit: number, minFrequency: number): string[] {
   return Array.from(freq.entries())
+    .filter(([, count]) => count >= minFrequency)
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
     .map(([word]) => word)
+}
+
+/**
+ * Tokenizes text, drops junk tokens (stop words, markup noise, digit/hex
+ * tokens), folds plurals, and returns the top-N keywords that occur at least
+ * `minFrequency` times.
+ */
+export function extractKeywords(
+  text: string,
+  limit = 10,
+  minFrequency = MIN_KEYWORD_FREQUENCY,
+): string[] {
+  if (!text || text.trim().length === 0) return []
+  const freq = new Map<string, number>()
+  countKeywords(text, freq)
+  return topKeywords(freq, limit, minFrequency)
 }
 
 // ---------------------------------------------------------------------------
@@ -161,44 +329,29 @@ export function categorize(text: string): string {
 // buildTags — combine keyword extraction + domain hints
 // ---------------------------------------------------------------------------
 
+const MAX_TAGS = 4
+
 /**
- * Builds a deduplicated, normalized, 2-4 tag array from text and domain.
+ * Builds a deduplicated, normalized tag array (at most 4) from text and domain.
+ * Domain hints always come first and are exempt from the frequency rule.
+ * Title words count double, so a title word alone qualifies as a keyword.
+ * Returns fewer tags (possibly none) rather than padding with generic ones.
  */
-export function buildTags(text: string, domain: string | null): string[] {
-  const keywords = extractKeywords(text, 6)
-  const domainHints = getDomainHints(domain)
+export function buildTags(text: string, domain: string | null, title?: string | null): string[] {
+  const freq = new Map<string, number>()
+  countKeywords(text, freq)
+  if (title) countKeywords(title, freq, MIN_KEYWORD_FREQUENCY)
+  const keywords = topKeywords(freq, 6, MIN_KEYWORD_FREQUENCY)
+  const domainHints = getDomainHints(domain).map((t) => t.toLowerCase().trim())
 
-  // Combine: domain hints first (higher signal), then keywords
-  const combined = [...domainHints, ...keywords]
-    .map((t) => t.toLowerCase().trim())
-    .filter((t) => t.length >= 2)
-
-  // Deduplicate
   const seen = new Set<string>()
-  const unique: string[] = []
-  for (const tag of combined) {
-    if (!seen.has(tag)) {
-      seen.add(tag)
-      unique.push(tag)
-    }
+  const tags: string[] = []
+  for (const tag of [...domainHints, ...keywords]) {
+    if (tag.length < 2 || seen.has(tag)) continue
+    seen.add(tag)
+    tags.push(tag)
   }
-
-  // Ensure 2-4 tags
-  const tags = unique.slice(0, 4)
-
-  // Pad to minimum 2 if we don't have enough
-  if (tags.length < 2) {
-    const fallbacks = ['link', 'saved', 'content', 'resource']
-    for (const fallback of fallbacks) {
-      if (tags.length >= 2) break
-      if (!seen.has(fallback)) {
-        tags.push(fallback)
-        seen.add(fallback)
-      }
-    }
-  }
-
-  return tags
+  return tags.slice(0, MAX_TAGS)
 }
 
 // ---------------------------------------------------------------------------
@@ -215,7 +368,7 @@ export interface EnrichInput {
 /**
  * Enriches a link with tags, description, and category.
  * Uses existing description when available; falls back to bodyText extraction.
- * Combines bodyText and title for tag/category signals.
+ * Combines bodyText and title for tag/category signals; title words weigh double for tags.
  */
 export function enrich(opts: EnrichInput): EnrichmentResult {
   const { bodyText, existingDescription, domain, title } = opts
@@ -223,8 +376,8 @@ export function enrich(opts: EnrichInput): EnrichmentResult {
   // Combine available text signals for analysis
   const textSignals = [bodyText, title].filter(Boolean).join(' ')
 
-  // Tags: combine keyword extraction + domain hints
-  const tags = buildTags(textSignals, domain)
+  // Tags: combine keyword extraction + domain hints (title weighted higher)
+  const tags = buildTags(bodyText ?? '', domain, title)
 
   // Description: use existing or extract from bodyText
   const description =

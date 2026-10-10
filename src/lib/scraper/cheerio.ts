@@ -58,8 +58,39 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
   }
 
   // Extract body text for Phase 2 classification
-  $('script, style, nav, header, footer').remove()
-  const bodyText = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 5000) || null
+  const bodyText = extractBodyText($)
 
   return { title, description, ogImage, favicon, bodyText, rawHtml }
+}
+
+/** DOM node type (domhandler's AnyNode) without depending on domhandler directly. */
+type AnyNode = Extract<Parameters<typeof cheerio.load>[0], readonly unknown[]>[number]
+
+/** Elements whose content is never readable page text. */
+const NON_TEXT_SELECTOR =
+  'script, style, noscript, svg, iframe, template, object, embed, canvas, nav, header, footer'
+
+const BODY_TEXT_MAX = 5000
+
+/**
+ * Collects the visible body text with a space between every text node, so
+ * adjacent elements (e.g. `<a>About</a><a>Press</a>`) do not run together.
+ * Whitespace is collapsed and the result capped at 5000 chars.
+ */
+function extractBodyText($: cheerio.CheerioAPI): string | null {
+  $(NON_TEXT_SELECTOR).remove()
+  const parts: string[] = []
+  const walk = (nodes: AnyNode[]) => {
+    for (const node of nodes) {
+      if (node.type === 'text') parts.push(node.data)
+      else if ('children' in node) walk(node.children)
+    }
+  }
+  walk($('body').toArray())
+  return parts.join(' ').replace(/\s+/g, ' ').trim().slice(0, BODY_TEXT_MAX) || null
+}
+
+/** Body text from stored HTML, extracted the same way scrapeUrl does it. */
+export function bodyTextFromHtml(html: string): string | null {
+  return extractBodyText(cheerio.load(html))
 }

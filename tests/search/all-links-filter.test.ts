@@ -24,20 +24,20 @@ function makeLink(id: string, stashState: StashState | null): LinkWithTags {
 }
 
 describe('isVisibleInAllLinks', () => {
-  it('hides inbox and read', () => {
+  it('hides inbox, read and archived', () => {
     expect(isVisibleInAllLinks({ stashState: 'inbox' })).toBe(false)
     expect(isVisibleInAllLinks({ stashState: 'read' })).toBe(false)
+    expect(isVisibleInAllLinks({ stashState: 'archived' })).toBe(false)
   })
 
-  it('shows kept, archived and non-stash links', () => {
+  it('shows kept and non-stash links', () => {
     expect(isVisibleInAllLinks({ stashState: 'kept' })).toBe(true)
-    expect(isVisibleInAllLinks({ stashState: 'archived' })).toBe(true)
     expect(isVisibleInAllLinks({ stashState: null })).toBe(true)
   })
 })
 
 describe('filterAllLinksView', () => {
-  it('keeps order and drops inbox/read links', () => {
+  it('keeps order and drops inbox/read/archived links', () => {
     const links = [
       makeLink('manual', null),
       makeLink('inbox', 'inbox'),
@@ -45,7 +45,7 @@ describe('filterAllLinksView', () => {
       makeLink('read', 'read'),
       makeLink('archived', 'archived'),
     ]
-    expect(filterAllLinksView(links).map((l) => l.id)).toEqual(['manual', 'kept', 'archived'])
+    expect(filterAllLinksView(links).map((l) => l.id)).toEqual(['manual', 'kept'])
   })
 
   it('returns an empty array when everything is in the inbox', () => {

@@ -1,6 +1,6 @@
 import { db } from '@/lib/db/client'
-import { tags, linkTags } from '@/lib/db/schema'
-import { eq, and, sql } from 'drizzle-orm'
+import { tags, linkTags, links } from '@/lib/db/schema'
+import { eq, and, or, isNull, sql } from 'drizzle-orm'
 import type { Tag } from '@/types'
 
 /**
@@ -72,7 +72,9 @@ export async function deleteLinkTag(linkId: string, tagId: string): Promise<void
 }
 
 /**
- * List all tags for a user with the count of links each tag is applied to.
+ * List a user's tags with the count of links each tag is applied to, counting
+ * only links All Links shows (see isVisibleInAllLinks), so a tag's count
+ * matches what filtering by it shows. Tags with no such links are left out.
  * Returns tags sorted alphabetically by name.
  */
 export async function listTagsWithCount(
@@ -81,10 +83,17 @@ export async function listTagsWithCount(
   return db
     .select({
       name: tags.name,
-      count: sql<number>`count(${linkTags.linkId})::int`,
+      count: sql<number>`count(${links.id})::int`,
     })
     .from(tags)
-    .leftJoin(linkTags, eq(tags.id, linkTags.tagId))
+    .innerJoin(linkTags, eq(tags.id, linkTags.tagId))
+    .innerJoin(
+      links,
+      and(
+        eq(linkTags.linkId, links.id),
+        or(isNull(links.stashState), eq(links.stashState, 'kept')),
+      ),
+    )
     .where(eq(tags.userId, userId))
     .groupBy(tags.name)
     .orderBy(tags.name)

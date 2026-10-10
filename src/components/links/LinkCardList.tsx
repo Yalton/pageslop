@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from 'date-fns'
 import { ArchiveRestore, ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { UNDO_WINDOW_MS } from '@/lib/links/pending-deletes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -39,7 +40,7 @@ export function LinkCardList({ link, onDelete, onUndoDelete, onOpenDetail, onTag
   function handleDelete() {
     onDelete(link.id)
     toast('Link deleted', {
-      duration: 5000,
+      duration: UNDO_WINDOW_MS,
       action: {
         label: 'Undo',
         onClick: () => onUndoDelete(link),
