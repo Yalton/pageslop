@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArchiveRestore, ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { UNDO_WINDOW_MS } from '@/lib/links/pending-deletes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -17,19 +17,33 @@ import { LinkSkeleton } from '@/components/links/LinkSkeleton'
 import { UptimeDot } from '@/components/links/UptimeDot'
 import { EnrichmentBadge } from '@/components/links/EnrichmentBadge'
 import { domainToHue } from '@/lib/utils/domain-color'
+import { SelectCheckbox, type SelectionProps } from '@/components/links/SelectCheckbox'
 import { isArchived } from '@/lib/utils/all-links-filter'
+import { cn } from '@/lib/utils'
 import type { LinkWithTags } from '@/types'
 
-interface LinkCardProps {
+interface LinkCardProps extends SelectionProps {
   link: LinkWithTags
   onDelete: (id: string) => void
   onUndoDelete: (link: LinkWithTags) => void
   onOpenDetail: (link: LinkWithTags) => void
   onTagClick?: (tagName: string) => void
   onRestore?: (id: string) => void
+  onArchive?: (id: string) => void
 }
 
-export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail, onTagClick, onRestore }: LinkCardProps) {
+export function LinkCard({
+  link,
+  onDelete,
+  onUndoDelete,
+  onOpenDetail,
+  onTagClick,
+  onRestore,
+  onArchive,
+  selecting = false,
+  selected = false,
+  onToggleSelect,
+}: LinkCardProps) {
   if (link.status === 'pending') {
     return <LinkSkeleton variant="grid" />
   }
@@ -57,9 +71,23 @@ export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail, onTagClic
 
   return (
     <div
-      className="overflow-hidden rounded-lg border bg-card text-card-foreground cursor-pointer hover:border-primary transition-colors relative"
-      onClick={() => onOpenDetail(link)}
+      className={cn(
+        'group overflow-hidden rounded-lg border bg-card text-card-foreground cursor-pointer hover:border-primary transition-colors relative',
+        selected && 'border-primary ring-2 ring-primary',
+      )}
+      onClick={(e) => (selecting && onToggleSelect ? onToggleSelect(link.id, e.shiftKey) : onOpenDetail(link))}
     >
+      {onToggleSelect && (
+        <SelectCheckbox
+          checked={selected}
+          onToggle={(shiftKey) => onToggleSelect(link.id, shiftKey)}
+          label={`Select ${link.title || link.url}`}
+          className={cn(
+            'absolute top-2 left-2 z-10 size-6',
+            !selecting && 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
+          )}
+        />
+      )}
       {/* Hero image */}
       <div className="h-[160px] w-full overflow-hidden">
         {link.ogImage && !imgError ? (
@@ -163,7 +191,13 @@ export function LinkCard({ link, onDelete, onUndoDelete, onOpenDetail, onTagClic
             {onRestore && isArchived(link) && (
               <DropdownMenuItem onSelect={() => onRestore(link.id)}>
                 <ArchiveRestore className="size-4" />
-                Restore to inbox
+                Restore
+              </DropdownMenuItem>
+            )}
+            {onArchive && !isArchived(link) && (
+              <DropdownMenuItem onSelect={() => onArchive(link.id)}>
+                <Archive className="size-4" />
+                Archive
               </DropdownMenuItem>
             )}
             <DropdownMenuItem variant="destructive" onSelect={handleDelete}>

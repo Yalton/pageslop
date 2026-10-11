@@ -205,13 +205,21 @@ describe('POST /api/links/bulk-stash-state', () => {
     ['empty-string id', { ids: [''], stashState: 'kept' }],
     ['too many ids', { ids: Array.from({ length: 501 }, (_, i) => `id-${i}`), stashState: 'kept' }],
     ['unknown state', { ids: ['a'], stashState: 'deleted' }],
-    ['null state', { ids: ['a'], stashState: null }],
   ])('returns 400 for %s', async (_label, body) => {
     await signedIn()
     const { bulkSetStashState } = await import('@/lib/db/queries/links')
     const res = await bulk(body)
     expect(res.status).toBe(400)
     expect(bulkSetStashState).not.toHaveBeenCalled()
+  })
+
+  it('accepts null to make links ordinary saved links again', async () => {
+    await signedIn()
+    const { bulkSetStashState } = await import('@/lib/db/queries/links')
+    vi.mocked(bulkSetStashState).mockResolvedValue(1)
+    const res = await bulk({ ids: ['link-1'], stashState: null })
+    expect(res.status).toBe(200)
+    expect(bulkSetStashState).toHaveBeenCalledWith('user-1', ['link-1'], null)
   })
 
   it('returns 400 for a body that is not JSON', async () => {

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { LayoutGrid, List, Layers } from 'lucide-react'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { LayoutGrid, List, Layers, ListChecks, Trash2 } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Toggle } from '@/components/ui/toggle'
@@ -13,11 +13,23 @@ import { SaveURLInput } from '@/components/links/SaveURLInput'
 import { SearchInput } from '@/components/links/SearchInput'
 import { TagFilterChip } from '@/components/links/TagFilterChip'
 import { GroupedView } from '@/components/links/GroupedView'
+import { BulkActionBar } from '@/components/links/BulkActionBar'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { UNDO_WINDOW_MS } from '@/lib/links/pending-deletes'
+import { groupLinks } from '@/lib/utils/group-links'
+import { groupIdsByState, restoreTarget, toggleSelection } from '@/lib/utils/selection'
 import { filterLinks } from '@/lib/utils/search'
 import { allLinksEmptyState, filterAllLinksView, filterArchivedView } from '@/lib/utils/all-links-filter'
 import { toast } from 'sonner'
 import { useLinks } from '@/lib/hooks/useLinks'
-import type { LinkWithTags } from '@/types'
+import type { LinkWithTags, StashState } from '@/types'
 
 type ViewMode = 'grid' | 'list' | 'grouped'
 const STORAGE_KEY = 'pageslop-view-mode'
@@ -31,11 +43,16 @@ const BASE_PATH: Record<LinkGridView, string> = {
 }
 
 export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
-  const { links, isLoading, deleteLink, undoDelete, setStashState, mutate } = useLinks()
+  const { links, isLoading, deleteLink, undoDelete, deleteLinks, undoDeletes, addTagToLinks, setStashState, mutate } =
+    useLinks()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+  const selectAnchor = useRef<string | null>(null)
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -57,12 +74,94 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
     [visibleLinks, searchQuery, tagFilter]
   )
 
-  async function handleRestore(id: string) {
+  // Order the links appear on screen, for shift-click ranges.
+  const displayOrder = useMemo(
+    () => (viewMode === 'grouped' ? [...groupLinks(filteredLinks).values()].flat() : filteredLinks).map((l) => l.id),
+    [viewMode, filteredLinks]
+  )
+  // Selected links still on screen; a search or filter can hide some.
+  const selectedLinks = useMemo(() => filteredLinks.filter((l) => selectedIds.has(l.id)), [filteredLinks, selectedIds])
+  const selecting = selectMode || selectedIds.size > 0
+  const tagSuggestions = useMemo(
+    () => [...new Set(links.flatMap((l) => l.tags.map((t) => t.name)))].sort(),
+    [links]
+  )
+
+  function handleToggleSelect(id: string, shiftKey: boolean) {
+    setSelectedIds((current) => toggleSelection(current, displayOrder, id, shiftKey, selectAnchor.current))
+    if (!shiftKey) selectAnchor.current = id
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set())
+    setSelectMode(false)
+    selectAnchor.current = null
+  }
+
+  useEffect(() => {
+    if (!selecting) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !document.querySelector('[role="dialog"]')) clearSelection()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selecting])
+
+  /** Sets each link back to the state it had, one bulk call per state. */
+  async function restoreStates(previous: Map<string, StashState | null>) {
+    for (const [state, ids] of groupIdsByState(previous)) await setStashState(ids, state)
+  }
+
+  async function restoreLinks(targets: LinkWithTags[]) {
     try {
-      await setStashState([id], 'inbox')
-      toast.success('Restored to inbox')
+      await restoreStates(new Map(targets.map((l) => [l.id, restoreTarget(l)])))
+      toast.success(targets.length === 1 ? 'Link restored' : `${targets.length} links restored`)
     } catch {
-      toast.error('Could not restore link. Please try again.')
+      toast.error('Could not restore. Please try again.')
+    }
+  }
+
+  async function archiveLinks(targets: LinkWithTags[]) {
+    const previous = new Map(targets.map((l) => [l.id, l.stashState]))
+    try {
+      await setStashState([...previous.keys()], 'archived')
+      toast(targets.length === 1 ? 'Link archived' : `${targets.length} links archived`, {
+        duration: UNDO_WINDOW_MS,
+        action: { label: 'Undo', onClick: () => void restoreStates(previous).catch(() => toast.error('Could not undo.')) },
+      })
+    } catch {
+      toast.error('Could not archive. Please try again.')
+    }
+  }
+
+  function removeLinks(targets: LinkWithTags[]) {
+    const ids = targets.map((l) => l.id)
+    deleteLinks(ids)
+    toast(ids.length === 1 ? 'Link deleted' : `${ids.length} links deleted`, {
+      duration: UNDO_WINDOW_MS,
+      action: { label: 'Undo', onClick: () => undoDeletes(ids) },
+    })
+  }
+
+  function handleRestore(id: string) {
+    const link = links.find((l) => l.id === id)
+    if (link) void restoreLinks([link])
+  }
+
+  function handleArchive(id: string) {
+    const link = links.find((l) => l.id === id)
+    if (link) void archiveLinks([link])
+  }
+
+  async function handleBulkTag(name: string) {
+    const count = selectedLinks.length
+    try {
+      await addTagToLinks(selectedLinks.map((l) => l.id), name)
+      toast.success(`Tagged ${count} ${count === 1 ? 'link' : 'links'} "${name.toLowerCase().trim()}"`)
+      clearSelection()
+    } catch {
+      toast.error('Could not add the tag. Please try again.')
+      throw new Error('bulk tag failed')
     }
   }
 
@@ -111,6 +210,15 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <Toggle
+            pressed={selecting}
+            onPressedChange={(pressed) => (pressed ? setSelectMode(true) : clearSelection())}
+            aria-label="Select links"
+            size="sm"
+          >
+            <ListChecks className="size-4" />
+          </Toggle>
+          <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+          <Toggle
             pressed={viewMode === 'grid'}
             onPressedChange={(pressed) => pressed && handleViewMode('grid')}
             aria-label="Grid view"
@@ -136,6 +244,23 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
           </Toggle>
         </div>
       </div>
+
+      {view === 'archived' && visibleLinks.length > 0 && (
+        <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+          <span>
+            {visibleLinks.length} archived {visibleLinks.length === 1 ? 'link' : 'links'}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setConfirmDeleteAll(true)}
+          >
+            <Trash2 className="size-4" />
+            Delete all
+          </Button>
+        </div>
+      )}
 
       {/* Active tag filter chip */}
       {tagFilter && (
@@ -218,6 +343,10 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
               onOpenDetail={handleOpenDetail}
               onTagClick={handleTagClick}
               onRestore={handleRestore}
+              onArchive={handleArchive}
+              selecting={selecting}
+              selected={selectedIds.has(link.id)}
+              onToggleSelect={handleToggleSelect}
             />
           ))}
         </div>
@@ -235,6 +364,10 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
               onOpenDetail={handleOpenDetail}
               onTagClick={handleTagClick}
               onRestore={handleRestore}
+              onArchive={handleArchive}
+              selecting={selecting}
+              selected={selectedIds.has(link.id)}
+              onToggleSelect={handleToggleSelect}
             />
           ))}
         </div>
@@ -250,8 +383,57 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
           onOpenDetail={handleOpenDetail}
           onTagClick={handleTagClick}
           onRestore={handleRestore}
+          onArchive={handleArchive}
+          selecting={selecting}
+          selectedIds={selectedIds}
+          onToggleSelect={handleToggleSelect}
         />
       )}
+
+      {selecting && (
+        <BulkActionBar
+          count={selectedLinks.length}
+          total={filteredLinks.length}
+          onSelectAll={() => setSelectedIds(new Set(filteredLinks.map((l) => l.id)))}
+          onClear={clearSelection}
+          onDelete={() => {
+            removeLinks(selectedLinks)
+            clearSelection()
+          }}
+          onAddTag={handleBulkTag}
+          onArchive={view === 'all' ? () => { void archiveLinks(selectedLinks); clearSelection() } : undefined}
+          onRestore={view === 'archived' ? () => { void restoreLinks(selectedLinks); clearSelection() } : undefined}
+          tagSuggestions={tagSuggestions}
+        />
+      )}
+
+      <Dialog open={confirmDeleteAll} onOpenChange={setConfirmDeleteAll}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Delete all {visibleLinks.length} archived {visibleLinks.length === 1 ? 'link' : 'links'}?
+            </DialogTitle>
+            <DialogDescription>
+              They are removed for good once the undo window passes ({UNDO_WINDOW_MS / 1000} seconds).
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteAll(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                removeLinks(visibleLinks)
+                clearSelection()
+                setConfirmDeleteAll(false)
+              }}
+            >
+              Delete all
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Link detail dialog/sheet */}
       <LinkDetail

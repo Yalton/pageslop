@@ -7,6 +7,7 @@ import { groupLinks } from '@/lib/utils/group-links'
 import { LinkCard } from '@/components/links/LinkCard'
 import { LinkCardList } from '@/components/links/LinkCardList'
 import type { LinkWithTags } from '@/types'
+import type { SelectionProps } from '@/components/links/SelectCheckbox'
 
 interface GroupedViewProps {
   links: LinkWithTags[]
@@ -16,6 +17,10 @@ interface GroupedViewProps {
   onOpenDetail: (link: LinkWithTags) => void
   onTagClick?: (tagName: string) => void
   onRestore?: (id: string) => void
+  onArchive?: (id: string) => void
+  selecting?: SelectionProps['selecting']
+  selectedIds?: ReadonlySet<string>
+  onToggleSelect?: SelectionProps['onToggleSelect']
 }
 
 export function GroupedView({
@@ -26,6 +31,10 @@ export function GroupedView({
   onOpenDetail,
   onTagClick,
   onRestore,
+  onArchive,
+  selecting,
+  selectedIds,
+  onToggleSelect,
 }: GroupedViewProps) {
   const grouped = groupLinks(links)
 
@@ -93,6 +102,10 @@ export function GroupedView({
                       onOpenDetail={onOpenDetail}
                       onTagClick={onTagClick}
                       onRestore={onRestore}
+                      onArchive={onArchive}
+                      selecting={selecting}
+                      selected={selectedIds?.has(link.id) ?? false}
+                      onToggleSelect={onToggleSelect}
                     />
                   ))}
                 </div>
@@ -107,6 +120,10 @@ export function GroupedView({
                       onOpenDetail={onOpenDetail}
                       onTagClick={onTagClick}
                       onRestore={onRestore}
+                      onArchive={onArchive}
+                      selecting={selecting}
+                      selected={selectedIds?.has(link.id) ?? false}
+                      onToggleSelect={onToggleSelect}
                     />
                   ))}
                 </div>
