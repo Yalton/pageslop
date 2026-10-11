@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useSWRConfig } from "swr"
 import {
   Link2,
   Inbox,
@@ -28,6 +29,7 @@ import { cn } from "@/lib/utils"
 import { useLinks } from "@/lib/hooks/useLinks"
 import { countInbox } from "@/lib/stash/revisit"
 import { isNavActive } from "@/lib/nav/active"
+import { browserStorage, clearPersisted } from "@/lib/swr/persistent-cache"
 
 const REVISIT_HREF = "/dashboard/revisit"
 
@@ -123,11 +125,15 @@ function SidebarContent({
   collapsed?: boolean
 }) {
   const router = useRouter()
+  const { cache } = useSWRConfig()
   const { links } = useLinks()
   const inboxCount = countInbox(links)
 
   async function handleLogOut() {
     await authClient.signOut()
+    // Empty the in-memory cache too, or the save on pagehide writes it back.
+    for (const key of [...cache.keys()]) cache.delete(key)
+    clearPersisted(browserStorage())
     router.push("/login")
   }
 

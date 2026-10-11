@@ -1,16 +1,15 @@
 'use client'
 import { useMemo, useSyncExternalStore } from 'react'
-import useSWR, { mutate as mutateKey } from 'swr'
+import useSWR, { type KeyedMutator } from 'swr'
 import { toast } from 'sonner'
 import type { Link, LinkWithDuplicate, LinkWithTags, SaveLinksRequest, StashState } from '@/types'
 import { createPendingDeletes } from '@/lib/links/pending-deletes'
+import { jsonFetcher as fetcher } from '@/lib/swr/fetcher'
 
-// Throw on HTTP errors so SWR reports them in `error` instead of caching an error body.
-const fetcher = async (url: string) => {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`Could not load links (${res.status})`)
-  return res.json()
-}
+// The dashboard's SWR cache is a custom provider (DataProvider), which the
+// global `mutate` from 'swr' cannot reach, so deletes revalidate through the
+// mutate of the most recently rendered useLinks.
+let revalidateLinks: KeyedMutator<LinkWithTags[]> | null = null
 
 // Shared by every useLinks caller, so a delete started in one view stays
 // hidden in the others until it runs or is undone.
@@ -38,7 +37,7 @@ const pendingDeletes = createPendingDeletes((ids) => {
     ),
   )
     .then((responses) => { if (responses.some((res) => !res.ok)) failed() }, failed)
-    .finally(() => void mutateKey('/api/links'))
+    .finally(() => void revalidateLinks?.())
 })
 
 if (typeof window !== 'undefined') {
@@ -49,6 +48,7 @@ export function useLinks() {
   const { data, error, isLoading, mutate } = useSWR<LinkWithTags[]>('/api/links', fetcher, {
     revalidateOnFocus: true,
   })
+  revalidateLinks = mutate
 
   const hasPending = data?.some(l => l.status === 'pending') ?? false
 
@@ -242,7 +242,9 @@ export function useLinks() {
   }
 
   return {
-    links, isLoading, error, hasPending, saveLinks, deleteLink, undoDelete, deleteLinks, undoDeletes,
+    // SWR reports isLoading while it revalidates data restored from the saved
+    // cache; pages only need to wait when there is nothing to show.
+    links, isLoading: isLoading && !data, error, hasPending, saveLinks, deleteLink, undoDelete, deleteLinks, undoDeletes,
     addTag, addTagToLinks, removeTag, updateLink, setStashState, checkLink, mutate,
   }
 }
