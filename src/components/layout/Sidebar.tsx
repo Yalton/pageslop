@@ -72,7 +72,10 @@ function NavItem({
           {!collapsed && <span>{item.label}</span>}
         </span>
       ) : (
-        <Link href={item.href}>
+        // Full prefetch: dashboard pages are dynamic, so by default Next fetches
+        // them only on click. Their payload is small (data loads client-side),
+        // so prefetching the whole page makes navigation instant.
+        <Link href={item.href} prefetch>
           <item.icon className="size-5 shrink-0" />
           {!collapsed && <span>{item.label}</span>}
           {showBadge && !collapsed && (
