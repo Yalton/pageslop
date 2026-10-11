@@ -41,4 +41,30 @@ describe('createPendingDeletes', () => {
     vi.advanceTimersByTime(DELETE_DELAY_MS)
     expect(run).toHaveBeenCalledTimes(2)
   })
+
+  it('bumps the version and notifies subscribers on every change', () => {
+    const pending = createPendingDeletes(vi.fn())
+    const listener = vi.fn()
+    const unsubscribe = pending.subscribe(listener)
+    const v0 = pending.getVersion()
+
+    pending.schedule('a')
+    expect(pending.getVersion()).toBeGreaterThan(v0)
+    pending.cancel('a')
+    pending.schedule('b')
+    vi.advanceTimersByTime(DELETE_DELAY_MS)
+    expect(listener).toHaveBeenCalledTimes(4)
+
+    unsubscribe()
+    pending.schedule('c')
+    expect(listener).toHaveBeenCalledTimes(4)
+  })
+
+  it('keeps the version when nothing changed', () => {
+    const pending = createPendingDeletes(vi.fn())
+    const v = pending.getVersion()
+    expect(pending.cancel('missing')).toBe(false)
+    pending.flush()
+    expect(pending.getVersion()).toBe(v)
+  })
 })
