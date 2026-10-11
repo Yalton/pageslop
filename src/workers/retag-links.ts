@@ -4,9 +4,9 @@
  *   node --import tsx src/workers/retag-links.ts [--dry-run]
  *
  * 1. Re-tags every link that was not LLM-enriched with the current rule
- *    extractor, re-extracting body text from stored HTML where there is some.
- *    Keyword tags survive only when two or more of the user's links share
- *    them. The link's generated tags are replaced; tags with source 'user' stay.
+ *    extractor, re-extracting body text from stored HTML where there is some
+ *    (links that failed to scrape are tagged from title and URL). Keyword tags
+ *    survive only when links on two or more sites share them. The link's generated tags are replaced; tags with source 'user' stay.
  * 2. Per user, drops rule tags the extractor now rejects as junk and folds
  *    plural generated tags into their singular form.
  * 3. Deletes generated tags no link uses any more.
@@ -57,7 +57,7 @@ async function retagRuleLinks(tx: Tx): Promise<number> {
       rawHtml: schema.rawContent.rawHtml,
     })
     .from(schema.links)
-    .innerJoin(schema.rawContent, eq(schema.rawContent.linkId, schema.links.id))
+    .leftJoin(schema.rawContent, eq(schema.rawContent.linkId, schema.links.id))
     .where(or(isNull(schema.links.enrichmentSource), ne(schema.links.enrichmentSource, 'llm')))
 
   const links = rows.map((row) => ({
@@ -71,24 +71,24 @@ async function retagRuleLinks(tx: Tx): Promise<number> {
       knownTags,
     })
 
-  // A keyword tag is worth keeping when at least two of the user's links would
-  // get it, or the user already has it from somewhere this script leaves alone
-  // (tags they typed, LLM-tagged links). Links that differ only by #fragment,
-  // or share a domain and title (one job board's listings), count once.
-  const pageNames = new Map<string, Map<string, Set<string>>>()
+  // A keyword tag is worth keeping when links on at least two sites would get
+  // it, or the user already has it from somewhere this script leaves alone
+  // (tags they typed, LLM-tagged links). Counting sites, not links, stops one
+  // site's boilerplate (a country picker, a job board footer) from qualifying.
+  const siteNames = new Map<string, Map<string, Set<string>>>()
   for (const link of links) {
-    const pages = pageNames.get(link.userId) ?? new Map<string, Set<string>>()
-    const page = link.title ? `${link.domain}|${link.title}` : link.url.split('#')[0]
-    const names = pages.get(page) ?? new Set<string>()
+    const sites = siteNames.get(link.userId) ?? new Map<string, Set<string>>()
+    const site = link.domain ?? link.url
+    const names = sites.get(site) ?? new Set<string>()
     for (const name of tagsFor(link)) names.add(name)
-    pages.set(page, names)
-    pageNames.set(link.userId, pages)
+    sites.set(site, names)
+    siteNames.set(link.userId, sites)
   }
-  const linkCounts = new Map<string, Map<string, number>>()
-  for (const [userId, pages] of pageNames) {
+  const siteCounts = new Map<string, Map<string, number>>()
+  for (const [userId, sites] of siteNames) {
     const counts = new Map<string, number>()
-    for (const names of pages.values()) for (const name of names) counts.set(name, (counts.get(name) ?? 0) + 1)
-    linkCounts.set(userId, counts)
+    for (const names of sites.values()) for (const name of names) counts.set(name, (counts.get(name) ?? 0) + 1)
+    siteCounts.set(userId, counts)
   }
   const keptRows = await tx
     .selectDistinct({ userId: schema.tags.userId, name: schema.tags.name })
@@ -101,7 +101,7 @@ async function retagRuleLinks(tx: Tx): Promise<number> {
     if (!knownTags.has(userId)) knownTags.set(userId, new Set())
     return knownTags.get(userId)!
   }
-  for (const [userId, counts] of linkCounts) {
+  for (const [userId, counts] of siteCounts) {
     for (const [name, n] of counts) if (n >= 2) known(userId).add(name)
   }
   for (const { userId, name } of keptRows) known(userId).add(name)
