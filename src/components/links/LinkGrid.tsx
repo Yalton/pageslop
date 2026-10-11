@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { UNDO_WINDOW_MS } from '@/lib/links/pending-deletes'
+import { PageSpinner } from '@/components/ui/spinner'
 import { groupLinks } from '@/lib/utils/group-links'
 import { groupIdsByState, restoreTarget, toggleSelection } from '@/lib/utils/selection'
 import { filterLinks } from '@/lib/utils/search'
@@ -266,6 +267,8 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
       {tagFilter && (
         <TagFilterChip tag={tagFilter} onClear={handleClearTagFilter} />
       )}
+
+      {isLoading && links.length === 0 && <PageSpinner label="Loading links" />}
 
       {/* Empty state */}
       {emptyState === 'all-in-revisit' && !isLoading && (

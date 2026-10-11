@@ -5,6 +5,7 @@ import useSWR from 'swr'
 import { AlertCircle, Check, Copy, Puzzle, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import {
   formatTokenDate,
   validateTokenName,
@@ -160,7 +161,12 @@ export function ExtensionTokensCard() {
 
         <div className="mt-6">
           <h4 className="text-sm font-semibold mb-2">Active tokens</h4>
-          {isLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
+          {isLoading && (
+            <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Spinner className="size-4" />
+              Loading tokens
+            </div>
+          )}
           {loadError && (
             <div className="flex items-center gap-2 text-sm text-destructive">
               <AlertCircle className="size-4" />
