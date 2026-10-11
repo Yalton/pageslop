@@ -1,4 +1,5 @@
 'use client'
+import { useMemo, useSyncExternalStore } from 'react'
 import useSWR, { mutate as mutateKey } from 'swr'
 import { toast } from 'sonner'
 import type { Link, LinkWithDuplicate, LinkWithTags, SaveLinksRequest, StashState } from '@/types'
@@ -39,10 +40,22 @@ export function useLinks() {
     { refreshInterval: 2000 }
   )
 
-  // Use polled data if available, otherwise main data
-  // Revalidation would otherwise bring back links whose delete is still pending.
-  const links: LinkWithTags[] = ((hasPending ? polledData : data) ?? data ?? [])
-    .filter(l => !pendingDeletes.has(l.id))
+  // Use polled data if available, otherwise main data. Revalidation would
+  // otherwise bring back links whose delete is still pending. Memoized so the
+  // array keeps its identity across renders; the graph rebuilds and restarts
+  // its simulation whenever it changes.
+  const pendingVersion = useSyncExternalStore(
+    pendingDeletes.subscribe,
+    pendingDeletes.getVersion,
+    pendingDeletes.getVersion,
+  )
+  const source = (hasPending ? polledData : data) ?? data
+  const links: LinkWithTags[] = useMemo(
+    () => (source ?? []).filter(l => !pendingDeletes.has(l.id)),
+    // pendingVersion: recompute when a delete is scheduled, undone or run
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [source, pendingVersion],
+  )
 
   async function saveLinks(urls: string, force = false): Promise<LinkWithDuplicate[]> {
     const res = await fetch('/api/links', {

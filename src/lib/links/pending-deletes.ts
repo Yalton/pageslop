@@ -10,9 +10,18 @@ export const DELETE_DELAY_MS = UNDO_WINDOW_MS + 1000
  */
 export function createPendingDeletes(run: (id: string) => void) {
   const timers = new Map<string, ReturnType<typeof setTimeout>>()
+  const listeners = new Set<() => void>()
+  // Bumped on every change, so a React hook can tell when to recompute.
+  let version = 0
+
+  function changed() {
+    version++
+    for (const listener of listeners) listener()
+  }
 
   function fire(id: string) {
     timers.delete(id)
+    changed()
     run(id)
   }
 
@@ -20,6 +29,7 @@ export function createPendingDeletes(run: (id: string) => void) {
     schedule(id: string) {
       clearTimeout(timers.get(id))
       timers.set(id, setTimeout(() => fire(id), DELETE_DELAY_MS))
+      changed()
     },
     /** Returns true when a delete was still pending and is now cancelled. */
     cancel(id: string): boolean {
@@ -27,6 +37,7 @@ export function createPendingDeletes(run: (id: string) => void) {
       if (timer === undefined) return false
       clearTimeout(timer)
       timers.delete(id)
+      changed()
       return true
     },
     has(id: string): boolean {
@@ -38,6 +49,14 @@ export function createPendingDeletes(run: (id: string) => void) {
         clearTimeout(timer)
         fire(id)
       }
+    },
+    /** For useSyncExternalStore. */
+    subscribe(listener: () => void): () => void {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    getVersion(): number {
+      return version
     },
   }
 }
