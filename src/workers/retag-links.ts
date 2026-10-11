@@ -5,7 +5,8 @@
  *
  * 1. Re-tags every link that was not LLM-enriched with the current rule
  *    extractor, re-extracting body text from stored HTML where there is some.
- *    The link's generated tags are replaced; tags with source 'user' stay.
+ *    Keyword tags survive only when two or more of the user's links share
+ *    them. The link's generated tags are replaced; tags with source 'user' stay.
  * 2. Per user, drops rule tags the extractor now rejects as junk and folds
  *    plural generated tags into their singular form.
  * 3. Deletes generated tags no link uses any more.
@@ -48,8 +49,10 @@ async function retagRuleLinks(tx: Tx): Promise<number> {
     .select({
       id: schema.links.id,
       userId: schema.links.userId,
+      url: schema.links.url,
       domain: schema.links.domain,
       title: schema.links.title,
+      description: schema.links.description,
       bodyText: schema.rawContent.bodyText,
       rawHtml: schema.rawContent.rawHtml,
     })
@@ -57,17 +60,52 @@ async function retagRuleLinks(tx: Tx): Promise<number> {
     .innerJoin(schema.rawContent, eq(schema.rawContent.linkId, schema.links.id))
     .where(or(isNull(schema.links.enrichmentSource), ne(schema.links.enrichmentSource, 'llm')))
 
-  for (const row of rows) {
-    const bodyText = row.rawHtml ? bodyTextFromHtml(row.rawHtml) : row.bodyText
-    if (row.rawHtml) {
-      await tx.update(schema.rawContent).set({ bodyText }).where(eq(schema.rawContent.linkId, row.id))
+  const links = rows.map((row) => ({
+    ...row,
+    bodyText: row.rawHtml ? bodyTextFromHtml(row.rawHtml) : row.bodyText,
+  }))
+  const tagsFor = (link: (typeof links)[number], knownTags?: ReadonlySet<string>) =>
+    buildTags(link.bodyText ?? '', link.domain, link.title, {
+      description: link.description,
+      url: link.url,
+      knownTags,
+    })
+
+  // A keyword tag is worth keeping when at least two of the user's links would
+  // get it, or the user already has it from somewhere this script leaves alone
+  // (tags they typed, LLM-tagged links).
+  const linkCounts = new Map<string, Map<string, number>>()
+  for (const link of links) {
+    const counts = linkCounts.get(link.userId) ?? new Map<string, number>()
+    for (const name of tagsFor(link)) counts.set(name, (counts.get(name) ?? 0) + 1)
+    linkCounts.set(link.userId, counts)
+  }
+  const keptRows = await tx
+    .selectDistinct({ userId: schema.tags.userId, name: schema.tags.name })
+    .from(schema.tags)
+    .innerJoin(schema.linkTags, eq(schema.linkTags.tagId, schema.tags.id))
+    .innerJoin(schema.links, eq(schema.links.id, schema.linkTags.linkId))
+    .where(or(eq(schema.tags.source, 'user'), eq(schema.links.enrichmentSource, 'llm')))
+  const knownTags = new Map<string, Set<string>>()
+  const known = (userId: string) => {
+    if (!knownTags.has(userId)) knownTags.set(userId, new Set())
+    return knownTags.get(userId)!
+  }
+  for (const [userId, counts] of linkCounts) {
+    for (const [name, n] of counts) if (n >= 2) known(userId).add(name)
+  }
+  for (const { userId, name } of keptRows) known(userId).add(name)
+
+  for (const link of links) {
+    if (link.rawHtml) {
+      await tx.update(schema.rawContent).set({ bodyText: link.bodyText }).where(eq(schema.rawContent.linkId, link.id))
     }
 
     // Tag source is per tag, not per link, so a generated tag the user also
     // added by hand to this link is replaced too.
     await tx.delete(schema.linkTags).where(
       and(
-        eq(schema.linkTags.linkId, row.id),
+        eq(schema.linkTags.linkId, link.id),
         inArray(
           schema.linkTags.tagId,
           tx.select({ id: schema.tags.id }).from(schema.tags).where(ne(schema.tags.source, 'user')),
@@ -75,14 +113,14 @@ async function retagRuleLinks(tx: Tx): Promise<number> {
       ),
     )
 
-    const names = buildTags(bodyText ?? '', row.domain, row.title)
+    const names = tagsFor(link, known(link.userId))
     for (const name of names) {
-      const tagId = await tagIdFor(tx, row.userId, name)
-      await tx.insert(schema.linkTags).values({ linkId: row.id, tagId }).onConflictDoNothing()
+      const tagId = await tagIdFor(tx, link.userId, name)
+      await tx.insert(schema.linkTags).values({ linkId: link.id, tagId }).onConflictDoNothing()
     }
-    if (dryRun) console.log(`  ${row.title ?? row.id}: ${names.join(', ') || '(no tags)'}`)
+    if (dryRun) console.log(`  ${link.title ?? link.id}: ${names.join(', ') || '(no tags)'}`)
   }
-  return rows.length
+  return links.length
 }
 
 async function cleanUpTags(tx: Tx): Promise<{ merged: number; deleted: number }> {

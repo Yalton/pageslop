@@ -4,7 +4,7 @@ import { screenshotUrl } from '../lib/scraper/screenshot'
 import { checkUrl } from '../lib/monitor/check-url'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import { eq, sql, and } from 'drizzle-orm'
+import { eq, sql, and, ne } from 'drizzle-orm'
 import * as schema from '../lib/db/schema'
 import { importJobs } from '../lib/db/schema'
 import { enrich } from '../lib/enrichment/classify'
@@ -170,12 +170,21 @@ async function main() {
       .where(eq(schema.user.id, link.userId))
       .limit(1)
 
+    // Tags already on the user's other links; rule-based keyword tags must be one of these
+    const knownTagRows = await db
+      .selectDistinct({ name: schema.tags.name })
+      .from(schema.tags)
+      .innerJoin(schema.linkTags, eq(schema.linkTags.tagId, schema.tags.id))
+      .where(and(eq(schema.tags.userId, link.userId), ne(schema.linkTags.linkId, linkId)))
+
     // Attempt LLM enrichment if user has an API key, else fall back to rule-based
     let result = enrich({
       bodyText: raw.bodyText,
       existingDescription: link.description,
       domain: link.domain,
       title: link.title,
+      url: link.url,
+      knownTags: new Set(knownTagRows.map((r) => r.name)),
     })
     let usedLlm = false
     let enrichmentSource: string = 'rule'

@@ -223,6 +223,16 @@ describe('getDomainHints()', () => {
 })
 
 describe('isJunkToken()', () => {
+  it('rejects tokens with fewer than three distinct letters', () => {
+    expect(isJunkToken('ffffff')).toBe(true)
+    expect(isJunkToken('aaa')).toBe(true)
+    expect(isJunkToken('facade')).toBe(false)
+  })
+
+  it('rejects app chrome and site-wide footer words', () => {
+    for (const w of ['tab', 'window', 'google', 'youtube', 'password', 'signed-in']) expect(isJunkToken(w)).toBe(true)
+  })
+
   it.each([
     'aboutpresscopyrightcontact', // concatenated footer links (>20 chars)
     '0-29b-a4b',
@@ -362,9 +372,27 @@ describe('buildTags()', () => {
 
   it('gives title words enough weight to become tags', () => {
     const tags = buildTags('', null, 'Python Machine Learning Tutorial')
-    expect(tags).toContain('python')
+    expect(tags).toEqual(expect.arrayContaining(['ai', 'code', 'learning']))
     expect(tags.length).toBeGreaterThanOrEqual(2)
     expect(tags.length).toBeLessThanOrEqual(4)
+  })
+
+  it('puts shared topic tags first, using the description and URL', () => {
+    const tags = buildTags('', 'jellyfin.billbert.co', 'Jellyfin', {
+      description: 'Stream your movie library',
+      url: 'https://jellyfin.billbert.co/web',
+    })
+    expect(tags.slice(0, 2).sort()).toEqual(['media', 'self-hosted'])
+  })
+
+  it('keeps only keywords the user already has when knownTags is given', () => {
+    const text = 'zorb bounce zorb bounce plushie plushie'
+    expect(buildTags(text, null, 'Zorb Bounce', { knownTags: new Set(['plushie']) })).toEqual(['plushie'])
+    expect(buildTags(text, null, 'Zorb Bounce', { knownTags: new Set() })).toEqual([])
+  })
+
+  it('drops keyword tags that repeat a chosen topic', () => {
+    expect(buildTags('game game game', null, 'Steam game')).toEqual(['gaming'])
   })
 
   it('returns no duplicate singular/plural tags', () => {
