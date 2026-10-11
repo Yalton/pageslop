@@ -144,7 +144,7 @@ export const TOPICS: Topic[] = [
   },
   {
     tag: 'social',
-    signals: ['reddit', 'subreddit', 'forum', 'discord', 'community', 'twitter', 'mastodon', 'bluesky'],
+    signals: ['social', 'social media', 'reddit', 'subreddit', 'forum', 'discord', 'community', 'twitter', 'mastodon', 'bluesky'],
     hosts: ['reddit.com', 'twitter.com', 'x.com', 'bsky.app', 'discord.com', 'linkedin.com'],
   },
   {
