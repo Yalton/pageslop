@@ -6,6 +6,7 @@
 import { CATEGORIES } from '@/types/index'
 import { getDomainHints } from './domain-hints'
 import { extractDescription } from './describe'
+import { isTopicSignal, matchTopics } from './topics'
 
 export { CATEGORIES }
 
@@ -91,6 +92,9 @@ export const WEB_NOISE_WORDS = new Set([
   'verify', 'verifying', 'human', 'robot', 'cloudflare', 'ray', 'checking',
   'continue', 'wait', 'moment', 'seconds', 'request', 'requests', 'blocked',
   'access', 'denied', 'forbidden', 'unsupported', 'supported', 'outdated',
+  // app chrome and site-wide footers that end up on many unrelated pages
+  'tab', 'tabs', 'window', 'token', 'test', 'free', 'interface', 'generation',
+  'signed-in', 'signed', 'password', 'otp', 'google', 'youtube', 'session', 'white', 'change', 'woff',
   // navigation / footer boilerplate
   'click', 'tap', 'menu', 'sign', 'signin', 'signup', 'login', 'logout', 'log',
   'register', 'account', 'subscribe', 'subscription', 'newsletter-signup',
@@ -116,6 +120,7 @@ export function isJunkToken(token: string): boolean {
   if (/\d/.test(t)) return true // digits: 221f1f, 0-29b-a4b, ids, years
   if (!/^[a-z-]+$/.test(t)) return true
   if (t.startsWith('-') || t.endsWith('-') || t.includes('--')) return true
+  if (new Set(t.replace(/-/g, '')).size < 3) return true // ffffff, aaa, zzz
 
   const isNoise = (w: string) => STOP_WORDS.has(w) || WEB_NOISE_WORDS.has(w)
   if (isNoise(t) || isNoise(normalizeTag(t))) return true
@@ -331,22 +336,43 @@ export function categorize(text: string): string {
 
 const MAX_TAGS = 4
 
+export interface BuildTagsOptions {
+  description?: string | null
+  url?: string | null
+  /**
+   * Tag names the user already has on other links. When given, keyword tags
+   * are kept only if they are in it, so a page's one-off words do not each
+   * become a tag nobody else shares.
+   */
+  knownTags?: ReadonlySet<string>
+}
+
 /**
- * Builds a deduplicated, normalized tag array (at most 4) from text and domain.
- * Domain hints always come first and are exempt from the frequency rule.
- * Title words count double, so a title word alone qualifies as a keyword.
+ * Builds a deduplicated, normalized tag array (at most 4): shared topic tags
+ * first (see topics.ts), then domain hints, then keywords. Title words count
+ * double, so a title word alone qualifies as a keyword.
  * Returns fewer tags (possibly none) rather than padding with generic ones.
  */
-export function buildTags(text: string, domain: string | null, title?: string | null): string[] {
+export function buildTags(
+  text: string,
+  domain: string | null,
+  title?: string | null,
+  opts: BuildTagsOptions = {},
+): string[] {
+  const topics = matchTopics({ title, description: opts.description, bodyText: text, url: opts.url })
+  const domainHints = getDomainHints(domain).map((t) => t.toLowerCase().trim())
+
   const freq = new Map<string, number>()
   countKeywords(text, freq)
   if (title) countKeywords(title, freq, MIN_KEYWORD_FREQUENCY)
-  const keywords = topKeywords(freq, 6, MIN_KEYWORD_FREQUENCY)
-  const domainHints = getDomainHints(domain).map((t) => t.toLowerCase().trim())
+  let keywords = topKeywords(freq, 6, MIN_KEYWORD_FREQUENCY)
+  if (opts.knownTags) keywords = keywords.filter((k) => opts.knownTags!.has(k))
+  // "game" next to "gaming" says nothing new.
+  keywords = keywords.filter((k) => !isTopicSignal(k, topics))
 
   const seen = new Set<string>()
   const tags: string[] = []
-  for (const tag of [...domainHints, ...keywords]) {
+  for (const tag of [...topics, ...domainHints, ...keywords]) {
     if (tag.length < 2 || seen.has(tag)) continue
     seen.add(tag)
     tags.push(tag)
@@ -363,6 +389,9 @@ export interface EnrichInput {
   existingDescription: string | null
   domain: string | null
   title: string | null
+  url?: string | null
+  /** See BuildTagsOptions.knownTags. */
+  knownTags?: ReadonlySet<string>
 }
 
 /**
@@ -371,13 +400,13 @@ export interface EnrichInput {
  * Combines bodyText and title for tag/category signals; title words weigh double for tags.
  */
 export function enrich(opts: EnrichInput): EnrichmentResult {
-  const { bodyText, existingDescription, domain, title } = opts
+  const { bodyText, existingDescription, domain, title, url, knownTags } = opts
 
   // Combine available text signals for analysis
   const textSignals = [bodyText, title].filter(Boolean).join(' ')
 
-  // Tags: combine keyword extraction + domain hints (title weighted higher)
-  const tags = buildTags(bodyText ?? '', domain, title)
+  // Tags: topics, domain hints, then keywords (title weighted higher)
+  const tags = buildTags(bodyText ?? '', domain, title, { description: existingDescription, url, knownTags })
 
   // Description: use existing or extract from bodyText
   const description =
