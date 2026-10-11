@@ -233,6 +233,10 @@ describe('isJunkToken()', () => {
     for (const w of ['tab', 'window', 'google', 'youtube', 'password', 'signed-in']) expect(isJunkToken(w)).toBe(true)
   })
 
+  it('rejects sign-up form words (country pickers, resend code)', () => {
+    for (const w of ['island', 'islands', 'south', 'resend']) expect(isJunkToken(w)).toBe(true)
+  })
+
   it.each([
     'aboutpresscopyrightcontact', // concatenated footer links (>20 chars)
     '0-29b-a4b',

@@ -105,6 +105,9 @@ export const WEB_NOISE_WORDS = new Set([
   'site', 'website', 'learn-more', 'more-info', 'share', 'tweet', 'email',
   'follow', 'press', 'advertise', 'advertising', 'ads', 'sponsored', 'feedback',
   'help-center', 'faq', 'careers', 'jobs-at', 'sitemap', 'powered',
+  // sign-up forms: country pickers and code-resend prompts
+  'resend', 'island', 'islands', 'south', 'north', 'east', 'west', 'republic',
+  'saint', 'united', 'guinea', 'country', 'region',
 ])
 
 const MAX_TOKEN_LENGTH = 20
