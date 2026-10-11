@@ -73,12 +73,22 @@ async function retagRuleLinks(tx: Tx): Promise<number> {
 
   // A keyword tag is worth keeping when at least two of the user's links would
   // get it, or the user already has it from somewhere this script leaves alone
-  // (tags they typed, LLM-tagged links).
-  const linkCounts = new Map<string, Map<string, number>>()
+  // (tags they typed, LLM-tagged links). Links that differ only by #fragment
+  // are one page, so they count once.
+  const pageNames = new Map<string, Map<string, Set<string>>>()
   for (const link of links) {
-    const counts = linkCounts.get(link.userId) ?? new Map<string, number>()
-    for (const name of tagsFor(link)) counts.set(name, (counts.get(name) ?? 0) + 1)
-    linkCounts.set(link.userId, counts)
+    const pages = pageNames.get(link.userId) ?? new Map<string, Set<string>>()
+    const page = link.url.split('#')[0]
+    const names = pages.get(page) ?? new Set<string>()
+    for (const name of tagsFor(link)) names.add(name)
+    pages.set(page, names)
+    pageNames.set(link.userId, pages)
+  }
+  const linkCounts = new Map<string, Map<string, number>>()
+  for (const [userId, pages] of pageNames) {
+    const counts = new Map<string, number>()
+    for (const names of pages.values()) for (const name of names) counts.set(name, (counts.get(name) ?? 0) + 1)
+    linkCounts.set(userId, counts)
   }
   const keptRows = await tx
     .selectDistinct({ userId: schema.tags.userId, name: schema.tags.name })

@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { allLinksEmptyState, filterAllLinksView, isArchived, isVisibleInAllLinks } from '@/lib/utils/all-links-filter'
+import {
+  allLinksEmptyState,
+  filterAllLinksView,
+  filterArchivedView,
+  isArchived,
+  isVisibleInAllLinks,
+} from '@/lib/utils/all-links-filter'
 import type { LinkWithTags, StashState } from '@/types'
 
 function makeLink(id: string, stashState: StashState | null): LinkWithTags {
@@ -72,5 +78,18 @@ describe('allLinksEmptyState', () => {
 
   it("is 'all-in-revisit' when every link is waiting in To Revisit", () => {
     expect(allLinksEmptyState([makeLink('a', 'inbox'), makeLink('b', 'read')])).toBe('all-in-revisit')
+  })
+})
+
+describe('filterArchivedView', () => {
+  it('keeps only archived links, in order', () => {
+    const links = [
+      makeLink('a', 'archived'),
+      makeLink('b', null),
+      makeLink('c', 'inbox'),
+      makeLink('d', 'kept'),
+      makeLink('e', 'archived'),
+    ]
+    expect(filterArchivedView(links).map((l) => l.id)).toEqual(['a', 'e'])
   })
 })

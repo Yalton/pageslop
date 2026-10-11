@@ -1,4 +1,5 @@
 import { isJunkToken, normalizeTag } from './classify'
+import { isTopicTag } from './topics'
 
 export interface TagRow {
   id: string
@@ -16,12 +17,13 @@ export interface TagCleanupPlan {
 /**
  * Plans the cleanup of one user's existing tags. Rule tags the extractor would
  * now reject are dropped; generated tags with a plural form fold into the
- * singular. Tags the user typed are left as they are.
+ * singular. Tags the user typed and shared topic tags (some, like "ai", are
+ * too short to pass as keywords) are left as they are.
  */
 export function planTagCleanup(rows: TagRow[]): TagCleanupPlan {
   const plan: TagCleanupPlan = { merges: [], deletes: [] }
   for (const row of rows) {
-    if (row.source === 'user') continue
+    if (row.source === 'user' || isTopicTag(row.name)) continue
     if (row.source === 'rule' && isJunkToken(row.name)) {
       plan.deletes.push(row.id)
       continue

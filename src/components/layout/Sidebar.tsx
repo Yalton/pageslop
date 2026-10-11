@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   Link2,
   Inbox,
+  Archive,
   Tags,
   Network,
   Settings,
@@ -33,6 +34,7 @@ const REVISIT_HREF = "/dashboard/revisit"
 const navItems = [
   { label: "All Links", icon: Link2, href: "/dashboard", disabled: false },
   { label: "To Revisit", icon: Inbox, href: REVISIT_HREF, disabled: false },
+  { label: "Archived", icon: Archive, href: "/dashboard/archived", disabled: false },
   { label: "Tags", icon: Tags, href: "/dashboard/tags", disabled: false },
   { label: "Graph", icon: Network, href: "/dashboard/graph", disabled: false },
   { label: "Settings", icon: Settings, href: "/dashboard/settings", disabled: false },
