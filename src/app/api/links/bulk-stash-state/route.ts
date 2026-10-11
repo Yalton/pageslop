@@ -1,6 +1,7 @@
 /**
  * POST /api/links/bulk-stash-state — set stashState on many links at once
- * (Open all / Keep all / Dismiss all on /dashboard/revisit).
+ * (Open all / Keep all / Dismiss all on /dashboard/revisit, bulk Archive and
+ * Restore in the link grid). null makes them ordinary saved links again.
  *
  * Session auth. bulkSetStashState filters by the caller's user id, so ids
  * belonging to other users are silently skipped and not counted.
@@ -16,7 +17,7 @@ const MAX_IDS = 500
 
 const bulkSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(MAX_IDS),
-  stashState: z.enum(STASH_STATES),
+  stashState: z.enum(STASH_STATES).nullable(),
 })
 
 export async function POST(req: Request): Promise<Response> {
@@ -33,7 +34,7 @@ export async function POST(req: Request): Promise<Response> {
   const parsed = bulkSchema.safeParse(raw)
   if (!parsed.success) {
     return Response.json(
-      { error: `Expected { ids: string[] (1-${MAX_IDS}), stashState: ${STASH_STATES.join(' | ')} }` },
+      { error: `Expected { ids: string[] (1-${MAX_IDS}), stashState: ${STASH_STATES.join(' | ')} | null }` },
       { status: 400 },
     )
   }

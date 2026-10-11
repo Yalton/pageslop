@@ -14,11 +14,30 @@ const fetcher = async (url: string) => {
 
 // Shared by every useLinks caller, so a delete started in one view stays
 // hidden in the others until it runs or is undone.
-const pendingDeletes = createPendingDeletes((id) => {
-  const failed = () => toast.error('Could not delete link. Please try again.')
+const BULK_MAX_IDS = 500
+
+/** Splits ids into chunks the bulk routes accept. */
+function chunks(ids: string[]): string[][] {
+  const out: string[][] = []
+  for (let i = 0; i < ids.length; i += BULK_MAX_IDS) out.push(ids.slice(i, i + BULK_MAX_IDS))
+  return out
+}
+
+const pendingDeletes = createPendingDeletes((ids) => {
+  const failed = () =>
+    toast.error(ids.length === 1 ? 'Could not delete link. Please try again.' : 'Could not delete links. Please try again.')
   // keepalive lets a delete flushed on pagehide outlive the page.
-  fetch(`/api/links/${id}`, { method: 'DELETE', keepalive: true })
-    .then((res) => { if (!res.ok) failed() }, failed)
+  Promise.all(
+    chunks(ids).map((chunk) =>
+      fetch('/api/links/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: chunk }),
+        keepalive: true,
+      }),
+    ),
+  )
+    .then((responses) => { if (responses.some((res) => !res.ok)) failed() }, failed)
     .finally(() => void mutateKey('/api/links'))
 })
 
@@ -93,6 +112,46 @@ export function useLinks() {
     mutate() // the row was never deleted, so revalidating brings it back with its tags
   }
 
+  /** Deletes many links as one batch, after the same undo window as deleteLink. */
+  function deleteLinks(ids: string[]): void {
+    if (ids.length === 0) return
+    const idSet = new Set(ids)
+    mutate((current) => current?.filter(l => !idSet.has(l.id)) ?? [], false)
+    pendingDeletes.schedule(ids)
+  }
+
+  function undoDeletes(ids: string[]): void {
+    const restored = ids.filter((id) => pendingDeletes.cancel(id))
+    if (restored.length < ids.length) toast.error('Too late to undo, some links are already deleted.')
+    if (restored.length > 0) mutate()
+  }
+
+  /** Adds one user tag to many links. Throws when the server refuses. */
+  async function addTagToLinks(ids: string[], name: string): Promise<void> {
+    const tagName = name.toLowerCase().trim()
+    if (ids.length === 0 || !tagName) return
+    const idSet = new Set(ids)
+    const tempTag = { id: `temp-${Date.now()}`, userId: '', name: tagName, source: 'user' as const }
+    mutate(
+      (current) =>
+        current?.map(l =>
+          idSet.has(l.id) && !l.tags.some(t => t.name === tagName) ? { ...l, tags: [...l.tags, tempTag] } : l
+        ) ?? [],
+      false
+    )
+    const responses = await Promise.all(
+      chunks(ids).map((chunk) =>
+        fetch('/api/links/bulk-tag', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: chunk, name: tagName }),
+        }),
+      ),
+    )
+    await mutate()
+    if (responses.some((res) => !res.ok)) throw new Error(`Failed to tag ${ids.length} link(s)`)
+  }
+
   async function addTag(linkId: string, name: string): Promise<void> {
     // Optimistic: add a temporary tag
     const tempTag = { id: `temp-${Date.now()}`, userId: '', name, source: 'user' as const }
@@ -145,7 +204,8 @@ export function useLinks() {
     mutate()
   }
 
-  async function setStashState(ids: string[], stashState: StashState): Promise<void> {
+  /** null makes links ordinary saved links again (shown in All Links). */
+  async function setStashState(ids: string[], stashState: StashState | null): Promise<void> {
     if (ids.length === 0) return
     const idSet = new Set(ids)
     const now = new Date()
@@ -161,13 +221,17 @@ export function useLinks() {
       false,
     )
 
-    const res = await fetch('/api/links/bulk-stash-state', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids, stashState }),
-    })
+    const responses = await Promise.all(
+      chunks(ids).map((chunk) =>
+        fetch('/api/links/bulk-stash-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: chunk, stashState }),
+        }),
+      ),
+    )
     await mutate()
-    if (!res.ok) {
+    if (responses.some((res) => !res.ok)) {
       throw new Error(`Failed to update ${ids.length} link(s) to ${stashState}`)
     }
   }
@@ -177,5 +241,8 @@ export function useLinks() {
     mutate()
   }
 
-  return { links, isLoading, error, hasPending, saveLinks, deleteLink, undoDelete, addTag, removeTag, updateLink, setStashState, checkLink, mutate }
+  return {
+    links, isLoading, error, hasPending, saveLinks, deleteLink, undoDelete, deleteLinks, undoDeletes,
+    addTag, addTagToLinks, removeTag, updateLink, setStashState, checkLink, mutate,
+  }
 }

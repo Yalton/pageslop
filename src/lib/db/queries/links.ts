@@ -66,6 +66,15 @@ export async function deleteLink(userId: string, linkId: string) {
   return result[0] || null
 }
 
+/** Delete many of the owner's links at once. Returns the number of rows deleted. */
+export async function bulkDeleteLinks(userId: string, ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0
+  const rows = await db.delete(links)
+    .where(and(eq(links.userId, userId), inArray(links.id, ids)))
+    .returning({ id: links.id })
+  return rows.length
+}
+
 export async function updateLinkMetadata(linkId: string, data: {
   title?: string | null
   description?: string | null
@@ -264,11 +273,12 @@ export async function stashTabs(
 /**
  * Set stash_state on many links at once, scoped to the owner. Returns the number of rows updated.
  * Moving links back to 'inbox' also resets stashed_at to now so they do not expire immediately.
+ * null puts a link back in All Links as an ordinary saved link (restoring one archived from there).
  */
 export async function bulkSetStashState(
   userId: string,
   ids: string[],
-  state: StashState
+  state: StashState | null
 ): Promise<number> {
   if (ids.length === 0) return 0
   const now = new Date()

@@ -1,6 +1,6 @@
 import { db } from '@/lib/db/client'
 import { tags, linkTags, links } from '@/lib/db/schema'
-import { eq, and, or, isNull, sql } from 'drizzle-orm'
+import { eq, and, or, isNull, inArray, sql } from 'drizzle-orm'
 import type { Tag } from '@/types'
 
 /**
@@ -42,6 +42,26 @@ export async function linkTagToLink(linkId: string, tagId: string): Promise<void
     .insert(linkTags)
     .values({ linkId, tagId })
     .onConflictDoNothing()
+}
+
+/**
+ * Add one user tag to many of the owner's links. Links the user does not own
+ * are skipped. Returns the tag and how many links newly got it.
+ */
+export async function bulkAddTag(userId: string, linkIds: string[], name: string): Promise<{ tag: Tag; added: number }> {
+  const tag = await upsertTag(userId, name, 'user')
+  if (linkIds.length === 0) return { tag, added: 0 }
+  const owned = await db
+    .select({ id: links.id })
+    .from(links)
+    .where(and(eq(links.userId, userId), inArray(links.id, linkIds)))
+  if (owned.length === 0) return { tag, added: 0 }
+  const added = await db
+    .insert(linkTags)
+    .values(owned.map(({ id }) => ({ linkId: id, tagId: tag.id })))
+    .onConflictDoNothing()
+    .returning({ linkId: linkTags.linkId })
+  return { tag, added: added.length }
 }
 
 /**
