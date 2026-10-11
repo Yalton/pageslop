@@ -33,4 +33,13 @@ describe('planTagCleanup', () => {
     const plan = planTagCleanup([{ id: 'u1', name: 'notes', source: 'user' }])
     expect(plan).toEqual({ merges: [], deletes: [] })
   })
+
+  it('keeps topic tags the keyword filter would reject', () => {
+    const plan = planTagCleanup([
+      { id: 't1', name: 'ai', source: 'rule' },
+      { id: 't2', name: 'email', source: 'rule' },
+      { id: 't3', name: 'jobs', source: 'rule' },
+    ])
+    expect(plan).toEqual({ merges: [], deletes: [] })
+  })
 })

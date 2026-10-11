@@ -27,3 +27,8 @@ export function allLinksEmptyState(
 export function isArchived(link: Pick<LinkWithTags, 'stashState'>): boolean {
   return link.stashState === 'archived'
 }
+
+/** Stash links that were dismissed or expired, listed on /dashboard/archived. */
+export function filterArchivedView(links: LinkWithTags[]): LinkWithTags[] {
+  return links.filter(isArchived)
+}

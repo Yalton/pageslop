@@ -14,7 +14,7 @@ import { SearchInput } from '@/components/links/SearchInput'
 import { TagFilterChip } from '@/components/links/TagFilterChip'
 import { GroupedView } from '@/components/links/GroupedView'
 import { filterLinks } from '@/lib/utils/search'
-import { allLinksEmptyState, filterAllLinksView } from '@/lib/utils/all-links-filter'
+import { allLinksEmptyState, filterAllLinksView, filterArchivedView } from '@/lib/utils/all-links-filter'
 import { toast } from 'sonner'
 import { useLinks } from '@/lib/hooks/useLinks'
 import type { LinkWithTags } from '@/types'
@@ -22,7 +22,15 @@ import type { LinkWithTags } from '@/types'
 type ViewMode = 'grid' | 'list' | 'grouped'
 const STORAGE_KEY = 'pageslop-view-mode'
 
-export function LinkGrid() {
+/** 'all' is All Links; 'archived' lists dismissed or expired stash links so they can be restored. */
+export type LinkGridView = 'all' | 'archived'
+
+const BASE_PATH: Record<LinkGridView, string> = {
+  all: '/dashboard',
+  archived: '/dashboard/archived',
+}
+
+export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   const { links, isLoading, deleteLink, undoDelete, setStashState, mutate } = useLinks()
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null)
@@ -37,8 +45,11 @@ export function LinkGrid() {
   const selectedLink = selectedLinkId ? links.find(l => l.id === selectedLinkId) ?? null : null
 
   // inbox/read links live on /dashboard/revisit; hide them here
-  const visibleLinks = useMemo(() => filterAllLinksView(links), [links])
-  const emptyState = allLinksEmptyState(links)
+  const visibleLinks = useMemo(
+    () => (view === 'archived' ? filterArchivedView(links) : filterAllLinksView(links)),
+    [links, view]
+  )
+  const emptyState = view === 'archived' ? null : allLinksEmptyState(links)
 
   // Filter links client-side using search query and tag filter
   const filteredLinks = useMemo(
@@ -79,20 +90,22 @@ export function LinkGrid() {
   }
 
   function handleTagClick(tagName: string) {
-    router.push(`/dashboard?tag=${encodeURIComponent(tagName)}`)
+    router.push(`${BASE_PATH[view]}?tag=${encodeURIComponent(tagName)}`)
   }
 
   function handleClearTagFilter() {
-    router.push('/dashboard')
+    router.push(BASE_PATH[view])
   }
 
   return (
     <div className="flex flex-col gap-4">
       {/* Top bar: URL input + search + view toggle */}
       <div className="flex items-start gap-2 flex-wrap">
-        <div className="flex-1 min-w-[200px]">
-          <SaveURLInput />
-        </div>
+        {view === 'all' && (
+          <div className="flex-1 min-w-[200px]">
+            <SaveURLInput />
+          </div>
+        )}
         <div className="flex-1 min-w-[160px] max-w-sm">
           <SearchInput value={searchQuery} onChange={setSearchQuery} />
         </div>
@@ -139,6 +152,16 @@ export function LinkGrid() {
               Go to To Revisit
             </Link>{' '}
             to read or keep them, or paste a URL above to save a link here.
+          </p>
+        </div>
+      )}
+
+      {view === 'archived' && visibleLinks.length === 0 && !isLoading && (
+        <div className="flex flex-col items-center justify-center flex-1 py-24 text-center">
+          <h2 className="text-[20px] font-semibold leading-[1.2] mb-2">No archived links</h2>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            Tabs you dismiss in To Revisit, or that sit there unread too long, end up here. Restore one to send it back to
+            your inbox.
           </p>
         </div>
       )}
@@ -194,7 +217,7 @@ export function LinkGrid() {
               onUndoDelete={undoDelete}
               onOpenDetail={handleOpenDetail}
               onTagClick={handleTagClick}
-          onRestore={handleRestore}
+              onRestore={handleRestore}
             />
           ))}
         </div>
@@ -211,7 +234,7 @@ export function LinkGrid() {
               onUndoDelete={undoDelete}
               onOpenDetail={handleOpenDetail}
               onTagClick={handleTagClick}
-          onRestore={handleRestore}
+              onRestore={handleRestore}
             />
           ))}
         </div>

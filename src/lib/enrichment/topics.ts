@@ -186,6 +186,13 @@ export const TOPICS: Topic[] = [
   },
 ]
 
+const TOPIC_TAGS = new Set(TOPICS.map((t) => t.tag))
+
+/** True when `name` is one of the shared topic tags. */
+export function isTopicTag(name: string): boolean {
+  return TOPIC_TAGS.has(name)
+}
+
 /** True when `word` is one of the signals of any topic in `tags`. */
 export function isTopicSignal(word: string, tags: string[]): boolean {
   return TOPICS.some((t) => tags.includes(t.tag) && t.signals.includes(word))
