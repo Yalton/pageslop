@@ -78,7 +78,9 @@ async function retagRuleLinks(tx: Tx): Promise<number> {
   const siteNames = new Map<string, Map<string, Set<string>>>()
   for (const link of links) {
     const sites = siteNames.get(link.userId) ?? new Map<string, Set<string>>()
-    const site = link.domain ?? link.url
+    // accounts.zoho.com and mail.zoho.com are one site. Two-part TLDs (co.uk) lump
+    // a little more together, which only makes the rule stricter.
+    const site = (link.domain ?? link.url).split('.').slice(-2).join('.')
     const names = sites.get(site) ?? new Set<string>()
     for (const name of tagsFor(link)) names.add(name)
     sites.set(site, names)

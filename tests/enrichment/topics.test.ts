@@ -9,6 +9,10 @@ describe('matchTopics', () => {
     expect(matchTopics({ title: 'Pi-hole flowController', url: 'http://192.168.50.78/admin' })).toContain('self-hosted')
   })
 
+  it('finds social from a host label', () => {
+    expect(matchTopics({ title: 'Postiz Register', url: 'https://social.citreum.com' })).toContain('social')
+  })
+
   it('finds ai from a title word', () => {
     expect(
       matchTopics({ title: 'PSA: reminder that Minimax H3 is forbidden to use : r/LocalLLaMA', url: 'https://reddit.com/r/LocalLLaMA/x' }),
