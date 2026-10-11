@@ -6,6 +6,7 @@ import useSWR from 'swr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { SearchInput } from '@/components/links/SearchInput'
+import { PageSpinner } from '@/components/ui/spinner'
 import { selectTagsToShow, type TagWithCount } from '@/lib/utils/tags-view'
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
@@ -31,9 +32,7 @@ export default function TagsPage() {
         <SearchInput value={filterQuery} onChange={setFilterQuery} />
       </div>
 
-      {isLoading && (
-        <p className="text-sm text-muted-foreground">Loading tags...</p>
-      )}
+      {isLoading && <PageSpinner label="Loading tags" className="max-w-lg" />}
 
       {!isLoading && filteredTags.length === 0 && hiddenCount === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 py-24 text-center">

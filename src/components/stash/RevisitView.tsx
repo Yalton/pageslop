@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { AlertCircle, Archive, Bookmark, ExternalLink, Inbox, Loader2 } from 'lucide-react'
+import { AlertCircle, Archive, Bookmark, ExternalLink, Inbox } from 'lucide-react'
+import { PageSpinner } from '@/components/ui/spinner'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -86,12 +87,7 @@ export function RevisitView() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center flex-1 py-24 text-sm text-muted-foreground gap-2" role="status">
-        <Loader2 className="size-4 animate-spin" />
-        Loading links...
-      </div>
-    )
+    return <PageSpinner label="Loading links" />
   }
 
   if (error && revisitLinks.length === 0) {

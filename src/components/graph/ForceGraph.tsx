@@ -15,6 +15,7 @@ import {
   type GraphLink,
 } from './graphUtils'
 import type { LinkWithTags, Link } from '@/types'
+import { PageSpinner } from '@/components/ui/spinner'
 
 // Module-level image cache — never recreate inside paintNode
 const imageCache = new Map<string, HTMLImageElement>()
@@ -225,11 +226,7 @@ export default function ForceGraph() {
   )
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col h-full w-full items-center justify-center text-muted-foreground">
-        Loading links...
-      </div>
-    )
+    return <PageSpinner label="Loading graph" className="h-full" />
   }
 
   if (links.length === 0) {

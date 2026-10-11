@@ -1,14 +1,11 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { PageSpinner } from '@/components/ui/spinner'
 
 const ForceGraph = dynamic(() => import('./ForceGraph'), {
   ssr: false,
-  loading: () => (
-    <div className="flex-1 flex items-center justify-center text-muted-foreground">
-      Loading graph...
-    </div>
-  ),
+  loading: () => <PageSpinner label="Loading graph" className="h-full" />,
 })
 
 export function GraphView() {
