@@ -67,8 +67,9 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
 type AnyNode = Extract<Parameters<typeof cheerio.load>[0], readonly unknown[]>[number]
 
 /** Elements whose content is never readable page text. */
+// select/datalist: form pickers (country lists on sign-up pages) are not page content.
 const NON_TEXT_SELECTOR =
-  'script, style, noscript, svg, iframe, template, object, embed, canvas, nav, header, footer'
+  'script, style, noscript, svg, iframe, template, object, embed, canvas, nav, header, footer, select, datalist'
 
 const BODY_TEXT_MAX = 5000
 

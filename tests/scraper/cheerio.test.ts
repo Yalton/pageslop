@@ -115,6 +115,21 @@ describe('scrapeUrl', () => {
     expect(result.bodyText).toBe('Real Content here')
   })
 
+  it('drops form picker options such as country lists', async () => {
+    const html = `
+      <html><body>
+        <main><p>Sign in</p>
+          <select><option>Netherlands (+31)</option><option>French Guiana (+594)</option></select>
+          <datalist id="c"><option value="Territory"></option></datalist>
+        </main>
+      </body></html>
+    `
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
+
+    const result = await scrapeUrl('https://example.com')
+    expect(result.bodyText).toBe('Sign in')
+  })
+
   it('caps body text at 5000 chars', async () => {
     const html = `<html><body>${'<p>word</p>'.repeat(3000)}</body></html>`
     vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
