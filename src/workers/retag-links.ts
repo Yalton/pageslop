@@ -73,12 +73,12 @@ async function retagRuleLinks(tx: Tx): Promise<number> {
 
   // A keyword tag is worth keeping when at least two of the user's links would
   // get it, or the user already has it from somewhere this script leaves alone
-  // (tags they typed, LLM-tagged links). Links that differ only by #fragment
-  // are one page, so they count once.
+  // (tags they typed, LLM-tagged links). Links that differ only by #fragment,
+  // or share a domain and title (one job board's listings), count once.
   const pageNames = new Map<string, Map<string, Set<string>>>()
   for (const link of links) {
     const pages = pageNames.get(link.userId) ?? new Map<string, Set<string>>()
-    const page = link.url.split('#')[0]
+    const page = link.title ? `${link.domain}|${link.title}` : link.url.split('#')[0]
     const names = pages.get(page) ?? new Set<string>()
     for (const name of tagsFor(link)) names.add(name)
     pages.set(page, names)
