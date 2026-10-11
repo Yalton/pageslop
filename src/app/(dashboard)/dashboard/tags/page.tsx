@@ -7,13 +7,17 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { SearchInput } from '@/components/links/SearchInput'
 import { PageSpinner } from '@/components/ui/spinner'
+import { jsonFetcher } from '@/lib/swr/fetcher'
 import { selectTagsToShow, type TagWithCount } from '@/lib/utils/tags-view'
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
 export default function TagsPage() {
   const router = useRouter()
-  const { data: tags, isLoading } = useSWR<TagWithCount[]>('/api/tags', fetcher)
+  const { data, error, mutate } = useSWR<TagWithCount[]>('/api/tags', jsonFetcher)
+  // Guard against anything but a list reaching the view (an old cache entry, a proxy page).
+  const tags = Array.isArray(data) ? data : undefined
+  // Wait only while there is nothing to show: saved tags render at once and
+  // SWR refreshes them in the background.
+  const isLoading = !tags && !error
   const [filterQuery, setFilterQuery] = useState('')
   const [showAll, setShowAll] = useState(false)
 
@@ -34,7 +38,16 @@ export default function TagsPage() {
 
       {isLoading && <PageSpinner label="Loading tags" className="max-w-lg" />}
 
-      {!isLoading && filteredTags.length === 0 && hiddenCount === 0 && (
+      {error && !tags && (
+        <div role="alert" className="flex flex-col items-center gap-3 py-24 text-center max-w-lg">
+          <p className="text-sm text-muted-foreground">Could not load your tags.</p>
+          <Button variant="outline" size="sm" onClick={() => mutate()}>
+            Try again
+          </Button>
+        </div>
+      )}
+
+      {!isLoading && tags && filteredTags.length === 0 && hiddenCount === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 py-24 text-center">
           <h2 className="text-[20px] font-semibold leading-[1.2] mb-2">No tags yet</h2>
           <p className="text-sm text-muted-foreground max-w-sm">

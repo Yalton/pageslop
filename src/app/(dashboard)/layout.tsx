@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth/server"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { MobileFAB } from "@/components/layout/MobileFAB"
+import { DataProvider } from "@/components/providers/DataProvider"
 
 export default async function DashboardLayout({
   children,
@@ -16,17 +17,19 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar />
+    <DataProvider userId={session.user.id}>
+      <div className="min-h-screen bg-background">
+        <Sidebar />
 
-      {/* Main content area with left margin for sidebar */}
-      {/* Desktop: ml-[240px], Tablet: ml-16, Mobile: no margin (sidebar is overlay) */}
-      <main className="ml-0 md:ml-16 lg:ml-[240px]">
-        {children}
-      </main>
+        {/* Main content area with left margin for sidebar */}
+        {/* Desktop: ml-[240px], Tablet: ml-16, Mobile: no margin (sidebar is overlay) */}
+        <main className="ml-0 md:ml-16 lg:ml-[240px]">
+          {children}
+        </main>
 
-      {/* Mobile FAB */}
-      <MobileFAB />
-    </div>
+        {/* Mobile FAB */}
+        <MobileFAB />
+      </div>
+    </DataProvider>
   )
 }
