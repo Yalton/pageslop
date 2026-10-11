@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { isTopicSignal, matchTopics, TOPICS } from '@/lib/enrichment/topics'
+import { normalizeTag } from '@/lib/enrichment/classify'
 
 describe('matchTopics', () => {
   it('tags self-hosted apps on private hosts from the title alone', () => {
@@ -60,6 +61,8 @@ describe('matchTopics', () => {
     const tags = TOPICS.map((t) => t.tag)
     expect(new Set(tags).size).toBe(tags.length)
     for (const tag of tags) expect(tag).toMatch(/^[a-z][a-z-]*[a-z]$/)
+    // The tag cleanup folds plurals; a topic tag must survive it unchanged.
+    for (const tag of tags) expect(normalizeTag(tag)).toBe(tag)
   })
 
   it('tags texture and 3D asset sites as design', () => {

@@ -141,7 +141,7 @@ export function isJunkToken(token: string): boolean {
 
 /** Words ending in "s" that are not plurals (or whose plural we keep). */
 const NON_PLURAL_S = new Set([
-  'news', 'series', 'species', 'kubernetes', 'postgres', 'jenkins', 'always',
+  'news', 'series', 'species', 'kubernetes', 'postgres', 'jenkins', 'always', 'devops', 'jobs',
   'perhaps', 'yes', 'thanks', 'chaos', 'ethos', 'pathos', 'cosmos', 'kudos',
   'ios', 'macos', 'tvos', 'watchos', 'chromeos', 'centos', 'aws', 'gas',
   'atlas', 'canvas', 'alias', 'bias', 'pancreas', 'lens', 'means', 'mars',
