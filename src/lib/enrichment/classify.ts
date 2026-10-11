@@ -6,7 +6,7 @@
 import { CATEGORIES } from '@/types/index'
 import { getDomainHints } from './domain-hints'
 import { extractDescription } from './describe'
-import { isTopicSignal, matchTopics } from './topics'
+import { isTopicSignal, isTopicTag, matchTopics } from './topics'
 
 export { CATEGORIES }
 
@@ -106,7 +106,7 @@ export const WEB_NOISE_WORDS = new Set([
   'follow', 'press', 'advertise', 'advertising', 'ads', 'sponsored', 'feedback',
   'help-center', 'faq', 'careers', 'jobs-at', 'sitemap', 'powered',
   // sign-up forms: country pickers and code-resend prompts
-  'resend', 'island', 'islands', 'south', 'north', 'east', 'west', 'republic',
+  'resend', 'verification', 'enter', 'island', 'islands', 'south', 'north', 'east', 'west', 'republic',
   'saint', 'united', 'guinea', 'country', 'region',
 ])
 
@@ -370,8 +370,9 @@ export function buildTags(
   if (title) countKeywords(title, freq, MIN_KEYWORD_FREQUENCY)
   let keywords = topKeywords(freq, 6, MIN_KEYWORD_FREQUENCY)
   if (opts.knownTags) keywords = keywords.filter((k) => opts.knownTags!.has(k))
-  // "game" next to "gaming" says nothing new.
-  keywords = keywords.filter((k) => !isTopicSignal(k, topics))
+  // "game" next to "gaming" says nothing new. A topic's own name ("code" in
+  // "verification code") only comes from topic matching, never as a keyword.
+  keywords = keywords.filter((k) => !isTopicSignal(k, topics) && !isTopicTag(k))
 
   const seen = new Set<string>()
   const tags: string[] = []

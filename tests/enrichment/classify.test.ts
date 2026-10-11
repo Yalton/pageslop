@@ -234,7 +234,7 @@ describe('isJunkToken()', () => {
   })
 
   it('rejects sign-up form words (country pickers, resend code)', () => {
-    for (const w of ['island', 'islands', 'south', 'resend']) expect(isJunkToken(w)).toBe(true)
+    for (const w of ['island', 'islands', 'south', 'resend', 'verification', 'enter']) expect(isJunkToken(w)).toBe(true)
   })
 
   it.each([
@@ -364,6 +364,12 @@ describe('buildTags()', () => {
     for (const junk of ['aboutpresscopyrightcontact', '221f1f', 'iframe', 'src', 'https', 'class', 'ago', 'please', 'enable', 'copyright', 'privacy', 'terms']) {
       expect(tags).not.toContain(junk)
     }
+  })
+
+  it('never adds a topic name as a plain keyword', () => {
+    const text = 'Enter the verification code we sent. Code expires soon. Resend code.'
+    const tags = buildTags(text, 'accounts.example.com', 'Example Accounts', { knownTags: new Set(['code']) })
+    expect(tags).not.toContain('code')
   })
 
   it('does not pad with generic fallback tags', () => {
