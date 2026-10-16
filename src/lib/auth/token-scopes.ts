@@ -3,8 +3,8 @@
  * Settings UI can use the same list.
  *
  * - stash:       POST /api/stash and GET /api/stash/ping (browser extension)
- * - links:read:  GET /api/v1/links, /api/v1/links/:id, /api/v1/tags
- * - links:write: POST /api/v1/links
+ * - links:read:  GET /api/v1/links, /api/v1/links/:id, /api/v1/tags (and MCP search_links, get_link, list_tags)
+ * - links:write: POST /api/v1/links (and MCP save_link)
  *
  * Tokens created before scopes existed have ['stash'] (the column default).
  */

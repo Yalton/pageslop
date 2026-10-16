@@ -170,3 +170,9 @@ such link are left out.
 curl -s -H "Authorization: Bearer $PAGESLOP_TOKEN" \
   https://pageslop.example.com/api/v1/tags
 ```
+
+## MCP server for AI agents
+
+The same tokens and scopes work with Pageslop's Model Context Protocol
+endpoint at `/api/mcp`, so agents such as Claude Code can search and save
+your links. See [mcp.md](mcp.md).

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// /api/stash and /api/v1 (and their subpaths) use bearer-token auth and return
+// /api/stash, /api/v1 and /api/mcp (and their subpaths) use bearer-token auth and return
 // their own 401/403 JSON, so they must not be redirected for lacking a session cookie.
-const publicPaths = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/about', '/api/auth', '/api/stash', '/api/v1']
+const publicPaths = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/about', '/api/auth', '/api/stash', '/api/v1', '/api/mcp']
 
 // Repeated decoding is bounded so a deeply nested encoding cannot loop forever.
 const MAX_DECODE_PASSES = 3
