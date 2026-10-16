@@ -1,6 +1,8 @@
 'use client'
 
-import { X } from 'lucide-react'
+import { useState } from 'react'
+import { SlidersHorizontal, X } from 'lucide-react'
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -14,6 +16,7 @@ import {
   LINK_SORT_LABELS,
   LINK_STATUS_LABELS,
   type LinkStatusFilter,
+  activeFilterCount,
   hasActiveLinkFilters,
   type FacetOption,
   type LinkSort,
@@ -81,8 +84,11 @@ export function LinkViewToolbar({
   websiteOpen,
   onWebsiteOpenChange,
 }: LinkViewToolbarProps) {
-  return (
-    <div className="flex items-center gap-2 flex-wrap">
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const count = activeFilterCount(view)
+
+  const controls = (open?: boolean, onOpen?: (o: boolean) => void) => (
+    <>
       <Select value={view.sort} onValueChange={(v) => onChange({ sort: v as LinkSort })}>
         <SelectTrigger size="sm" aria-label="Sort links">
           <SelectValue />
@@ -101,8 +107,8 @@ export function LinkViewToolbar({
         value={view.domain}
         options={domains}
         onChange={(domain) => onChange({ domain })}
-        open={websiteOpen}
-        onOpenChange={onWebsiteOpenChange}
+        open={open}
+        onOpenChange={onOpen}
       />
       {(categories.length > 0 || view.category) && (
         <FacetSelect
@@ -146,16 +152,58 @@ export function LinkViewToolbar({
       >
         Has description
       </Toggle>
-      {hasActiveLinkFilters(view) && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onChange(CLEAR_FACETS)}
-        >
-          <X className="size-4" />
-          Clear filters
-        </Button>
-      )}
-    </div>
+    </>
+  )
+
+  return (
+    <>
+      <div className="hidden md:flex items-center gap-2 flex-wrap">
+        {controls(websiteOpen, onWebsiteOpenChange)}
+        {hasActiveLinkFilters(view) && (
+          <Button variant="ghost" size="sm" onClick={() => onChange(CLEAR_FACETS)}>
+            <X className="size-4" />
+            Clear filters
+          </Button>
+        )}
+      </div>
+      <div className="md:hidden">
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="sm" aria-label={count ? `Filters, ${count} active` : 'Filters'}>
+              <SlidersHorizontal className="size-4" />
+              Filters
+              {count > 0 && (
+                <span className="ml-1 inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-violet-600 px-1.5 text-xs font-medium text-white">
+                  {count}
+                </span>
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-2xl border-white/10 bg-background/80 backdrop-blur-xl">
+            <SheetHeader>
+              <SheetTitle>Filters</SheetTitle>
+              <SheetDescription className="sr-only">Sort and filter your links</SheetDescription>
+            </SheetHeader>
+            <div className="flex flex-col items-stretch gap-3 px-4 [&_[data-slot=select-trigger]]:w-full [&_[data-slot=select-trigger]]:max-w-none [&_button[aria-pressed]]:justify-start">
+              {controls()}
+            </div>
+            <SheetFooter className="flex-row gap-2">
+              {hasActiveLinkFilters(view) && (
+                <Button variant="ghost" className="flex-1" onClick={() => onChange(CLEAR_FACETS)}>
+                  <X className="size-4" />
+                  Clear filters
+                </Button>
+              )}
+              <Button
+                className="flex-1 bg-gradient-to-br from-violet-500 to-violet-600 text-white"
+                onClick={() => setSheetOpen(false)}
+              >
+                Done
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </>
   )
 }

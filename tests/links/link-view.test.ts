@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { LINK_DEFAULTS } from '../fixtures/link-defaults'
 import {
+  activeFilterCount,
   applyLinkView,
   categoryOptions,
   domainOptions,
@@ -205,6 +206,15 @@ describe('linkViewHref', () => {
   it('clears facets and tag but keeps sort with CLEAR_ALL_FILTERS', () => {
     const current = new URLSearchParams('sort=oldest&tag=go&domain=a.com&untagged=1')
     expect(linkViewHref('/dashboard', current, CLEAR_ALL_FILTERS)).toBe('/dashboard?sort=oldest')
+  })
+})
+
+describe('activeFilterCount', () => {
+  it('is 0 for the default view, ignoring sort', () => {
+    expect(activeFilterCount({ ...DEFAULT_LINK_VIEW, sort: 'title' })).toBe(0)
+  })
+  it('counts each active filter once', () => {
+    expect(activeFilterCount({ ...DEFAULT_LINK_VIEW, domain: 'a.com', untagged: true, status: 'down' })).toBe(3)
   })
 })
 
