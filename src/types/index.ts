@@ -35,6 +35,7 @@ export interface Link {
   domain: string | null
   status: LinkStatus
   category: string | null
+  categorySource: string | null // 'rule' | 'llm' | 'user'
   createdAt: Date
   updatedAt: Date
   enrichmentSource: EnrichmentSource

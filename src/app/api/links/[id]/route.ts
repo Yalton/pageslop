@@ -55,11 +55,15 @@ export async function PATCH(
   const data: {
     description?: string
     category?: string
+    categorySource?: 'user'
     stashState?: StashState | null
     stashedAt?: Date
   } = {}
   if (body.description !== undefined) data.description = body.description
-  if (body.category !== undefined) data.category = body.category
+  if (body.category !== undefined) {
+    data.category = body.category
+    data.categorySource = 'user' // hand-picked: enrichment must not overwrite it
+  }
   if (body.stashState !== undefined) {
     data.stashState = body.stashState as StashState | null
     // "Restore to inbox" restarts the expiry clock

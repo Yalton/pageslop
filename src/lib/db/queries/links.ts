@@ -192,6 +192,7 @@ export async function updateLinkFields(
   data: {
     description?: string
     category?: string
+    categorySource?: 'rule' | 'llm' | 'user'
     stashState?: StashState | null
     stashedAt?: Date | null
   }

@@ -63,6 +63,7 @@ export const links = pgTable('links', {
   domain: text('domain'),
   status: text('status').notNull().default('pending'),
   category: text('category'),
+  categorySource: text('category_source'), // null | 'rule' | 'llm' | 'user' ('user' = hand-picked, never overwritten)
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   // Enrichment source tracking
