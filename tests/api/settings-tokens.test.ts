@@ -73,14 +73,15 @@ describe('POST /api/settings/tokens', () => {
       tokenHash: HASH,
       createdAt: new Date('2026-10-03T12:00:00.000Z'),
       lastUsedAt: null,
+      scopes: ['stash'],
     } as never)
 
     const { POST } = await import('@/app/api/settings/tokens/route')
     const res = await POST(postReq({ name: '  Firefox laptop  ' }))
     expect(res.status).toBe(201)
     const json = await res.json()
-    expect(json).toEqual({ id: 'tok-1', name: 'Firefox laptop', token: RAW })
-    expect(createApiToken).toHaveBeenCalledWith('user-1', 'Firefox laptop', HASH)
+    expect(json).toEqual({ id: 'tok-1', name: 'Firefox laptop', scopes: ['stash'], token: RAW })
+    expect(createApiToken).toHaveBeenCalledWith('user-1', 'Firefox laptop', HASH, ['stash'])
     // The raw token is never passed to the DB layer
     expect(JSON.stringify(vi.mocked(createApiToken).mock.calls)).not.toContain(RAW)
     // The hash never goes back to the client
@@ -108,6 +109,39 @@ describe('POST /api/settings/tokens', () => {
     const { POST } = await import('@/app/api/settings/tokens/route')
     const res = await POST(postReq({ name: 'x'.repeat(101) }))
     expect(res.status).toBe(400)
+  })
+
+  it('creates a token with the requested scopes, deduplicated in canonical order', async () => {
+    await signedIn()
+    const { generateToken } = await import('@/lib/auth/api-token')
+    const { createApiToken } = await import('@/lib/db/queries/api-tokens')
+    vi.mocked(generateToken).mockReturnValue({ raw: RAW, hash: HASH })
+    vi.mocked(createApiToken).mockResolvedValue({
+      id: 'tok-1',
+      name: 'MCP',
+      createdAt: new Date('2026-10-03T12:00:00.000Z'),
+      lastUsedAt: null,
+      scopes: ['links:read', 'links:write'],
+    })
+
+    const { POST } = await import('@/app/api/settings/tokens/route')
+    const res = await POST(postReq({ name: 'MCP', scopes: ['links:write', 'links:read', 'links:write'] }))
+    expect(res.status).toBe(201)
+    expect(createApiToken).toHaveBeenCalledWith('user-1', 'MCP', HASH, ['links:read', 'links:write'])
+    expect((await res.json()).scopes).toEqual(['links:read', 'links:write'])
+  })
+
+  it.each([
+    ['an unknown scope', ['admin']],
+    ['an empty list', []],
+    ['a non-array', 'links:read'],
+  ])('returns 400 for %s', async (_label, scopes) => {
+    await signedIn()
+    const { createApiToken } = await import('@/lib/db/queries/api-tokens')
+    const { POST } = await import('@/app/api/settings/tokens/route')
+    const res = await POST(postReq({ name: 'MCP', scopes }))
+    expect(res.status).toBe(400)
+    expect(createApiToken).not.toHaveBeenCalled()
   })
 
   it('returns 400 for a body that is not JSON', async () => {
@@ -141,6 +175,7 @@ describe('GET /api/settings/tokens', () => {
         tokenHash: HASH,
         createdAt: new Date('2026-10-01T00:00:00.000Z'),
         lastUsedAt: new Date('2026-10-03T09:00:00.000Z'),
+        scopes: ['stash'],
       },
       {
         id: 'tok-2',
@@ -149,6 +184,7 @@ describe('GET /api/settings/tokens', () => {
         tokenHash: 'b'.repeat(64),
         createdAt: new Date('2026-10-02T00:00:00.000Z'),
         lastUsedAt: null,
+        scopes: ['links:read', 'links:write'],
       },
     ] as never)
 
@@ -162,8 +198,8 @@ describe('GET /api/settings/tokens', () => {
     expect(text).not.toContain('ps_')
     expect(JSON.parse(text)).toEqual({
       tokens: [
-        { id: 'tok-1', name: 'Firefox laptop', createdAt: '2026-10-01T00:00:00.000Z', lastUsedAt: '2026-10-03T09:00:00.000Z' },
-        { id: 'tok-2', name: 'Firefox desktop', createdAt: '2026-10-02T00:00:00.000Z', lastUsedAt: null },
+        { id: 'tok-1', name: 'Firefox laptop', createdAt: '2026-10-01T00:00:00.000Z', lastUsedAt: '2026-10-03T09:00:00.000Z', scopes: ['stash'] },
+        { id: 'tok-2', name: 'Firefox desktop', createdAt: '2026-10-02T00:00:00.000Z', lastUsedAt: null, scopes: ['links:read', 'links:write'] },
       ],
     })
     expect(listApiTokens).toHaveBeenCalledWith('user-1')

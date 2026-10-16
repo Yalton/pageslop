@@ -49,19 +49,20 @@ describe('createApiToken', () => {
   it('inserts userId, name and hash, and returns the summary without the hash', async () => {
     const createdAt = new Date('2026-10-03T00:00:00Z')
     h.insertReturning.mockResolvedValueOnce([
-      { id: 'tok-1', name: 'Firefox laptop', createdAt, lastUsedAt: null },
+      { id: 'tok-1', name: 'Firefox laptop', createdAt, lastUsedAt: null, scopes: ['stash', 'links:read'] },
     ])
 
-    const result = await createApiToken('user-1', 'Firefox laptop', 'a'.repeat(64))
+    const result = await createApiToken('user-1', 'Firefox laptop', 'a'.repeat(64), ['stash', 'links:read'])
 
     expect(h.values).toHaveBeenCalledWith({
       userId: 'user-1',
       name: 'Firefox laptop',
       tokenHash: 'a'.repeat(64),
+      scopes: ['stash', 'links:read'],
     })
     const returningArg = h.insertReturning.mock.calls.at(0)?.at(0) as unknown as Record<string, unknown>
-    expect(Object.keys(returningArg).sort()).toEqual(['createdAt', 'id', 'lastUsedAt', 'name'])
-    expect(result).toEqual({ id: 'tok-1', name: 'Firefox laptop', createdAt, lastUsedAt: null })
+    expect(Object.keys(returningArg).sort()).toEqual(['createdAt', 'id', 'lastUsedAt', 'name', 'scopes'])
+    expect(result).toEqual({ id: 'tok-1', name: 'Firefox laptop', createdAt, lastUsedAt: null, scopes: ['stash', 'links:read'] })
   })
 })
 
@@ -73,7 +74,7 @@ describe('listApiTokens', () => {
     const result = await listApiTokens('user-1')
 
     const selectArg = h.select.mock.calls.at(0)?.at(0) as unknown as Record<string, unknown>
-    expect(Object.keys(selectArg).sort()).toEqual(['createdAt', 'id', 'lastUsedAt', 'name'])
+    expect(Object.keys(selectArg).sort()).toEqual(['createdAt', 'id', 'lastUsedAt', 'name', 'scopes'])
     expect(selectArg).not.toHaveProperty('tokenHash')
     expect(h.selectWhere).toHaveBeenCalledOnce()
     expect(result).toBe(rows)
@@ -103,14 +104,15 @@ describe('deleteApiToken', () => {
 
 describe('findTokenByHash', () => {
   it('returns {id, userId, lastUsedAt} when found', async () => {
-    h.limit.mockResolvedValueOnce([{ id: 'tok-1', userId: 'user-1', lastUsedAt: null }])
+    h.limit.mockResolvedValueOnce([{ id: 'tok-1', userId: 'user-1', lastUsedAt: null, scopes: ['stash'] }])
     await expect(findTokenByHash('b'.repeat(64))).resolves.toEqual({
       id: 'tok-1',
       userId: 'user-1',
       lastUsedAt: null,
+      scopes: ['stash'],
     })
     const selectArg = h.select.mock.calls.at(0)?.at(0) as unknown as Record<string, unknown>
-    expect(Object.keys(selectArg).sort()).toEqual(['id', 'lastUsedAt', 'userId'])
+    expect(Object.keys(selectArg).sort()).toEqual(['id', 'lastUsedAt', 'scopes', 'userId'])
   })
 
   it('returns null when not found', async () => {

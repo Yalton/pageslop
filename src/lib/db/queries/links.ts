@@ -1,8 +1,9 @@
 import { db } from '@/lib/db/client'
 import { links, rawContent, linkTags, tags } from '@/lib/db/schema'
-import { eq, and, desc, inArray, lt, sql, type SQL } from 'drizzle-orm'
+import { eq, and, or, desc, ilike, inArray, isNull, lt, sql, type SQL } from 'drizzle-orm'
 import type { LinkSource, LinkWithTags, StashState, Tag } from '@/types'
 import { normalizeUrl } from '@/lib/links/normalize-url'
+import { encodeCursor, type LinkCursor } from '@/lib/links/cursor'
 
 /**
  * List all links eligible for uptime monitoring.
@@ -103,6 +104,8 @@ export async function insertRawContent(linkId: string, bodyText: string | null, 
   await db.insert(rawContent).values({ linkId, bodyText, rawHtml })
 }
 
+type LinkRow = typeof links.$inferSelect
+
 /**
  * List all links for a user with their tags included (no N+1 queries).
  * One query for links, one batch query for all their tags.
@@ -111,10 +114,77 @@ export async function listLinksWithTags(userId: string): Promise<LinkWithTags[]>
   const userLinks = await db.select().from(links)
     .where(eq(links.userId, userId))
     .orderBy(desc(links.createdAt), desc(links.id))
+  return withTags(userLinks)
+}
 
-  if (userLinks.length === 0) return []
+export interface ListLinksPageOptions {
+  /** Case-insensitive substring of title, URL or description. */
+  q?: string
+  /** Exact tag name (tags are stored lowercase). */
+  tag?: string
+  /** Exact domain as stored (lowercase, no leading www.). */
+  domain?: string
+  /** Page size; the caller enforces bounds. */
+  limit: number
+  /** The previous page's nextCursor, decoded with decodeCursor; null for the first page. */
+  cursor: LinkCursor | null
+}
 
-  const linkIds = userLinks.map((l) => l.id)
+/** Escape LIKE wildcards so user text matches literally (Postgres's default escape is backslash). */
+function escapeLike(text: string): string {
+  return text.replace(/[\\%_]/g, (c) => '\\' + c)
+}
+
+/**
+ * One page of a user's links in the All Links view (not stashed, or kept),
+ * newest first, with tags. Keyset-paginated on (created_at, id): pass the
+ * returned nextCursor (decoded) to get the next page. null means no more.
+ */
+export async function listLinksPage(
+  userId: string,
+  opts: ListLinksPageOptions,
+): Promise<{ links: LinkWithTags[]; nextCursor: string | null }> {
+  const conditions: (SQL | undefined)[] = [
+    eq(links.userId, userId),
+    or(isNull(links.stashState), eq(links.stashState, 'kept')),
+  ]
+  if (opts.q) {
+    const pattern = `%${escapeLike(opts.q)}%`
+    conditions.push(or(ilike(links.title, pattern), ilike(links.url, pattern), ilike(links.description, pattern)))
+  }
+  if (opts.domain) conditions.push(eq(links.domain, opts.domain))
+  if (opts.tag) {
+    conditions.push(sql`exists (select 1 from ${linkTags} inner join ${tags} on ${linkTags.tagId} = ${tags.id} where ${linkTags.linkId} = ${links.id} and ${tags.name} = ${opts.tag})`)
+  }
+  if (opts.cursor) {
+    conditions.push(sql`(${links.createdAt}, ${links.id}) < (${opts.cursor.createdAt}::timestamp, ${opts.cursor.id})`)
+  }
+
+  const rows = await db
+    .select({
+      link: links,
+      // Full microsecond precision for the cursor (see LinkCursor).
+      cursorTs: sql<string>`to_char(${links.createdAt}, 'YYYY-MM-DD HH24:MI:SS.US')`,
+    })
+    .from(links)
+    .where(and(...conditions))
+    .orderBy(desc(links.createdAt), desc(links.id))
+    .limit(opts.limit + 1)
+
+  const page = rows.slice(0, opts.limit)
+  const last = page.at(-1)
+  const nextCursor = rows.length > opts.limit && last
+    ? encodeCursor({ createdAt: last.cursorTs, id: last.link.id })
+    : null
+
+  return { links: await withTags(page.map((r) => r.link)), nextCursor }
+}
+
+/** Attach each link's tags with one batch query (no N+1). */
+async function withTags(rows: LinkRow[]): Promise<LinkWithTags[]> {
+  if (rows.length === 0) return []
+
+  const linkIds = rows.map((l) => l.id)
 
   const tagRows = await db
     .select({
@@ -136,7 +206,7 @@ export async function listLinksWithTags(userId: string): Promise<LinkWithTags[]>
     tagMap.set(row.linkId, existing)
   }
 
-  return userLinks.map((link) => ({
+  return rows.map((link) => ({
     ...link,
     status: link.status as LinkWithTags['status'],
     enrichmentSource: link.enrichmentSource as LinkWithTags['enrichmentSource'],

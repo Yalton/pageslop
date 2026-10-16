@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { pgTable, text, timestamp, unique, index, integer } from 'drizzle-orm/pg-core'
 
 // Better Auth tables — generated via `npx @better-auth/cli generate`
@@ -86,7 +87,9 @@ export const links = pgTable('links', {
   userStashStateIdx: index('links_user_stash_state_idx').on(table.userId, table.stashState),
 }))
 
-// Bearer tokens for the browser extension. Only the SHA-256 hex hash of the raw token is stored.
+// Bearer tokens for the browser extension and the /api/v1 REST API. Only the SHA-256 hex hash
+// of the raw token is stored. scopes holds TokenScope values (src/lib/auth/token-scopes.ts);
+// the default keeps tokens made before scopes existed working for the extension only.
 export const apiTokens = pgTable('api_tokens', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
@@ -94,6 +97,7 @@ export const apiTokens = pgTable('api_tokens', {
   tokenHash: text('token_hash').notNull().unique(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   lastUsedAt: timestamp('last_used_at'),
+  scopes: text('scopes').array().notNull().default(sql`ARRAY['stash']::text[]`),
 })
 
 export const rawContent = pgTable('raw_content', {

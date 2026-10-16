@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod'
-import { authenticateBearer } from '@/lib/auth/api-token'
+import { requireScope } from '@/lib/api/bearer'
 import { stashTabs } from '@/lib/db/queries/links'
 import { enqueueScrapeJob } from '@/lib/queue/boss'
 
@@ -54,8 +54,8 @@ function parseClosedAt(value: unknown, now: Date): Date {
 }
 
 export async function POST(req: Request): Promise<Response> {
-  const authed = await authenticateBearer(req)
-  if (!authed) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  const authed = await requireScope(req, 'stash')
+  if (authed instanceof Response) return authed
 
   let raw: unknown
   try {

@@ -62,8 +62,15 @@ describe('api_tokens table', () => {
 
   it('has the expected columns', () => {
     expect(cfg.columns.map((c) => c.name).sort()).toEqual(
-      ['created_at', 'id', 'last_used_at', 'name', 'token_hash', 'user_id'].sort()
+      ['created_at', 'id', 'last_used_at', 'name', 'scopes', 'token_hash', 'user_id'].sort()
     )
+  })
+
+  it('scopes is a non-null text[] that defaults to stash, so pre-scope tokens keep working for the extension', () => {
+    expect(col('scopes')?.notNull).toBe(true)
+    expect(col('scopes')?.getSQLType()).toBe('text[]')
+    const def = col('scopes')?.default as { queryChunks?: unknown[] } | undefined
+    expect(JSON.stringify(def)).toContain("ARRAY['stash']::text[]")
   })
 
   it('token_hash is unique and not null', () => {

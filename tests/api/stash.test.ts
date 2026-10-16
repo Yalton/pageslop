@@ -31,7 +31,7 @@ async function setup(userId: string | null = 'user-1') {
   const { authenticateBearer } = await import('@/lib/auth/api-token')
   const { stashTabs } = await import('@/lib/db/queries/links')
   const { enqueueScrapeJob } = await import('@/lib/queue/boss')
-  vi.mocked(authenticateBearer).mockResolvedValue(userId ? { userId } : null)
+  vi.mocked(authenticateBearer).mockResolvedValue(userId ? { userId, scopes: ['stash'] } : null)
   // Default: echo every URL back, insert nothing
   vi.mocked(stashTabs).mockImplementation(async (_userId, tabs) => ({
     saved: tabs.map((t) => t.url),
@@ -80,6 +80,15 @@ describe('POST /api/stash', () => {
       const { POST } = await setup(null)
       const res = await POST(stashReq('not json', null))
       expect(res.status).toBe(401)
+    })
+
+    it('returns 403 for a token without the stash scope', async () => {
+      const { POST, stashTabs, authenticateBearer } = await setup()
+      vi.mocked(authenticateBearer).mockResolvedValue({ userId: 'user-1', scopes: ['links:read', 'links:write'] })
+      const res = await POST(stashReq({ tabs: [{ url: 'https://example.com' }] }))
+      expect(res.status).toBe(403)
+      expect((await res.json()).error).toContain('stash')
+      expect(stashTabs).not.toHaveBeenCalled()
     })
 
     it("uses only the token's user, so one user's token cannot touch another user's links", async () => {

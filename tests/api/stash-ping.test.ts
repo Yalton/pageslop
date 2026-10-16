@@ -25,7 +25,7 @@ describe('GET /api/stash/ping', () => {
   it('returns ok and the account email for a valid token', async () => {
     const { authenticateBearer } = await import('@/lib/auth/api-token')
     const { getUserEmail } = await import('@/lib/db/queries/users')
-    vi.mocked(authenticateBearer).mockResolvedValue({ userId: 'user-1' })
+    vi.mocked(authenticateBearer).mockResolvedValue({ userId: 'user-1', scopes: ['stash'] })
     vi.mocked(getUserEmail).mockResolvedValue('test@example.com')
 
     const { GET } = await import('@/app/api/stash/ping/route')
@@ -55,10 +55,21 @@ describe('GET /api/stash/ping', () => {
     expect(getUserEmail).not.toHaveBeenCalled()
   })
 
+  it('returns 403 for a token without the stash scope, so the extension test reflects what stashing will do', async () => {
+    const { authenticateBearer } = await import('@/lib/auth/api-token')
+    const { getUserEmail } = await import('@/lib/db/queries/users')
+    vi.mocked(authenticateBearer).mockResolvedValue({ userId: 'user-1', scopes: ['links:read'] })
+
+    const { GET } = await import('@/app/api/stash/ping/route')
+    const res = await GET(pingReq())
+    expect(res.status).toBe(403)
+    expect(getUserEmail).not.toHaveBeenCalled()
+  })
+
   it('returns 401 when the token user no longer exists', async () => {
     const { authenticateBearer } = await import('@/lib/auth/api-token')
     const { getUserEmail } = await import('@/lib/db/queries/users')
-    vi.mocked(authenticateBearer).mockResolvedValue({ userId: 'user-gone' })
+    vi.mocked(authenticateBearer).mockResolvedValue({ userId: 'user-gone', scopes: ['stash'] })
     vi.mocked(getUserEmail).mockResolvedValue(null)
 
     const { GET } = await import('@/app/api/stash/ping/route')

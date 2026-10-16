@@ -6,12 +6,14 @@ export interface ApiTokenSummary {
   name: string
   createdAt: string
   lastUsedAt: string | null
+  scopes: string[]
 }
 
 /** Response of POST /api/settings/tokens. `token` is the raw value, shown once. */
 export interface CreatedApiToken {
   id: string
   name: string
+  scopes: string[]
   token: string
 }
 

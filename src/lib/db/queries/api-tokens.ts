@@ -1,12 +1,14 @@
 import { db } from '@/lib/db/client'
 import { apiTokens } from '@/lib/db/schema'
 import { and, desc, eq } from 'drizzle-orm'
+import type { TokenScope } from '@/lib/auth/token-scopes'
 
 export interface ApiTokenSummary {
   id: string
   name: string
   createdAt: Date
   lastUsedAt: Date | null
+  scopes: string[]
 }
 
 // Columns safe to return to clients. Never add tokenHash here.
@@ -15,16 +17,18 @@ const summaryColumns = {
   name: apiTokens.name,
   createdAt: apiTokens.createdAt,
   lastUsedAt: apiTokens.lastUsedAt,
+  scopes: apiTokens.scopes,
 }
 
 export async function createApiToken(
   userId: string,
   name: string,
-  tokenHash: string
+  tokenHash: string,
+  scopes: TokenScope[],
 ): Promise<ApiTokenSummary> {
   const [row] = await db
     .insert(apiTokens)
-    .values({ userId, name, tokenHash })
+    .values({ userId, name, tokenHash, scopes })
     .returning(summaryColumns)
   return row
 }
@@ -47,9 +51,14 @@ export async function deleteApiToken(userId: string, id: string): Promise<boolea
 
 export async function findTokenByHash(
   tokenHash: string
-): Promise<{ id: string; userId: string; lastUsedAt: Date | null } | null> {
+): Promise<{ id: string; userId: string; lastUsedAt: Date | null; scopes: string[] } | null> {
   const [row] = await db
-    .select({ id: apiTokens.id, userId: apiTokens.userId, lastUsedAt: apiTokens.lastUsedAt })
+    .select({
+      id: apiTokens.id,
+      userId: apiTokens.userId,
+      lastUsedAt: apiTokens.lastUsedAt,
+      scopes: apiTokens.scopes,
+    })
     .from(apiTokens)
     .where(eq(apiTokens.tokenHash, tokenHash))
     .limit(1)
