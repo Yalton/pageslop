@@ -9,6 +9,7 @@ import * as schema from '../lib/db/schema'
 import { importJobs } from '../lib/db/schema'
 import { enrich } from '../lib/enrichment/classify'
 import { decryptApiKey } from '../lib/enrichment/crypto'
+import { categoryUpdate } from '../lib/enrichment/category-source'
 import { llmEnrich } from '../lib/enrichment/llm-enrich'
 import { archiveExpiredStash } from '../lib/db/queries/links'
 import { stashExpiryCutoff, stashExpireDays } from '../lib/stash/expiry'
@@ -199,6 +200,8 @@ async function main() {
             existingDescription: link.description,
             domain: link.domain,
             title: link.title,
+            url: link.url,
+            knownTags: new Set(knownTagRows.map((r) => r.name)),
           },
           apiKey
         )
@@ -224,7 +227,7 @@ async function main() {
     await db.update(schema.links)
       .set({
         ...(usedLlm || link.description === null ? { description: result.description } : {}),
-        category: result.category,
+        ...categoryUpdate(link.categorySource, result.category, usedLlm ? 'llm' : 'rule'),
         enrichmentSource,
         enrichmentError,
         updatedAt: new Date(),

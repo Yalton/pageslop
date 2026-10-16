@@ -83,6 +83,56 @@ describe('llmEnrich', () => {
   })
 })
 
+describe('llmEnrich prompt', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  async function callAndGetRequest(input: Record<string, unknown>) {
+    const mockCreate = getMockCreate()
+    mockCreate.mockResolvedValueOnce(validLLMResponse)
+    const { llmEnrich } = await import('@/lib/enrichment/llm-enrich')
+    await llmEnrich({ ...sampleInput, ...input } as never, 'sk-ant-test-key')
+    return mockCreate.mock.calls[0][0] as { system: string; messages: { content: string }[] }
+  }
+
+  it('includes the URL and existing description in the user message', async () => {
+    const req = await callAndGetRequest({
+      url: 'https://www.youtube.com/watch?v=abc',
+      existingDescription: 'Official music video',
+    })
+    const msg = req.messages[0].content
+    expect(msg).toContain('URL: https://www.youtube.com/watch?v=abc')
+    expect(msg).toContain('Description: Official music video')
+  })
+
+  it('lists known tags and tells the model to prefer them', async () => {
+    const req = await callAndGetRequest({ knownTags: new Set(['music', 'rust']) })
+    const msg = req.messages[0].content
+    expect(msg).toMatch(/Existing tags:.*music/)
+    expect(msg).toContain('rust')
+    expect(req.system).toMatch(/prefer.*existing tags/i)
+  })
+
+  it('omits the existing tags line when there are none', async () => {
+    const req = await callAndGetRequest({ knownTags: new Set() })
+    expect(req.messages[0].content).not.toContain('Existing tags')
+  })
+
+  it('strips boilerplate from the body excerpt', async () => {
+    const footer = 'About Press Copyright Contact us Creators Advertise Developers Terms Privacy Policy & Safety How YouTube works Test new features'
+    const req = await callAndGetRequest({ bodyText: `Great song lyrics ${footer}` })
+    expect(req.messages[0].content).toContain('Great song lyrics')
+    expect(req.messages[0].content).not.toContain('Press Copyright')
+  })
+
+  it('tells the model to pick the category by what the content is', async () => {
+    const req = await callAndGetRequest({})
+    expect(req.system).toMatch(/music video/i)
+    expect(req.system).toContain('Entertainment')
+  })
+})
+
 describe('validateApiKey', () => {
   beforeEach(() => {
     vi.clearAllMocks()

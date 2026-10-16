@@ -146,6 +146,7 @@ describe('PATCH /api/links/[id] with stashState', () => {
     expect(updateLinkFields).toHaveBeenCalledWith('user-1', 'link-1', {
       description: 'd',
       category: 'News',
+      categorySource: 'user',
       stashState: 'read',
     })
   })

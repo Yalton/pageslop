@@ -6,6 +6,7 @@ export const LINK_DEFAULTS: Pick<
   Link,
   | 'enrichmentSource'
   | 'enrichmentError'
+  | 'categorySource'
   | 'uptimeStatus'
   | 'lastStatusCode'
   | 'lastCheckedAt'
@@ -16,6 +17,7 @@ export const LINK_DEFAULTS: Pick<
 > = {
   enrichmentSource: null,
   enrichmentError: null,
+  categorySource: null,
   uptimeStatus: 'unchecked',
   lastStatusCode: null,
   lastCheckedAt: null,
