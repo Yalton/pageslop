@@ -20,7 +20,11 @@ describe('link list cursor', () => {
     ['json but wrong shape', Buffer.from('{"a":1}').toString('base64url')],
     ['bad timestamp', Buffer.from(JSON.stringify(['yesterday', 'x'])).toString('base64url')],
     ['sql in timestamp', Buffer.from(JSON.stringify(["2026-10-01 00:00:00'; drop", 'x'])).toString('base64url')],
-    ['empty id', Buffer.from(JSON.stringify(['2026-10-01 00:00:00', ''])).toString('base64url')],
+    ['impossible date and time', Buffer.from(JSON.stringify(['2026-13-45 99:99:99', 'x'])).toString('base64url')],
+    ['Feb 30', Buffer.from(JSON.stringify(['2026-02-30 00:00:00', 'x'])).toString('base64url')],
+    ['hour 24', Buffer.from(JSON.stringify(['2026-10-01 24:00:00', 'x'])).toString('base64url')],
+    ['seconds 60', Buffer.from(JSON.stringify(['2026-10-01 00:00:60', 'x'])).toString('base64url')],
+    ['empty id',Buffer.from(JSON.stringify(['2026-10-01 00:00:00', ''])).toString('base64url')],
   ])('returns null for %s', (_label, raw) => {
     expect(decodeCursor(raw)).toBeNull()
   })
