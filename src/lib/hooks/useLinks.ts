@@ -76,11 +76,11 @@ export function useLinks() {
     [source, pendingVersion],
   )
 
-  async function saveLinks(urls: string, force = false): Promise<LinkWithDuplicate[]> {
+  async function saveLinks(urls: string): Promise<LinkWithDuplicate[]> {
     const res = await fetch('/api/links', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ urls, force } satisfies SaveLinksRequest),
+      body: JSON.stringify({ urls } satisfies SaveLinksRequest),
     })
     const { saved } = await res.json()
 

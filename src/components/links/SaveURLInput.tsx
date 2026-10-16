@@ -47,13 +47,9 @@ export function SaveURLInput() {
         toast.success('Link saved', { duration: 3000 })
       }
 
-      for (const item of duplicates) {
-        toast.warning('This link is already saved', {
-          duration: 5000,
-          action: {
-            label: 'Save Again',
-            onClick: () => saveLinks(item.url, true),
-          },
+      if (duplicates.length > 0) {
+        toast.info(duplicates.length === 1 ? 'Already saved' : `${duplicates.length} links were already saved`, {
+          duration: 3000,
         })
       }
 

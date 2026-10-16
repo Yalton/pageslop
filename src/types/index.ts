@@ -70,7 +70,6 @@ export interface LinkTag {
 
 export interface SaveLinksRequest {
   urls: string
-  force?: boolean
 }
 
 export interface SaveLinksResponse {

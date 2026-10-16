@@ -7,9 +7,10 @@ const h = vi.hoisted(() => {
   const from = vi.fn(() => ({ where: selectWhere }))
   const select = vi.fn(() => ({ from }))
 
-  // insert().values().returning()
+  // insert().values().onConflictDoNothing().returning()
   const insertReturning = vi.fn<() => Promise<unknown[]>>()
-  const values = vi.fn(() => ({ returning: insertReturning }))
+  const onConflictDoNothing = vi.fn(() => ({ returning: insertReturning }))
+  const values = vi.fn(() => ({ returning: insertReturning, onConflictDoNothing }))
   const insert = vi.fn(() => ({ values }))
 
   // update().set().where() is awaitable directly or via .returning()
@@ -30,7 +31,7 @@ const h = vi.hoisted(() => {
   }
   const transaction = vi.fn(async (fn: (t: typeof tx) => Promise<unknown>) => fn(tx))
 
-  return { limit, selectWhere, from, select, insertReturning, values, insert, updateReturning, updateWhere, set, update, tx, transaction }
+  return { limit, selectWhere, from, select, insertReturning, onConflictDoNothing, values, insert, updateReturning, updateWhere, set, update, tx, transaction }
 })
 
 vi.mock('@/lib/db/client', () => ({
@@ -39,7 +40,7 @@ vi.mock('@/lib/db/client', () => ({
 
 import { PgDialect } from 'drizzle-orm/pg-core'
 import type { SQL } from 'drizzle-orm'
-import { insertLink, stashTabs, bulkSetStashState, updateLinkFields } from '@/lib/db/queries/links'
+import { insertLink, findDuplicate, stashTabs, bulkSetStashState, updateLinkFields } from '@/lib/db/queries/links'
 
 // Render a drizzle SQL fragment, so a test can check what it filters or sets.
 const render = (fragment: unknown) => new PgDialect().sqlToQuery(fragment as SQL)
@@ -79,8 +80,46 @@ describe('insertLink', () => {
   })
 })
 
+describe('duplicate URLs', () => {
+  it('insertLink stores the canonical URL', async () => {
+    h.insertReturning.mockResolvedValueOnce([{ id: 'l1', url: 'http://ombi.billbert.co/' }])
+    await insertLink('user-1', 'http://Ombi.Billbert.co')
+    expect(h.values).toHaveBeenCalledWith(expect.objectContaining({ url: 'http://ombi.billbert.co/' }))
+  })
+
+  it('insertLink returns the existing row instead of throwing when the URL is already saved', async () => {
+    const existing = { id: 'old-1', userId: 'user-1', url: 'https://a.com/' }
+    h.insertReturning.mockResolvedValueOnce([])
+    h.limit.mockResolvedValueOnce([existing])
+    await expect(insertLink('user-1', 'https://a.com')).resolves.toBe(existing)
+    expect(h.onConflictDoNothing).toHaveBeenCalled()
+  })
+
+  it('findDuplicate looks up the canonical URL', async () => {
+    h.limit.mockResolvedValueOnce([])
+    await findDuplicate('user-1', 'https://A.com')
+    const where = render((h.selectWhere.mock.calls[0] as unknown[])[0])
+    expect(where.params).toContain('https://a.com/')
+  })
+})
+
 describe('stashTabs', () => {
   const closedAt = new Date('2026-10-02T08:00:00Z')
+
+  it('treats URLs that differ only by the root slash as one link, but echoes both as saved', async () => {
+    h.limit.mockResolvedValueOnce([])
+    h.insertReturning.mockResolvedValueOnce([{ id: 'new-1', url: 'https://a.com/' }])
+
+    const result = await stashTabs('user-1', [
+      { url: 'https://a.com', closedAt },
+      { url: 'https://a.com/', closedAt },
+    ])
+
+    expect(h.insert).toHaveBeenCalledTimes(1)
+    expect(h.values).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://a.com/' }))
+    expect(result.saved).toEqual(['https://a.com', 'https://a.com/'])
+    expect(result.inserted).toEqual([{ id: 'new-1', url: 'https://a.com/' }])
+  })
 
   it('inserts a new URL as stash/inbox and reports it in saved and inserted', async () => {
     h.limit.mockResolvedValueOnce([])
@@ -167,7 +206,7 @@ describe('stashTabs', () => {
 
   it('echoes URL strings byte-for-byte (trailing slash, fragment) in input order', async () => {
     const urls = ['https://a.com/', 'https://a.com', 'https://a.com/page#frag']
-    for (const url of urls) {
+    for (const url of ['https://a.com/', 'https://a.com/page#frag']) {
       h.limit.mockResolvedValueOnce([])
       h.insertReturning.mockResolvedValueOnce([{ id: `id-${url}`, url }])
     }
@@ -175,7 +214,7 @@ describe('stashTabs', () => {
     const result = await stashTabs('user-1', urls.map((url) => ({ url, closedAt })))
 
     expect(result.saved).toEqual(urls)
-    expect(result.inserted.map((i) => i.url)).toEqual(urls)
+    expect(result.inserted.map((i) => i.url)).toEqual(['https://a.com/', 'https://a.com/page#frag'])
   })
 
   // pageslop-dpz: a failure part-way through must not leave earlier inserts

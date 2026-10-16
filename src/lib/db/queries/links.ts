@@ -2,6 +2,7 @@ import { db } from '@/lib/db/client'
 import { links, rawContent, linkTags, tags } from '@/lib/db/schema'
 import { eq, and, desc, inArray, lt, sql, type SQL } from 'drizzle-orm'
 import type { LinkSource, LinkWithTags, StashState, Tag } from '@/types'
+import { normalizeUrl } from '@/lib/links/normalize-url'
 
 /**
  * List all links eligible for uptime monitoring.
@@ -24,12 +25,17 @@ export interface InsertLinkOptions {
   title?: string | null
 }
 
+/**
+ * Insert a link under its canonical URL. If the user already saved that URL
+ * (including a concurrent save), returns the existing row instead.
+ */
 export async function insertLink(
   userId: string,
-  url: string,
+  rawUrl: string,
   opts: InsertLinkOptions = {},
   executor: Executor = db,
 ) {
+  const url = normalizeUrl(rawUrl)
   const domain = new URL(url).hostname.replace(/^www\./, '')
   const [link] = await executor.insert(links)
     .values({
@@ -42,13 +48,17 @@ export async function insertLink(
       stashedAt: opts.stashedAt ?? null,
       title: opts.title ?? null,
     })
+    .onConflictDoNothing({ target: [links.userId, links.url] })
     .returning()
-  return link
+  if (link) return link
+  const existing = await findDuplicate(userId, url, executor)
+  if (!existing) throw new Error(`insertLink: conflict on ${url} but no existing row`)
+  return existing
 }
 
 export async function findDuplicate(userId: string, url: string, executor: Executor = db) {
   const result = await executor.select().from(links)
-    .where(and(eq(links.userId, userId), eq(links.url, url)))
+    .where(and(eq(links.userId, userId), eq(links.url, normalizeUrl(url))))
     .limit(1)
   return result[0] || null
 }
@@ -216,25 +226,28 @@ export interface StashTabInput {
  * the call rejects, so a link is never committed without reaching `inserted` (and
  * so never left unscraped). The extension keeps the tabs open and retries.
  *
- * `saved` echoes each distinct URL string exactly as given (no normalisation), so the
- * extension can match it against its open tabs. `inserted` lists only new links, which
- * the caller must enqueue for scraping.
+ * URLs are collapsed by canonical form (see normalizeUrl), but `saved` echoes each
+ * distinct URL string exactly as given, so the extension can match it against its open
+ * tabs. `inserted` lists only new links (canonical URL), which the caller must enqueue
+ * for scraping.
  */
 export async function stashTabs(
   userId: string,
   tabs: StashTabInput[]
 ): Promise<{ saved: string[]; inserted: { id: string; url: string }[] }> {
-  const byUrl = new Map<string, { title?: string; closedAt: Date }>()
+  const byUrl = new Map<string, { title?: string; closedAt: Date; given: string[] }>()
   for (const tab of tabs) {
     const title = tab.title ? tab.title : undefined
-    const prev = byUrl.get(tab.url)
+    const key = normalizeUrl(tab.url)
+    const prev = byUrl.get(key)
     if (!prev) {
-      byUrl.set(tab.url, { title, closedAt: tab.closedAt })
+      byUrl.set(key, { title, closedAt: tab.closedAt, given: [tab.url] })
       continue
     }
-    byUrl.set(tab.url, {
+    byUrl.set(key, {
       title: prev.title ?? title,
       closedAt: tab.closedAt.getTime() > prev.closedAt.getTime() ? tab.closedAt : prev.closedAt,
+      given: prev.given.includes(tab.url) ? prev.given : [...prev.given, tab.url],
     })
   }
 
@@ -263,7 +276,7 @@ export async function stashTabs(
         }, tx)
         inserted.push({ id: link.id, url })
       }
-      saved.push(url)
+      saved.push(...tab.given)
     }
   })
 
