@@ -198,3 +198,43 @@ export function crossLinkNodes(data: GraphData): void {
     }
   }
 }
+
+// Initial fit: padding (px) for zoomToFit and its animation duration
+export const FIT_PADDING = 60
+export const FIT_DURATION_MS = 400
+// Weak centring pull so unconnected nodes stay near the cluster
+export const ISOLATED_PULL = 0.08
+export const CONNECTED_PULL = 0.005
+
+export interface PullNode {
+  x?: number
+  y?: number
+  vx?: number
+  vy?: number
+  neighbors?: unknown[]
+}
+
+/** Pull strength toward the centre: isolated nodes (no neighbours) get a stronger pull. */
+export function pullStrength(node: PullNode): number {
+  return node.neighbors && node.neighbors.length > 0 ? CONNECTED_PULL : ISOLATED_PULL
+}
+
+/**
+ * d3-force compatible force pulling every node toward the origin.
+ * Implemented locally (a force is just `(alpha) => void` + `initialize`) so we
+ * do not depend on the transitive d3-force-3d package.
+ */
+export function createCentringForce() {
+  let nodes: PullNode[] = []
+  const force = (alpha: number) => {
+    for (const node of nodes) {
+      const k = pullStrength(node) * alpha
+      node.vx = (node.vx ?? 0) - (node.x ?? 0) * k
+      node.vy = (node.vy ?? 0) - (node.y ?? 0) * k
+    }
+  }
+  force.initialize = (n: PullNode[]) => {
+    nodes = n
+  }
+  return force
+}
