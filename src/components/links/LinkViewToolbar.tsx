@@ -24,6 +24,9 @@ interface LinkViewToolbarProps {
   domains: FacetOption[]
   categories: FacetOption[]
   onChange: (patch: LinkViewPatch) => void
+  /** Open state of the website filter, so the site tabs' "more" button can open it. */
+  websiteOpen?: boolean
+  onWebsiteOpenChange?: (open: boolean) => void
 }
 
 function FacetSelect({
@@ -32,15 +35,24 @@ function FacetSelect({
   value,
   options,
   onChange,
+  open,
+  onOpenChange,
 }: {
   label: string
   anyLabel: string
   value: string | null
   options: FacetOption[]
   onChange: (value: string | null) => void
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
   return (
-    <Select value={facetToSelect(value)} onValueChange={(v) => onChange(facetFromSelect(v))}>
+    <Select
+      value={facetToSelect(value)}
+      onValueChange={(v) => onChange(facetFromSelect(v))}
+      open={open}
+      onOpenChange={onOpenChange}
+    >
       <SelectTrigger size="sm" aria-label={label} className="max-w-[200px]">
         <SelectValue />
       </SelectTrigger>
@@ -57,7 +69,14 @@ function FacetSelect({
 }
 
 /** Sort and filter controls for All Links and Archived. State lives in the URL; see link-view.ts. */
-export function LinkViewToolbar({ view, domains, categories, onChange }: LinkViewToolbarProps) {
+export function LinkViewToolbar({
+  view,
+  domains,
+  categories,
+  onChange,
+  websiteOpen,
+  onWebsiteOpenChange,
+}: LinkViewToolbarProps) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <Select value={view.sort} onValueChange={(v) => onChange({ sort: v as LinkSort })}>
@@ -78,6 +97,8 @@ export function LinkViewToolbar({ view, domains, categories, onChange }: LinkVie
         value={view.domain}
         options={domains}
         onChange={(domain) => onChange({ domain })}
+        open={websiteOpen}
+        onOpenChange={onWebsiteOpenChange}
       />
       {(categories.length > 0 || view.category) && (
         <FacetSelect
