@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { selectTagsToShow } from '@/lib/utils/tags-view'
+import { selectTagsToShow, tagWeight } from '@/lib/utils/tags-view'
 
 const tags = [
   { name: 'code', count: 25 },
@@ -25,5 +25,21 @@ describe('selectTagsToShow', () => {
     const r = selectTagsToShow(tags, 'CS', false)
     expect(r.shown.map((t) => t.name)).toEqual(['css'])
     expect(r.hiddenCount).toBe(0)
+  })
+})
+
+describe('tagWeight', () => {
+  it('is 1 for the max and proportional below it', () => {
+    expect(tagWeight(25, 25)).toBe(1)
+    expect(tagWeight(10, 20)).toBe(0.5)
+  })
+  it('never drops below the floor', () => {
+    expect(tagWeight(1, 1000)).toBe(0.08)
+    expect(tagWeight(0, 10, 0.1)).toBe(0.1)
+  })
+  it('handles a missing or zero max and clamps overshoot', () => {
+    expect(tagWeight(5, 0)).toBe(0.08)
+    expect(tagWeight(5, NaN)).toBe(0.08)
+    expect(tagWeight(30, 25)).toBe(1)
   })
 })

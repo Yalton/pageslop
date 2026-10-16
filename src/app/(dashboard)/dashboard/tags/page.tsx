@@ -3,12 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import useSWR from 'swr'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { SearchInput } from '@/components/links/SearchInput'
 import { PageSpinner } from '@/components/ui/spinner'
 import { jsonFetcher } from '@/lib/swr/fetcher'
-import { selectTagsToShow, type TagWithCount } from '@/lib/utils/tags-view'
+import { selectTagsToShow, tagWeight, type TagWithCount } from '@/lib/utils/tags-view'
 
 export default function TagsPage() {
   const router = useRouter()
@@ -22,6 +21,7 @@ export default function TagsPage() {
   const [showAll, setShowAll] = useState(false)
 
   const { shown: filteredTags, hiddenCount } = selectTagsToShow(tags ?? [], filterQuery, showAll)
+  const maxCount = (tags ?? []).reduce((m, t) => Math.max(m, t.count), 0)
   const hasSingleUse = (tags ?? []).some((t) => t.count <= 1)
 
   function handleTagClick(tagName: string) {
@@ -57,18 +57,24 @@ export default function TagsPage() {
       )}
 
       {!isLoading && filteredTags.length > 0 && (
-        <div className="flex flex-col gap-1 max-w-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3">
           {filteredTags.map((tag) => (
             <button
               key={tag.name}
               type="button"
               onClick={() => handleTagClick(tag.name)}
-              className="flex items-center justify-between px-3 py-2 rounded-md hover:bg-muted transition-colors text-left"
+              className="group flex flex-col gap-3 rounded-xl border border-border/60 bg-card/60 p-4 text-left backdrop-blur-sm transition-[transform,box-shadow,border-color] duration-300 ease-out hover:border-primary/50 hover:shadow-[0_14px_40px_-14px_hsl(var(--primary)/0.55)] motion-safe:hover:-translate-y-1"
             >
-              <span className="text-sm font-medium">{tag.name}</span>
-              <Badge variant="secondary" className="text-xs shrink-0">
-                {tag.count}
-              </Badge>
+              <span className="flex items-baseline justify-between gap-3">
+                <span className="truncate font-display text-base font-semibold">{tag.name}</span>
+                <span className="shrink-0 text-sm tabular-nums text-muted-foreground">{tag.count}</span>
+              </span>
+              <span className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                <span
+                  className="block h-full rounded-full bg-gradient-to-r from-primary to-[hsl(290_70%_52%)]"
+                  style={{ width: `${Math.round(tagWeight(tag.count, maxCount) * 100)}%` }}
+                />
+              </span>
             </button>
           ))}
         </div>
