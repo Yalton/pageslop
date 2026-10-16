@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { tagPillClass } from '@/components/links/tag-pill'
+import { cn } from '@/lib/utils'
 import type { Tag } from '@/types'
 
 interface TagEditorProps {
@@ -60,13 +62,13 @@ export function TagEditor({ linkId, tags, onTagAdded, onTagRemoved, onTagClick }
           <Badge
             key={tag.id}
             variant={tag.source === 'user' ? 'outline' : 'secondary'}
-            className="gap-1 pr-1"
+            className={cn('gap-1 pr-1', onTagClick && tagPillClass)}
           >
             {onTagClick ? (
               <button
                 type="button"
                 onClick={() => onTagClick(tag.name)}
-                className="hover:underline"
+                className="hover:underline focus-visible:outline-none"
                 aria-label={`Show links tagged ${tag.name}`}
               >
                 {tag.name}

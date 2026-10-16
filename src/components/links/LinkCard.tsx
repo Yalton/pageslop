@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { UNDO_WINDOW_MS } from '@/lib/links/pending-deletes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { tagPillClass } from '@/components/links/tag-pill'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -45,6 +46,7 @@ export function LinkCard({
   onToggleSelect,
 }: LinkCardProps) {
   const [imgError, setImgError] = useState(false)
+  const [faviconError, setFaviconError] = useState(false)
 
   if (link.status === 'pending') {
     return <LinkSkeleton variant="grid" />
@@ -103,11 +105,12 @@ export function LinkCard({
             className="w-full h-full flex items-center justify-center"
             style={{ backgroundColor: `hsl(${hue}, 65%, 55%)` }}
           >
-            {link.favicon ? (
+            {link.favicon && !faviconError ? (
               <img
                 src={link.favicon}
                 alt=""
                 className="size-12 object-contain"
+                onError={() => setFaviconError(true)}
               />
             ) : (
               <span className="text-4xl font-semibold text-white">{domainInitial}</span>
@@ -153,7 +156,7 @@ export function LinkCard({
         {visibleTags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {visibleTags.map((tag) => (
-              <Badge key={tag.id} variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80" asChild>
+              <Badge key={tag.id} variant="secondary" className={cn('text-xs', tagPillClass)} asChild>
                 <button
                   type="button"
                   aria-label={`Show links tagged ${tag.name}`}

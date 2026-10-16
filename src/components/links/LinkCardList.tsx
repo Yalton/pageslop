@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { UNDO_WINDOW_MS } from '@/lib/links/pending-deletes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { tagPillClass } from '@/components/links/tag-pill'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -101,7 +102,7 @@ export function LinkCardList({
       {visibleTags.length > 0 && (
         <div className="hidden sm:flex items-center gap-1 shrink-0">
           {visibleTags.map((tag) => (
-            <Badge key={tag.id} variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80" asChild>
+            <Badge key={tag.id} variant="secondary" className={cn('text-xs', tagPillClass)} asChild>
               <button
                 type="button"
                 aria-label={`Show links tagged ${tag.name}`}
