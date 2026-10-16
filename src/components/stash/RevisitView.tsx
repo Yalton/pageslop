@@ -103,7 +103,7 @@ export function RevisitView() {
   if (revisitLinks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center flex-1 py-24 text-center">
-        <Inbox className="size-10 text-muted-foreground mb-4" />
+        <div className="empty-icon"><Inbox className="size-7" /></div>
         <h2 className="text-[20px] font-semibold leading-[1.2] mb-2">Nothing to revisit</h2>
         <p className="text-sm text-muted-foreground max-w-sm">
           Tabs saved by the browser extension show up here. Set it up from the{' '}

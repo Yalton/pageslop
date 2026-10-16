@@ -370,7 +370,7 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
 
       {view === 'archived' && visibleLinks.length === 0 && !isLoading && (
         <div className="flex flex-col items-center justify-center flex-1 py-24 text-center">
-          <Archive className="size-10 text-muted-foreground mb-4" />
+          <div className="empty-icon"><Archive className="size-7" /></div>
           <h2 className="text-[20px] font-semibold leading-[1.2] mb-2">No archived links</h2>
           <p className="text-sm text-muted-foreground max-w-sm">
             Tabs you dismiss in To Revisit, or that sit there unread too long, end up here. Restore one to send it back to

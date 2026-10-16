@@ -21,6 +21,7 @@ import { domainToHue } from '@/lib/utils/domain-color'
 import { SelectCheckbox, type SelectionProps } from '@/components/links/SelectCheckbox'
 import { isArchived } from '@/lib/utils/all-links-filter'
 import { cn } from '@/lib/utils'
+import { CATEGORY_COLORS } from '@/components/graph/graphUtils'
 import type { LinkWithTags } from '@/types'
 
 interface LinkCardProps extends SelectionProps {
@@ -56,6 +57,7 @@ export function LinkCard({
   const domainInitial = (link.domain || link.url).charAt(0).toUpperCase()
   const visibleTags = link.tags?.slice(0, 3) ?? []
   const extraTagCount = (link.tags?.length ?? 0) - 3
+  const categoryColor = CATEGORY_COLORS[link.category ?? 'Other'] ?? CATEGORY_COLORS.Other
 
   function handleDelete() {
     onDelete(link.id)
@@ -75,7 +77,9 @@ export function LinkCard({
   return (
     <div
       className={cn(
-        'group overflow-hidden rounded-lg border bg-card text-card-foreground cursor-pointer hover:border-primary transition-colors relative',
+        'group relative overflow-hidden rounded-xl border border-border/60 bg-card/80 text-card-foreground cursor-pointer backdrop-blur-sm',
+        'transition-[transform,box-shadow,border-color] duration-300 ease-out',
+        'hover:border-primary/50 hover:shadow-[0_14px_40px_-14px_hsl(var(--primary)/0.55)] motion-safe:hover:-translate-y-1',
         selected && 'border-primary ring-2 ring-primary',
       )}
       onClick={(e) => (selecting && onToggleSelect ? onToggleSelect(link.id, e.shiftKey) : onOpenDetail(link))}
@@ -92,18 +96,18 @@ export function LinkCard({
         />
       )}
       {/* Hero image */}
-      <div className="h-[160px] w-full overflow-hidden">
+      <div className="relative h-[160px] w-full overflow-hidden">
         {link.ogImage && !imgError ? (
           <img
             src={link.ogImage}
             alt={link.title || ''}
-            className="w-full h-[160px] object-cover"
+            className="w-full h-[160px] object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:ease-out motion-safe:group-hover:scale-105"
             onError={() => setImgError(true)}
           />
         ) : (
           <div
-            className="w-full h-full flex items-center justify-center"
-            style={{ backgroundColor: `hsl(${hue}, 65%, 55%)` }}
+            className="w-full h-full flex items-center justify-center motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105"
+            style={{ backgroundImage: `linear-gradient(135deg, hsl(${hue}, 70%, 58%), hsl(${(hue + 40) % 360}, 65%, 38%))` }}
           >
             {link.favicon && !faviconError ? (
               <img
@@ -113,10 +117,12 @@ export function LinkCard({
                 onError={() => setFaviconError(true)}
               />
             ) : (
-              <span className="text-4xl font-semibold text-white">{domainInitial}</span>
+              <span className="text-4xl font-semibold text-white drop-shadow">{domainInitial}</span>
             )}
           </div>
         )}
+        {/* Category colour edge between image and body */}
+        <div className="absolute inset-x-0 bottom-0 h-0.5" style={{ backgroundColor: categoryColor }} aria-hidden="true" />
       </div>
 
       {/* Card body */}
@@ -136,7 +142,12 @@ export function LinkCard({
             </Badge>
           )}
           {link.category && link.category !== 'Other' && (
-            <Badge variant="outline" className={`text-xs shrink-0${isArchived(link) ? '' : ' ml-auto'}`}>
+            <Badge
+              variant="outline"
+              className={`text-xs shrink-0 gap-1.5${isArchived(link) ? '' : ' ml-auto'}`}
+              style={{ borderColor: `${categoryColor}66`, backgroundColor: `${categoryColor}1a` }}
+            >
+              <span className="size-1.5 rounded-full" style={{ backgroundColor: categoryColor }} aria-hidden="true" />
               {link.category}
             </Badge>
           )}
@@ -144,7 +155,7 @@ export function LinkCard({
 
         {/* Title */}
         {link.title && (
-          <p className="text-sm font-semibold leading-snug line-clamp-2">{link.title}</p>
+          <p className="text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 transition-colors group-hover:text-primary">{link.title}</p>
         )}
 
         {/* Description */}

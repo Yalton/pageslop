@@ -18,7 +18,7 @@ export default async function DashboardLayout({
 
   return (
     <DataProvider userId={session.user.id}>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen">
         <Sidebar />
 
         {/* Main content area with left margin for sidebar */}
