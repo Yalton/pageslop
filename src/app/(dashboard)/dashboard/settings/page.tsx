@@ -3,9 +3,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Upload, FileDown, CheckCircle, AlertCircle, Key, Trash2, Lock, Database } from 'lucide-react'
+import { Upload, FileDown, CheckCircle, AlertCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { ExtensionTokensCard } from '@/components/settings/ExtensionTokensCard'
 import { McpConnectCard } from '@/components/settings/McpConnectCard'
+import { SettingsNav, SettingsSection, settingsPanelClass } from '@/components/settings/SettingsSections'
 
 interface ImportState {
   jobId: string | null
@@ -263,351 +265,338 @@ export default function SettingsPage() {
   const isImporting = importState.status === 'uploading' || importState.status === 'processing'
 
   return (
-    <div className="flex flex-col min-h-screen p-6">
-      <h1 className="text-3xl font-semibold tracking-tight mb-6">Settings</h1>
+    <div className="min-h-screen p-6 lg:p-8">
+      <div className="mx-auto max-w-5xl">
+        <h1 className="mb-6 text-3xl font-semibold tracking-tight">Settings</h1>
 
-      <h2 className="text-lg font-semibold mt-2 mb-4">
-        <span className="inline-flex items-center gap-2">
-          <Database className="size-5" />
-          Data Management
-        </span>
-      </h2>
+        <div className="lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-8">
+          <SettingsNav />
 
-      {/* Import section */}
-      <div className="bg-card rounded-lg border p-6 mb-4">
-        <h3 className="font-semibold mb-1">Import Bookmarks</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Upload a bookmarks HTML file exported from Chrome, Firefox, or Safari.
-        </p>
+          <div className="flex min-w-0 flex-col gap-10">
+            <SettingsSection id="browser-extension">
+              <ExtensionTokensCard />
+            </SettingsSection>
 
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".html"
-          className="hidden"
-          onChange={handleFileInputChange}
-          disabled={isImporting}
-        />
+            <SettingsSection id="mcp">
+              <McpConnectCard />
+            </SettingsSection>
 
-        {/* Drop zone */}
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={isImporting ? undefined : handleZoneClick}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') handleZoneClick()
-          }}
-          className={[
-            'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors',
-            isDragOver
-              ? 'border-primary bg-primary/5'
-              : 'border-muted-foreground/25 hover:border-primary/50',
-            isImporting ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
-          ].join(' ')}
-        >
-          <Upload className="size-8 text-muted-foreground" />
-          <div className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Click to browse</span> or drag and drop
-          </div>
-          <p className="text-xs text-muted-foreground">HTML bookmarks file</p>
-        </div>
+            <SettingsSection id="llm">
+              {keyLoaded && (
+                <div className={settingsPanelClass}>
+                  <h3 className="font-semibold mb-1">Anthropic API Key</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Add your Anthropic API key to enable AI-powered tags and descriptions for newly saved links.
+                  </p>
 
-        {/* Status messages */}
-        {importState.status === 'uploading' && (
-          <div className="mt-3 text-sm text-muted-foreground animate-pulse">
-            Uploading and parsing bookmarks...
-          </div>
-        )}
+                  {!hasKey ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <input
+                        type="password"
+                        value={apiKeyInput}
+                        onChange={(e) => setApiKeyInput(e.target.value)}
+                        placeholder="sk-ant-..."
+                        className="flex-1 min-w-[240px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        disabled={keyStatus === 'saving'}
+                      />
+                      <Button
+                        variant="default"
+                        onClick={handleSaveKey}
+                        disabled={keyStatus === 'saving' || !apiKeyInput.trim()}
+                      >
+                        {keyStatus === 'saving' ? 'Saving...' : 'Save Key'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="font-mono text-sm bg-muted px-3 py-2 rounded-md text-muted-foreground">
+                        Current key: {maskedKey}
+                      </span>
+                      <Button
+                        variant="destructive"
+                        onClick={handleRemoveKey}
+                        disabled={keyStatus === 'removing'}
+                      >
+                        {keyStatus === 'removing' ? 'Removing...' : 'Remove Key'}
+                      </Button>
+                    </div>
+                  )}
 
-        {importState.status === 'processing' && (
-          <div className="mt-3 text-sm text-muted-foreground">
-            Importing... {importState.processedCount} of {importState.totalCount}
-          </div>
-        )}
+                  {keyStatus === 'error' && keyError && (
+                    <div className="mt-3 flex items-center gap-2 text-sm text-destructive">
+                      <AlertCircle className="size-4" />
+                      {keyError}
+                    </div>
+                  )}
 
-        {importState.status === 'complete' && (
-          <div className="mt-3 flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-            <CheckCircle className="size-4" />
-            {importState.totalCount === 0
-              ? 'No new bookmarks to import.'
-              : `Import complete! ${importState.totalCount} bookmarks imported.`}
-          </div>
-        )}
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Your key is encrypted at rest and never stored in plain text. Only newly saved links will use LLM enrichment.
+                  </p>
+                </div>
+              )}
+            </SettingsSection>
 
-        {importState.status === 'error' && (
-          <div className="mt-3 flex items-center gap-2 text-sm text-destructive">
-            <AlertCircle className="size-4" />
-            {importState.errorMessage}
-          </div>
-        )}
-      </div>
+            <SettingsSection id="account">
+              <div className={settingsPanelClass}>
+                <h3 className="font-semibold mb-1">Change Password</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Update your account password.
+                </p>
+                <form
+                  className="flex flex-col gap-3 max-w-sm"
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    setPasswordError(null)
 
-      {/* Export section */}
-      <div className="bg-card rounded-lg border p-6">
-        <h3 className="font-semibold mb-1">Export Links</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Download your link collection for backup or migration.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Button
-            variant="outline"
-            onClick={() => {
-              window.location.href = '/api/export/json'
-            }}
-          >
-            <FileDown />
-            Export JSON
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              window.location.href = '/api/export/html'
-            }}
-          >
-            <FileDown />
-            Export HTML
-          </Button>
-        </div>
-      </div>
-
-      {/* LLM Integration section */}
-      <h2 className="text-lg font-semibold mt-8 mb-4">
-        <span className="inline-flex items-center gap-2">
-          <Key className="size-5" />
-          LLM Integration
-        </span>
-      </h2>
-
-      {keyLoaded && (
-        <div className="bg-card rounded-lg border p-6">
-          <h3 className="font-semibold mb-1">Anthropic API Key</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Add your Anthropic API key to enable AI-powered tags and descriptions for newly saved links.
-          </p>
-
-          {!hasKey ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="password"
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-                placeholder="sk-ant-..."
-                className="flex-1 min-w-[240px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                disabled={keyStatus === 'saving'}
-              />
-              <Button
-                variant="default"
-                onClick={handleSaveKey}
-                disabled={keyStatus === 'saving' || !apiKeyInput.trim()}
-              >
-                {keyStatus === 'saving' ? 'Saving...' : 'Save Key'}
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="font-mono text-sm bg-muted px-3 py-2 rounded-md text-muted-foreground">
-                Current key: {maskedKey}
-              </span>
-              <Button
-                variant="destructive"
-                onClick={handleRemoveKey}
-                disabled={keyStatus === 'removing'}
-              >
-                {keyStatus === 'removing' ? 'Removing...' : 'Remove Key'}
-              </Button>
-            </div>
-          )}
-
-          {keyStatus === 'error' && keyError && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-destructive">
-              <AlertCircle className="size-4" />
-              {keyError}
-            </div>
-          )}
-
-          <p className="mt-3 text-xs text-muted-foreground">
-            Your key is encrypted at rest and never stored in plain text. Only newly saved links will use LLM enrichment.
-          </p>
-        </div>
-      )}
-
-      {/* Browser Extension */}
-      <ExtensionTokensCard />
-
-      {/* MCP server for AI agents */}
-      <McpConnectCard />
-
-      {/* Change Password */}
-      <h2 className="text-lg font-semibold mt-8 mb-4">
-        <span className="inline-flex items-center gap-2">
-          <Lock className="size-5" />
-          Account Security
-        </span>
-      </h2>
-
-      <div className="bg-card rounded-lg border p-6">
-        <h3 className="font-semibold mb-1">Change Password</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Update your account password.
-        </p>
-        <form
-          className="flex flex-col gap-3 max-w-sm"
-          onSubmit={async (e) => {
-            e.preventDefault()
-            setPasswordError(null)
-
-            if (newPassword.length < 8) {
-              setPasswordError('New password must be at least 8 characters.')
-              setPasswordStatus('error')
-              return
-            }
-            if (newPassword !== confirmNewPassword) {
-              setPasswordError('Passwords do not match.')
-              setPasswordStatus('error')
-              return
-            }
-
-            setPasswordStatus('saving')
-            try {
-              const { error } = await (await import('@/lib/auth/client')).authClient.changePassword({
-                currentPassword,
-                newPassword,
-                revokeOtherSessions: true,
-              })
-
-              if (error) {
-                setPasswordError(error.message || 'Failed to change password.')
-                setPasswordStatus('error')
-                return
-              }
-
-              setPasswordStatus('success')
-              setCurrentPassword('')
-              setNewPassword('')
-              setConfirmNewPassword('')
-              setTimeout(() => setPasswordStatus('idle'), 5000)
-            } catch {
-              setPasswordError('Something went wrong. Please try again.')
-              setPasswordStatus('error')
-            }
-          }}
-        >
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="Current password"
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            disabled={passwordStatus === 'saving'}
-            required
-          />
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="New password (min. 8 characters)"
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            disabled={passwordStatus === 'saving'}
-            required
-          />
-          <input
-            type="password"
-            value={confirmNewPassword}
-            onChange={(e) => setConfirmNewPassword(e.target.value)}
-            placeholder="Confirm new password"
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            disabled={passwordStatus === 'saving'}
-            required
-          />
-          <Button type="submit" disabled={passwordStatus === 'saving'} className="w-fit">
-            {passwordStatus === 'saving' ? 'Updating...' : 'Update Password'}
-          </Button>
-
-          {passwordStatus === 'success' && (
-            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-              <CheckCircle className="size-4" />
-              Password updated successfully.
-            </div>
-          )}
-          {passwordStatus === 'error' && passwordError && (
-            <div className="flex items-center gap-2 text-sm text-destructive">
-              <AlertCircle className="size-4" />
-              {passwordError}
-            </div>
-          )}
-        </form>
-      </div>
-
-      {/* Danger Zone */}
-      <h2 className="text-lg font-semibold mt-8 mb-4 text-destructive">
-        <span className="inline-flex items-center gap-2">
-          <Trash2 className="size-5" />
-          Danger Zone
-        </span>
-      </h2>
-
-      <div className="bg-card rounded-lg border border-destructive/30 p-6">
-        <h3 className="font-semibold mb-1">Delete Account</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Permanently delete your account and all your data. This includes all saved links, tags, and settings. This action cannot be undone.
-        </p>
-
-        {!showDeleteConfirm ? (
-          <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
-            Delete My Account
-          </Button>
-        ) : (
-          <div className="flex flex-col gap-3 max-w-sm">
-            <p className="text-sm font-medium">
-              Type <strong>DELETE</strong> to confirm:
-            </p>
-            <input
-              type="text"
-              value={deleteConfirmText}
-              onChange={(e) => setDeleteConfirmText(e.target.value)}
-              placeholder="Type DELETE"
-              className="rounded-md border border-destructive/50 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
-              disabled={deleteStatus === 'deleting'}
-            />
-            <div className="flex gap-2">
-              <Button
-                variant="destructive"
-                disabled={deleteConfirmText !== 'DELETE' || deleteStatus === 'deleting'}
-                onClick={async () => {
-                  setDeleteStatus('deleting')
-                  try {
-                    const res = await fetch('/api/settings/account', {
-                      method: 'DELETE',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ confirm: 'DELETE' }),
-                    })
-                    if (res.ok) {
-                      router.push('/login')
+                    if (newPassword.length < 8) {
+                      setPasswordError('New password must be at least 8 characters.')
+                      setPasswordStatus('error')
+                      return
                     }
-                  } catch {
-                    setDeleteStatus('idle')
-                  }
-                }}
-              >
-                {deleteStatus === 'deleting' ? 'Deleting...' : 'Permanently Delete'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDeleteConfirm(false)
-                  setDeleteConfirmText('')
-                }}
-                disabled={deleteStatus === 'deleting'}
-              >
-                Cancel
-              </Button>
-            </div>
+                    if (newPassword !== confirmNewPassword) {
+                      setPasswordError('Passwords do not match.')
+                      setPasswordStatus('error')
+                      return
+                    }
+
+                    setPasswordStatus('saving')
+                    try {
+                      const { error } = await (await import('@/lib/auth/client')).authClient.changePassword({
+                        currentPassword,
+                        newPassword,
+                        revokeOtherSessions: true,
+                      })
+
+                      if (error) {
+                        setPasswordError(error.message || 'Failed to change password.')
+                        setPasswordStatus('error')
+                        return
+                      }
+
+                      setPasswordStatus('success')
+                      setCurrentPassword('')
+                      setNewPassword('')
+                      setConfirmNewPassword('')
+                      setTimeout(() => setPasswordStatus('idle'), 5000)
+                    } catch {
+                      setPasswordError('Something went wrong. Please try again.')
+                      setPasswordStatus('error')
+                    }
+                  }}
+                >
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Current password"
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    disabled={passwordStatus === 'saving'}
+                    required
+                  />
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="New password (min. 8 characters)"
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    disabled={passwordStatus === 'saving'}
+                    required
+                  />
+                  <input
+                    type="password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    disabled={passwordStatus === 'saving'}
+                    required
+                  />
+                  <Button type="submit" disabled={passwordStatus === 'saving'} className="w-fit">
+                    {passwordStatus === 'saving' ? 'Updating...' : 'Update Password'}
+                  </Button>
+
+                  {passwordStatus === 'success' && (
+                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                      <CheckCircle className="size-4" />
+                      Password updated successfully.
+                    </div>
+                  )}
+                  {passwordStatus === 'error' && passwordError && (
+                    <div className="flex items-center gap-2 text-sm text-destructive">
+                      <AlertCircle className="size-4" />
+                      {passwordError}
+                    </div>
+                  )}
+                </form>
+              </div>
+            </SettingsSection>
+
+            <SettingsSection id="data">
+              {/* Import section */}
+              <div className={settingsPanelClass}>
+                <h3 className="font-semibold mb-1">Import Bookmarks</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Upload a bookmarks HTML file exported from Chrome, Firefox, or Safari.
+                </p>
+
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".html"
+                  className="hidden"
+                  onChange={handleFileInputChange}
+                  disabled={isImporting}
+                />
+
+                {/* Drop zone */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={isImporting ? undefined : handleZoneClick}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') handleZoneClick()
+                  }}
+                  className={[
+                    'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors',
+                    isDragOver
+                      ? 'border-primary bg-primary/5'
+                      : 'border-muted-foreground/25 hover:border-primary/50',
+                    isImporting ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+                  ].join(' ')}
+                >
+                  <Upload className="size-8 text-muted-foreground" />
+                  <div className="text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">Click to browse</span> or drag and drop
+                  </div>
+                  <p className="text-xs text-muted-foreground">HTML bookmarks file</p>
+                </div>
+
+                {/* Status messages */}
+                {importState.status === 'uploading' && (
+                  <div className="mt-3 text-sm text-muted-foreground animate-pulse">
+                    Uploading and parsing bookmarks...
+                  </div>
+                )}
+
+                {importState.status === 'processing' && (
+                  <div className="mt-3 text-sm text-muted-foreground">
+                    Importing... {importState.processedCount} of {importState.totalCount}
+                  </div>
+                )}
+
+                {importState.status === 'complete' && (
+                  <div className="mt-3 flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                    <CheckCircle className="size-4" />
+                    {importState.totalCount === 0
+                      ? 'No new bookmarks to import.'
+                      : `Import complete! ${importState.totalCount} bookmarks imported.`}
+                  </div>
+                )}
+
+                {importState.status === 'error' && (
+                  <div className="mt-3 flex items-center gap-2 text-sm text-destructive">
+                    <AlertCircle className="size-4" />
+                    {importState.errorMessage}
+                  </div>
+                )}
+              </div>
+
+              {/* Export section */}
+              <div className={settingsPanelClass}>
+                <h3 className="font-semibold mb-1">Export Links</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Download your link collection for backup or migration.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      window.location.href = '/api/export/json'
+                    }}
+                  >
+                    <FileDown />
+                    Export JSON
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      window.location.href = '/api/export/html'
+                    }}
+                  >
+                    <FileDown />
+                    Export HTML
+                  </Button>
+                </div>
+              </div>
+            </SettingsSection>
+
+            <SettingsSection id="danger-zone">
+              <div className={cn(settingsPanelClass, 'border-destructive/30 hover:shadow-[0_8px_30px_-12px_hsl(var(--destructive)/0.35)]')}>
+                <h3 className="font-semibold mb-1">Delete Account</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Permanently delete your account and all your data. This includes all saved links, tags, and settings. This action cannot be undone.
+                </p>
+
+                {!showDeleteConfirm ? (
+                  <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
+                    Delete My Account
+                  </Button>
+                ) : (
+                  <div className="flex flex-col gap-3 max-w-sm">
+                    <p className="text-sm font-medium">
+                      Type <strong>DELETE</strong> to confirm:
+                    </p>
+                    <input
+                      type="text"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="Type DELETE"
+                      className="rounded-md border border-destructive/50 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
+                      disabled={deleteStatus === 'deleting'}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="destructive"
+                        disabled={deleteConfirmText !== 'DELETE' || deleteStatus === 'deleting'}
+                        onClick={async () => {
+                          setDeleteStatus('deleting')
+                          try {
+                            const res = await fetch('/api/settings/account', {
+                              method: 'DELETE',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ confirm: 'DELETE' }),
+                            })
+                            if (res.ok) {
+                              router.push('/login')
+                            }
+                          } catch {
+                            setDeleteStatus('idle')
+                          }
+                        }}
+                      >
+                        {deleteStatus === 'deleting' ? 'Deleting...' : 'Permanently Delete'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowDeleteConfirm(false)
+                          setDeleteConfirmText('')
+                        }}
+                        disabled={deleteStatus === 'deleting'}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </SettingsSection>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
