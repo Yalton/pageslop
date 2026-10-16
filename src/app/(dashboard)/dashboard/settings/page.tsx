@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Upload, FileDown, CheckCircle, AlertCircle, Key, Trash2, Lock } from 'lucide-react'
 import { ExtensionTokensCard } from '@/components/settings/ExtensionTokensCard'
+import { McpConnectCard } from '@/components/settings/McpConnectCard'
 
 interface ImportState {
   jobId: string | null
@@ -431,6 +432,9 @@ export default function SettingsPage() {
 
       {/* Browser Extension */}
       <ExtensionTokensCard />
+
+      {/* MCP server for AI agents */}
+      <McpConnectCard />
 
       {/* Change Password */}
       <h2 className="text-lg font-semibold mt-8 mb-4">
