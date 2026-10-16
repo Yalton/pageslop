@@ -110,7 +110,7 @@ export async function insertRawContent(linkId: string, bodyText: string | null, 
 export async function listLinksWithTags(userId: string): Promise<LinkWithTags[]> {
   const userLinks = await db.select().from(links)
     .where(eq(links.userId, userId))
-    .orderBy(desc(links.createdAt))
+    .orderBy(desc(links.createdAt), desc(links.id))
 
   if (userLinks.length === 0) return []
 

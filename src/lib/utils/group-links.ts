@@ -41,7 +41,8 @@ export function groupLinks(links: LinkWithTags[]): Map<string, LinkWithTags[]> {
 
 const OTHER_DOMAIN = 'other'
 
-function domainKey(link: LinkWithTags): string {
+/** A link's site: its domain, else the URL hostname without "www.", else "other". */
+export function domainKey(link: Pick<LinkWithTags, 'domain' | 'url'>): string {
   if (link.domain) return link.domain
   try {
     return new URL(link.url).hostname.replace(/^www\./, '') || OTHER_DOMAIN

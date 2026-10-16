@@ -14,6 +14,7 @@ import { SearchInput } from '@/components/links/SearchInput'
 import { TagFilterChip } from '@/components/links/TagFilterChip'
 import { GroupedView } from '@/components/links/GroupedView'
 import { BulkActionBar } from '@/components/links/BulkActionBar'
+import { LinkViewToolbar } from '@/components/links/LinkViewToolbar'
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,15 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { groupLinks } from '@/lib/utils/group-links'
 import { groupIdsByState, restoreTarget, toggleSelection } from '@/lib/utils/selection'
 import { filterLinks } from '@/lib/utils/search'
+import {
+  applyLinkView,
+  categoryOptions,
+  domainOptions,
+  hasActiveLinkFilters,
+  linkViewQuery,
+  parseLinkView,
+  type LinkViewPatch,
+} from '@/lib/utils/link-view'
 import { allLinksEmptyState, filterAllLinksView, filterArchivedView } from '@/lib/utils/all-links-filter'
 import { toast } from 'sonner'
 import { useLinks } from '@/lib/hooks/useLinks'
@@ -58,6 +68,7 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const tagFilter = searchParams.get('tag')
+  const linkView = useMemo(() => parseLinkView(searchParams), [searchParams])
 
   // Derive selectedLink from SWR data so it stays in sync after mutations
   const selectedLink = selectedLinkId ? links.find(l => l.id === selectedLinkId) ?? null : null
@@ -69,11 +80,14 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   )
   const emptyState = view === 'archived' ? null : allLinksEmptyState(links)
 
-  // Filter links client-side using search query and tag filter
+  // Filter and sort client-side: tag and search, then the toolbar's filters and sort
   const filteredLinks = useMemo(
-    () => filterLinks(visibleLinks, searchQuery, tagFilter),
-    [visibleLinks, searchQuery, tagFilter]
+    () => applyLinkView(filterLinks(visibleLinks, searchQuery, tagFilter), linkView),
+    [visibleLinks, searchQuery, tagFilter, linkView]
   )
+  const domains = useMemo(() => domainOptions(visibleLinks), [visibleLinks])
+  const categories = useMemo(() => categoryOptions(visibleLinks), [visibleLinks])
+  const filtersActive = hasActiveLinkFilters(linkView)
 
   // Order the links appear on screen, for shift-click ranges.
   const displayOrder = useMemo(
@@ -189,12 +203,26 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
     setSelectedLinkId(null)
   }
 
+  function viewHref(patch: LinkViewPatch) {
+    const query = linkViewQuery(new URLSearchParams(searchParams.toString()), patch)
+    return query ? `${BASE_PATH[view]}?${query}` : BASE_PATH[view]
+  }
+
+  /** Toolbar changes replace the history entry so Back leaves the page instead of undoing each tweak. */
+  function handleViewChange(patch: LinkViewPatch) {
+    router.replace(viewHref(patch), { scroll: false })
+  }
+
+  function handleClearFilters() {
+    handleViewChange({ domain: null, category: null, untagged: false, described: false })
+  }
+
   function handleTagClick(tagName: string) {
-    router.push(`${BASE_PATH[view]}?tag=${encodeURIComponent(tagName)}`)
+    router.push(viewHref({ tag: tagName }))
   }
 
   function handleClearTagFilter() {
-    router.push(BASE_PATH[view])
+    router.push(viewHref({ tag: null }))
   }
 
   return (
@@ -245,6 +273,10 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
           </Toggle>
         </div>
       </div>
+
+      {visibleLinks.length > 0 && (
+        <LinkViewToolbar view={linkView} domains={domains} categories={categories} onChange={handleViewChange} />
+      )}
 
       {view === 'archived' && visibleLinks.length > 0 && (
         <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
@@ -322,6 +354,13 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
               </p>
               <Button variant="ghost" size="sm" onClick={handleClearTagFilter}>
                 Clear filter
+              </Button>
+            </>
+          ) : filtersActive ? (
+            <>
+              <p className="text-sm text-muted-foreground">No links match these filters</p>
+              <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+                Clear filters
               </Button>
             </>
           ) : null}
