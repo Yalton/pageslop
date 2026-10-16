@@ -28,11 +28,22 @@ services:
     ports:
       - "192.168.50.112:3847:3000"
     env_file: .env
+    environment:
+      # This service alone pushes the DB schema (see docker-entrypoint.sh).
+      RUN_MIGRATIONS: "1"
     volumes:
       - screenshots:/app/data/screenshots
     depends_on:
       db:
         condition: service_healthy
+    # Next only listens after the entrypoint's schema push finished, so an open
+    # port means the schema is ready; the worker waits on this.
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(3000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
 
   worker:
     build: .
@@ -50,6 +61,8 @@ services:
       - screenshots:/app/data/screenshots
     depends_on:
       db:
+        condition: service_healthy
+      app:
         condition: service_healthy
 
 volumes:
