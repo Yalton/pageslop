@@ -180,7 +180,7 @@ export function LinkCard({
         <Button
           variant="ghost"
           size="icon"
-          className="size-7 bg-background/80 hover:bg-background"
+          className="size-7 bg-black/55 text-white backdrop-blur-sm hover:bg-black/75 hover:text-white"
           asChild
         >
           <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label="Open link in new tab" title="Open link in new tab">
@@ -192,7 +192,7 @@ export function LinkCard({
             <Button
               variant="ghost"
               size="icon"
-              className="size-7 bg-background/80 hover:bg-background"
+              className="size-7 bg-black/55 text-white backdrop-blur-sm hover:bg-black/75 hover:text-white"
               aria-label="Link actions"
             >
               <MoreHorizontal className="size-4" />

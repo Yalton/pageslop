@@ -8,6 +8,8 @@ import { CATEGORY_COLORS } from './graphUtils'
 interface GraphControlsProps {
   visibleCategories: Set<string>
   onToggleCategory: (cat: string) => void
+  /** Links per category; categories with none get no chip. */
+  categoryCounts: Map<string, number>
   totalNodes: number
   totalEdges: number
 }
@@ -15,6 +17,7 @@ interface GraphControlsProps {
 export function GraphControls({
   visibleCategories,
   onToggleCategory,
+  categoryCounts,
   totalNodes,
   totalEdges,
 }: GraphControlsProps) {
@@ -32,7 +35,7 @@ export function GraphControls({
     <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b bg-background">
       {/* Category filter pills */}
       <div className="flex flex-wrap items-center gap-1.5 flex-1">
-        {CATEGORIES.map((cat) => {
+        {CATEGORIES.filter((cat) => (categoryCounts.get(cat) ?? 0) > 0 || visibleCategories.has(cat)).map((cat) => {
           const isActive =
             visibleCategories.size === 0 || visibleCategories.has(cat)
           const color = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS['Other']
@@ -59,6 +62,7 @@ export function GraphControls({
                 aria-hidden="true"
               />
               {cat}
+              <span className="text-muted-foreground tabular-nums">{categoryCounts.get(cat) ?? 0}</span>
             </Button>
           )
         })}

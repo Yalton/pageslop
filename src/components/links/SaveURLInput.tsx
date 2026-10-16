@@ -73,7 +73,7 @@ export function SaveURLInput() {
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Paste a link..."
-          className="flex-1 text-sm min-h-[48px] resize-none"
+          className="flex-1 text-sm min-h-9 resize-none"
           disabled={isSubmitting}
         />
       ) : (
@@ -82,13 +82,13 @@ export function SaveURLInput() {
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Paste a link..."
-          className="flex-1 text-sm h-12"
+          className="flex-1 text-sm h-9"
           disabled={isSubmitting}
         />
       )}
       <Button
         type="submit"
-        className="h-12 px-4"
+        className="h-9 px-3"
         aria-label="Save link"
         disabled={isSubmitting || !value.trim()}
       >

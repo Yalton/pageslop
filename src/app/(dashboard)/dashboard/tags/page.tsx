@@ -33,7 +33,7 @@ export default function TagsPage() {
       <h1 className="text-[20px] font-semibold leading-[1.2] mb-6">Tags</h1>
 
       <div className="mb-4 max-w-sm">
-        <SearchInput value={filterQuery} onChange={setFilterQuery} />
+        <SearchInput value={filterQuery} onChange={setFilterQuery} placeholder="Search tags..." />
       </div>
 
       {isLoading && <PageSpinner label="Loading tags" className="max-w-lg" />}

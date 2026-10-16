@@ -5,9 +5,10 @@ import { Search, X } from 'lucide-react'
 interface SearchInputProps {
   value: string
   onChange: (value: string) => void
+  placeholder?: string
 }
 
-export function SearchInput({ value, onChange }: SearchInputProps) {
+export function SearchInput({ value, onChange, placeholder = 'Search links...' }: SearchInputProps) {
   return (
     <div className="relative flex items-center">
       <Search className="absolute left-2.5 size-4 text-muted-foreground pointer-events-none" />
@@ -15,7 +16,7 @@ export function SearchInput({ value, onChange }: SearchInputProps) {
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Search links..."
+        placeholder={placeholder}
         className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-8 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       />
       {value && (
