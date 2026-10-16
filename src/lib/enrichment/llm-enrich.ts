@@ -5,16 +5,16 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import type { EnrichmentResult, EnrichInput } from './classify'
+import { stripBoilerplate, type EnrichmentResult, type EnrichInput } from './classify'
 import { CATEGORIES } from '@/types/index'
 
 const MODEL = 'claude-haiku-4-5-20251001'
 
 const SYSTEM_PROMPT = `You are a precise content classifier for a bookmark manager.
-Given a web page's title, domain, and body text excerpt, produce a JSON object with:
-- "tags": an array of 4-6 specific, lowercase, single-word-or-hyphenated tags describing the page content (prefer specific terms over generic ones)
+Given a web page's URL, title, domain, existing description, body text excerpt, and (optionally) the user's existing tags, produce a JSON object with:
+- "tags": an array of 4-6 specific, lowercase, single-word-or-hyphenated tags describing the page content (prefer specific terms over generic ones). Prefer the user's existing tags, using their exact names, when they fit the page; only invent a new tag when none of them fit
 - "description": a concise 2-3 sentence summary of the page content (150-200 chars)
-- "category": the single best-matching category from this list: ${CATEGORIES.join(', ')}
+- "category": the single best-matching category from this list: ${CATEGORIES.join(', ')}. Choose the category by what the content itself is, not by the site it is on (for example, a music video is Entertainment, not News)
 
 Respond ONLY with a valid JSON object matching this exact structure:
 {"tags":["tag1","tag2","tag3","tag4"],"description":"...","category":"Technology"}`
@@ -29,10 +29,16 @@ export async function llmEnrich(
 ): Promise<EnrichmentResult | null> {
   const client = new Anthropic({ apiKey })
 
+  const knownTags = [...(opts.knownTags ?? [])]
+  const body = stripBoilerplate(opts.bodyText ?? '').trim().slice(0, 3000)
+
   const userContent = [
+    opts.url && `URL: ${opts.url}`,
     opts.title && `Title: ${opts.title}`,
     opts.domain && `Domain: ${opts.domain}`,
-    opts.bodyText && `Content excerpt: ${opts.bodyText.slice(0, 3000)}`,
+    opts.existingDescription && `Description: ${opts.existingDescription}`,
+    knownTags.length > 0 && `Existing tags: ${knownTags.join(', ')}`,
+    body && `Content excerpt: ${body}`,
   ]
     .filter(Boolean)
     .join('\n')

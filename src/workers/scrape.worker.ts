@@ -200,6 +200,8 @@ async function main() {
             existingDescription: link.description,
             domain: link.domain,
             title: link.title,
+            url: link.url,
+            knownTags: new Set(knownTagRows.map((r) => r.name)),
           },
           apiKey
         )
