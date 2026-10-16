@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { LayoutGrid, List, Layers, ListChecks, Trash2 } from 'lucide-react'
+import { Globe, LayoutGrid, List, Layers, ListChecks, Trash2 } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Toggle } from '@/components/ui/toggle'
@@ -15,6 +15,7 @@ import { TagFilterChip } from '@/components/links/TagFilterChip'
 import { GroupedView } from '@/components/links/GroupedView'
 import { BulkActionBar } from '@/components/links/BulkActionBar'
 import { LinkViewToolbar } from '@/components/links/LinkViewToolbar'
+import { SiteTabs } from '@/components/links/SiteTabs'
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ import {
 import { UNDO_WINDOW_MS } from '@/lib/links/pending-deletes'
 import { PageSpinner } from '@/components/ui/spinner'
 import { groupLinks } from '@/lib/utils/group-links'
+import { groupLinksBySite, siteFavicons } from '@/lib/utils/site-tabs'
 import { groupIdsByState, restoreTarget, toggleSelection } from '@/lib/utils/selection'
 import { filterLinks } from '@/lib/utils/search'
 import {
@@ -43,7 +45,9 @@ import { toast } from 'sonner'
 import { useLinks } from '@/lib/hooks/useLinks'
 import type { LinkWithTags, StashState } from '@/types'
 
-type ViewMode = 'grid' | 'list' | 'grouped'
+/** 'grouped' is sections per category, 'site' sections per website. */
+type ViewMode = 'grid' | 'list' | 'grouped' | 'site'
+const VIEW_MODES: readonly string[] = ['grid', 'list', 'grouped', 'site']
 const STORAGE_KEY = 'pageslop-view-mode'
 
 /** 'all' is All Links; 'archived' lists dismissed or expired stash links so they can be restored. */
@@ -65,6 +69,7 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const selectAnchor = useRef<string | null>(null)
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
+  const [websiteFilterOpen, setWebsiteFilterOpen] = useState(false)
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -88,13 +93,19 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   )
   const domains = useMemo(() => domainOptions(visibleLinks), [visibleLinks])
   const categories = useMemo(() => categoryOptions(visibleLinks), [visibleLinks])
+  const favicons = useMemo(() => siteFavicons(visibleLinks), [visibleLinks])
   const noMatchMessage = emptyFilterMessage(searchQuery, tagFilter, linkView)
 
   // Order the links appear on screen, for shift-click ranges.
-  const displayOrder = useMemo(
-    () => (viewMode === 'grouped' ? [...groupLinks(filteredLinks).values()].flat() : filteredLinks).map((l) => l.id),
-    [viewMode, filteredLinks]
-  )
+  const displayOrder = useMemo(() => {
+    const ordered =
+      viewMode === 'grouped'
+        ? [...groupLinks(filteredLinks).values()].flat()
+        : viewMode === 'site'
+          ? [...groupLinksBySite(filteredLinks, linkView.sort).values()].flat()
+          : filteredLinks
+    return ordered.map((l) => l.id)
+  }, [viewMode, filteredLinks, linkView.sort])
   // Selected links still on screen; a search or filter can hide some.
   const selectedLinks = useMemo(() => filteredLinks.filter((l) => selectedIds.has(l.id)), [filteredLinks, selectedIds])
   const selecting = selectMode || selectedIds.size > 0
@@ -184,8 +195,8 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   // Load view mode from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === 'grid' || stored === 'list' || stored === 'grouped') {
-      setViewMode(stored)
+    if (stored && VIEW_MODES.includes(stored)) {
+      setViewMode(stored as ViewMode)
     }
   }, [])
 
@@ -268,16 +279,46 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
           <Toggle
             pressed={viewMode === 'grouped'}
             onPressedChange={(pressed) => pressed && handleViewMode('grouped')}
-            aria-label="Grouped view"
+            aria-label="Group by category"
+            title="Group by category"
             size="sm"
           >
             <Layers className="size-4" />
+            <span className="hidden sm:inline">Category</span>
+          </Toggle>
+          <Toggle
+            pressed={viewMode === 'site'}
+            onPressedChange={(pressed) => pressed && handleViewMode('site')}
+            aria-label="Group by site"
+            title="Group by site"
+            size="sm"
+          >
+            <Globe className="size-4" />
+            <span className="hidden sm:inline">Site</span>
           </Toggle>
         </div>
       </div>
 
       {visibleLinks.length > 0 && (
-        <LinkViewToolbar view={linkView} domains={domains} categories={categories} onChange={handleViewChange} />
+        <LinkViewToolbar
+          view={linkView}
+          domains={domains}
+          categories={categories}
+          onChange={handleViewChange}
+          websiteOpen={websiteFilterOpen}
+          onWebsiteOpenChange={setWebsiteFilterOpen}
+        />
+      )}
+
+      {visibleLinks.length > 0 && (domains.length > 1 || linkView.domain) && (
+        <SiteTabs
+          domains={domains}
+          selected={linkView.domain}
+          favicons={favicons}
+          total={visibleLinks.length}
+          onSelect={(domain) => handleViewChange({ domain })}
+          onMore={() => setWebsiteFilterOpen(true)}
+        />
       )}
 
       {view === 'archived' && visibleLinks.length > 0 && (
@@ -400,10 +441,13 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
       )}
 
       {/* Grouped view */}
-      {viewMode === 'grouped' && filteredLinks.length > 0 && (
+      {(viewMode === 'grouped' || viewMode === 'site') && filteredLinks.length > 0 && (
         <GroupedView
+          key={viewMode}
           links={filteredLinks}
           subMode="grid"
+          groupBy={viewMode === 'site' ? 'site' : 'category'}
+          sort={linkView.sort}
           onDelete={deleteLink}
           onUndoDelete={undoDelete}
           onOpenDetail={handleOpenDetail}

@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import { groupLinks } from '@/lib/utils/group-links'
+import { groupLinksBySite, siteFavicons } from '@/lib/utils/site-tabs'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import type { LinkSort } from '@/lib/utils/link-view'
 import { LinkCard } from '@/components/links/LinkCard'
 import { LinkCardList } from '@/components/links/LinkCardList'
 import type { LinkWithTags } from '@/types'
@@ -12,6 +15,10 @@ import type { SelectionProps } from '@/components/links/SelectCheckbox'
 interface GroupedViewProps {
   links: LinkWithTags[]
   subMode: 'grid' | 'list'
+  /** Sections per category (default) or per website. */
+  groupBy?: 'category' | 'site'
+  /** The toolbar sort; by-site sections go A–Z when it is 'domain'. */
+  sort?: LinkSort
   onDelete: (id: string) => void
   onUndoDelete: (link: LinkWithTags) => void
   onOpenDetail: (link: LinkWithTags) => void
@@ -26,6 +33,8 @@ interface GroupedViewProps {
 export function GroupedView({
   links,
   subMode,
+  groupBy = 'category',
+  sort = 'newest',
   onDelete,
   onUndoDelete,
   onOpenDetail,
@@ -36,7 +45,8 @@ export function GroupedView({
   selectedIds,
   onToggleSelect,
 }: GroupedViewProps) {
-  const grouped = groupLinks(links)
+  const grouped = groupBy === 'site' ? groupLinksBySite(links, sort) : groupLinks(links)
+  const favicons = groupBy === 'site' ? siteFavicons(links) : null
 
   // Track open/closed state for each category, default all open
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(() => {
@@ -75,6 +85,12 @@ export function GroupedView({
                 <ChevronRight
                   className="size-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90"
                 />
+                {favicons && (
+                  <Avatar className="size-5">
+                    <AvatarImage src={favicons.get(category)} alt="" />
+                    <AvatarFallback className="text-[9px]">{category.charAt(0).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                )}
                 <span className="text-sm font-semibold">
                   {category}{' '}
                   <span className="text-muted-foreground font-normal">
