@@ -87,3 +87,64 @@ export function getDomainHints(domain: string | null): string[] {
 
   return []
 }
+
+/**
+ * Default category for sites whose pages say little about themselves (a YouTube
+ * watch page scrapes as the site footer). Matched like DOMAIN_HINTS: exact
+ * host or any subdomain of it.
+ */
+export const DOMAIN_CATEGORIES: Record<string, string> = {
+  'youtube.com': 'Entertainment',
+  'youtu.be': 'Entertainment',
+  'vimeo.com': 'Entertainment',
+  'twitch.tv': 'Entertainment',
+  'spotify.com': 'Entertainment',
+  'soundcloud.com': 'Entertainment',
+  'bandcamp.com': 'Entertainment',
+  'netflix.com': 'Entertainment',
+  'imdb.com': 'Entertainment',
+  'itch.io': 'Entertainment',
+  'github.com': 'Technology',
+  'gitlab.com': 'Technology',
+  'huggingface.co': 'Technology',
+  'stackoverflow.com': 'Technology',
+  'npmjs.com': 'Technology',
+  'pypi.org': 'Technology',
+  'crates.io': 'Technology',
+  'dev.to': 'Technology',
+  'news.ycombinator.com': 'Technology',
+  'wikipedia.org': 'Reference',
+  'developer.mozilla.org': 'Reference',
+  'arxiv.org': 'Education',
+  'coursera.org': 'Education',
+  'udemy.com': 'Education',
+  'edx.org': 'Education',
+  'khanacademy.org': 'Education',
+  'reddit.com': 'Social',
+  'twitter.com': 'Social',
+  'x.com': 'Social',
+  'bsky.app': 'Social',
+  'linkedin.com': 'Social',
+  'amazon.com': 'Shopping',
+  'ebay.com': 'Shopping',
+  'etsy.com': 'Shopping',
+  'bbc.com': 'News',
+  'nytimes.com': 'News',
+  'theguardian.com': 'News',
+  'reuters.com': 'News',
+  'news.google.com': 'News',
+  'figma.com': 'Creative',
+  'dribbble.com': 'Creative',
+  'behance.net': 'Creative',
+}
+
+/** The DOMAIN_CATEGORIES entry for `domain` or one of its parent domains. */
+export function getDomainCategory(domain: string | null | undefined): string | null {
+  if (!domain) return null
+  let host = domain.toLowerCase().replace(/^www\./, '')
+  while (host.includes('.')) {
+    if (host in DOMAIN_CATEGORIES) return DOMAIN_CATEGORIES[host]
+    host = host.slice(host.indexOf('.') + 1)
+  }
+  return null
+}

@@ -4,7 +4,7 @@
  */
 
 import { CATEGORIES } from '@/types/index'
-import { getDomainHints } from './domain-hints'
+import { getDomainCategory, getDomainHints } from './domain-hints'
 import { extractDescription } from './describe'
 import { isTopicSignal, isTopicTag, matchTopics } from './topics'
 
@@ -213,7 +213,7 @@ export const CATEGORY_SIGNALS: Record<string, string[]> = {
     'artificial', 'intelligence', 'open-source', 'docker', 'kubernetes',
   ],
   News: [
-    'news', 'breaking', 'report', 'journalist', 'press', 'media', 'article',
+    'news', 'breaking', 'report', 'journalist', 'press', 'article',
     'latest', 'update', 'headline', 'story', 'coverage', 'election', 'politics',
     'government', 'policy', 'announcement', 'statement',
   ],
@@ -242,7 +242,7 @@ export const CATEGORY_SIGNALS: Record<string, string[]> = {
     'learn', 'course', 'education', 'school', 'university', 'college', 'lesson',
     'lecture', 'study', 'student', 'teacher', 'professor', 'class', 'training',
     'certificate', 'degree', 'academic', 'research', 'science', 'math',
-    'history', 'biology', 'chemistry', 'physics', 'lecture', 'mooc',
+    'history', 'biology', 'chemistry', 'physics', 'mooc',
   ],
   Finance: [
     'finance', 'money', 'investment', 'stock', 'market', 'economy', 'business',
@@ -308,23 +308,70 @@ export function extractKeywords(
 // ---------------------------------------------------------------------------
 
 /**
- * Returns the best-matching category or "Other" if no signals score > 0.
+ * Site chrome that scrapes as body text and would otherwise score as content.
+ * YouTube watch pages render their content client side, so the scraper gets
+ * only this footer ("Press", "Policy", "Developers" read as News/Technology).
  */
-export function categorize(text: string): string {
-  if (!text || text.trim().length === 0) return 'Other'
+const BOILERPLATE_PATTERNS: RegExp[] = [
+  /About Press Copyright Contact us Creators Advertise Developers Terms Privacy Policy & Safety How YouTube works Test new features(?: NFL Sunday Ticket)?(?: © \d{4} Google LLC)?/g,
+]
 
-  const normalized = text.toLowerCase()
+export function stripBoilerplate(text: string): string {
+  return BOILERPLATE_PATTERNS.reduce((t, re) => t.replace(re, ' '), text)
+}
+
+/** Weight of a known site's default category: more than one title word, less than two. */
+const DOMAIN_PRIOR_WEIGHT = 2.5
+
+export interface CategorizeOptions {
+  domain?: string | null
+  /** Title words count twice. */
+  title?: string | null
+  description?: string | null
+}
+
+function countWords(text: string, counts: Map<string, number>, weight: number): void {
+  for (const word of text.toLowerCase().split(/[^a-z0-9-]+/)) {
+    if (word) counts.set(word, (counts.get(word) ?? 0) + weight)
+  }
+}
+
+/** Weighted occurrences of `signal` as a whole word or a simple plural of it. */
+function signalCount(signal: string, counts: Map<string, number>): number {
+  return (counts.get(signal) ?? 0) + (counts.get(`${signal}s`) ?? 0) + (counts.get(`${signal}es`) ?? 0)
+}
+
+/**
+ * Returns the best-matching category or "Other" if nothing scores.
+ *
+ * Each signal word scores once per text it appears in (body, description;
+ * title counts double), matched as a whole word. A known site's default
+ * category (DOMAIN_CATEGORIES) adds DOMAIN_PRIOR_WEIGHT and wins ties.
+ */
+export function categorize(text: string, opts: CategorizeOptions = {}): string {
+  const sources: [string, number][] = [
+    [stripBoilerplate(text ?? ''), 1],
+    [opts.description ?? '', 1],
+    [opts.title ?? '', 2],
+  ]
+  const perSource = sources.filter(([t]) => t.trim()).map(([t, w]) => {
+    const counts = new Map<string, number>()
+    countWords(t, counts, 1)
+    return { counts, weight: w }
+  })
+
+  const prior = getDomainCategory(opts.domain)
   let bestCategory = 'Other'
   let bestScore = 0
 
   for (const [category, signals] of Object.entries(CATEGORY_SIGNALS)) {
-    let score = 0
+    let score = category === prior ? DOMAIN_PRIOR_WEIGHT : 0
     for (const signal of signals) {
-      if (normalized.includes(signal)) {
-        score++
+      for (const { counts, weight } of perSource) {
+        if (signalCount(signal, counts) > 0) score += weight
       }
     }
-    if (score > bestScore) {
+    if (score > bestScore || (score === bestScore && score > 0 && category === prior)) {
       bestScore = score
       bestCategory = category
     }
@@ -406,9 +453,6 @@ export interface EnrichInput {
 export function enrich(opts: EnrichInput): EnrichmentResult {
   const { bodyText, existingDescription, domain, title, url, knownTags } = opts
 
-  // Combine available text signals for analysis
-  const textSignals = [bodyText, title].filter(Boolean).join(' ')
-
   // Tags: topics, domain hints, then keywords (title weighted higher)
   const tags = buildTags(bodyText ?? '', domain, title, { description: existingDescription, url, knownTags })
 
@@ -418,8 +462,7 @@ export function enrich(opts: EnrichInput): EnrichmentResult {
       ? existingDescription
       : extractDescription(bodyText ?? title ?? '')
 
-  // Category: classify combined text
-  const category = categorize(textSignals)
+  const category = categorize(bodyText ?? '', { domain, title, description: existingDescription })
 
   return { tags, description, category }
 }
