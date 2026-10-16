@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import useSWR from 'swr'
-import { AlertCircle, Check, Copy, Puzzle, Trash2 } from 'lucide-react'
+import { AlertCircle, Check, Copy, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { settingsPanelClass } from '@/components/settings/SettingsSections'
 import { Spinner } from '@/components/ui/spinner'
 import {
   formatTokenDate,
@@ -111,163 +112,154 @@ export function ExtensionTokensCard() {
   }
 
   return (
-    <>
-      <h2 id="browser-extension" className="text-lg font-semibold mt-8 mb-4 scroll-mt-6">
-        <span className="inline-flex items-center gap-2">
-          <Puzzle className="size-5" />
-          Browser Extension
-        </span>
-      </h2>
+    <div className={settingsPanelClass}>
+      <h3 className="font-semibold mb-1">API tokens</h3>
+      <p className="text-sm text-muted-foreground mb-4">
+        The Firefox extension uses a token to save idle tabs to your To Revisit list. Create one token per browser.
+        Tokens can also read and save links through the{' '}
+        <code className="font-mono">/api/v1</code> REST API; give each token only the permissions it needs.
+      </p>
 
-      <div className="bg-card rounded-lg border p-6">
-        <h3 className="font-semibold mb-1">API tokens</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          The Firefox extension uses a token to save idle tabs to your To Revisit list. Create one token per browser.
-          Tokens can also read and save links through the{' '}
-          <code className="font-mono">/api/v1</code> REST API; give each token only the permissions it needs.
-        </p>
-
-        <fieldset className="mb-3">
-          <legend className="text-sm font-medium mb-1">Permissions</legend>
-          <div className="flex flex-wrap gap-x-4 gap-y-1">
-            {TOKEN_SCOPES.map((scope) => (
-              <label key={scope} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={scopes.includes(scope)}
-                  onChange={(e) =>
-                    setScopes((prev) =>
-                      e.target.checked
-                        ? TOKEN_SCOPES.filter((s) => s === scope || prev.includes(s))
-                        : prev.filter((s) => s !== scope),
-                    )
-                  }
-                />
-                {TOKEN_SCOPE_LABELS[scope]}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        <form onSubmit={handleCreate} className="flex flex-wrap gap-2">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Token name, e.g. Firefox laptop"
-            maxLength={TOKEN_NAME_MAX}
-            aria-label="Token name"
-            className={inputClass}
-          />
-          <Button type="submit" disabled={creating}>
-            {creating ? 'Creating...' : 'Create token'}
-          </Button>
-        </form>
-
-        {formError && (
-          <div role="alert" className="mt-3 flex items-center gap-2 text-sm text-destructive">
-            <AlertCircle className="size-4" />
-            {formError}
-          </div>
-        )}
-
-        {created && (
-          <div className="mt-4 rounded-md border border-primary/40 bg-primary/5 p-4">
-            <p className="text-sm font-medium mb-2">
-              Token &ldquo;{created.name}&rdquo; created. Copy it now, you won&apos;t see this again.
-            </p>
-            <div className="flex flex-wrap gap-2">
+      <fieldset className="mb-3">
+        <legend className="text-sm font-medium mb-1">Permissions</legend>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {TOKEN_SCOPES.map((scope) => (
+            <label key={scope} className="flex items-center gap-2 text-sm">
               <input
-                type="text"
-                readOnly
-                value={created.token}
-                onFocus={(e) => e.currentTarget.select()}
-                aria-label="New token"
-                className={`${inputClass} font-mono`}
+                type="checkbox"
+                checked={scopes.includes(scope)}
+                onChange={(e) =>
+                  setScopes((prev) =>
+                    e.target.checked
+                      ? TOKEN_SCOPES.filter((s) => s === scope || prev.includes(s))
+                      : prev.filter((s) => s !== scope),
+                  )
+                }
               />
-              <Button type="button" variant="outline" onClick={handleCopy}>
-                {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                {copied ? 'Copied' : 'Copy'}
-              </Button>
-              <Button type="button" variant="ghost" onClick={() => setCreated(null)}>
-                Done
-              </Button>
-            </div>
+              {TOKEN_SCOPE_LABELS[scope]}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <form onSubmit={handleCreate} className="flex flex-wrap gap-2">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Token name, e.g. Firefox laptop"
+          maxLength={TOKEN_NAME_MAX}
+          aria-label="Token name"
+          className={inputClass}
+        />
+        <Button type="submit" disabled={creating}>
+          {creating ? 'Creating...' : 'Create token'}
+        </Button>
+      </form>
+
+      {formError && (
+        <div role="alert" className="mt-3 flex items-center gap-2 text-sm text-destructive">
+          <AlertCircle className="size-4" />
+          {formError}
+        </div>
+      )}
+
+      {created && (
+        <div className="mt-4 rounded-md border border-primary/40 bg-primary/5 p-4">
+          <p className="text-sm font-medium mb-2">
+            Token &ldquo;{created.name}&rdquo; created. Copy it now, you won&apos;t see this again.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="text"
+              readOnly
+              value={created.token}
+              onFocus={(e) => e.currentTarget.select()}
+              aria-label="New token"
+              className={`${inputClass} font-mono`}
+            />
+            <Button type="button" variant="outline" onClick={handleCopy}>
+              {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+              {copied ? 'Copied' : 'Copy'}
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setCreated(null)}>
+              Done
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-6">
+        <h4 className="text-sm font-semibold mb-2">Active tokens</h4>
+        {isLoading && (
+          <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Spinner className="size-4" />
+            Loading tokens
           </div>
         )}
-
-        <div className="mt-6">
-          <h4 className="text-sm font-semibold mb-2">Active tokens</h4>
-          {isLoading && (
-            <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Spinner className="size-4" />
-              Loading tokens
-            </div>
-          )}
-          {loadError && (
-            <div className="flex items-center gap-2 text-sm text-destructive">
-              <AlertCircle className="size-4" />
-              Could not load tokens
-            </div>
-          )}
-          {tokens && tokens.length === 0 && (
-            <p className="text-sm text-muted-foreground">No tokens yet.</p>
-          )}
-          {tokens && tokens.length > 0 && (
-            <ul className="flex flex-col divide-y border rounded-md">
-              {tokens.map((token) => (
-                <li key={token.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2">
-                  <span className="text-sm font-medium flex-1 min-w-[120px] truncate">{token.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    Created {formatTokenDate(token.createdAt)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Last used {formatTokenDate(token.lastUsedAt)}
-                  </span>
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {(token.scopes ?? []).filter(isTokenScope).join(', ') || 'no permissions'}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    disabled={revokingId === token.id}
-                    onClick={() => handleRevoke(token)}
-                  >
-                    <Trash2 className="size-4" />
-                    {revokingId === token.id ? 'Revoking...' : 'Revoke'}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="mt-6">
-          <h4 className="text-sm font-semibold mb-2">Setup</h4>
-          <ol className="list-decimal pl-5 text-sm text-muted-foreground space-y-1">
-            <li>
-              Install the extension by following the{' '}
-              <a
-                href={README_EXTENSION_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-4 hover:text-foreground"
-              >
-                Browser extension section of the README
-              </a>
-              .
-            </li>
-            <li>Create a token above and copy it.</li>
-            <li>
-              Open the extension&apos;s settings. Enter this server&apos;s URL (the address in your browser bar, without{' '}
-              <code className="font-mono">/dashboard</code>) and paste the token.
-            </li>
-            <li>Click Save. The extension checks the connection and shows whether it worked.</li>
-          </ol>
-        </div>
+        {loadError && (
+          <div className="flex items-center gap-2 text-sm text-destructive">
+            <AlertCircle className="size-4" />
+            Could not load tokens
+          </div>
+        )}
+        {tokens && tokens.length === 0 && (
+          <p className="text-sm text-muted-foreground">No tokens yet.</p>
+        )}
+        {tokens && tokens.length > 0 && (
+          <ul className="flex flex-col divide-y border rounded-md">
+            {tokens.map((token) => (
+              <li key={token.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2">
+                <span className="text-sm font-medium flex-1 min-w-[120px] truncate">{token.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  Created {formatTokenDate(token.createdAt)}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Last used {formatTokenDate(token.lastUsedAt)}
+                </span>
+                <span className="text-xs text-muted-foreground font-mono">
+                  {(token.scopes ?? []).filter(isTokenScope).join(', ') || 'no permissions'}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  disabled={revokingId === token.id}
+                  onClick={() => handleRevoke(token)}
+                >
+                  <Trash2 className="size-4" />
+                  {revokingId === token.id ? 'Revoking...' : 'Revoke'}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-    </>
+
+      <div className="mt-6">
+        <h4 className="text-sm font-semibold mb-2">Setup</h4>
+        <ol className="list-decimal pl-5 text-sm text-muted-foreground space-y-1">
+          <li>
+            Install the extension by following the{' '}
+            <a
+              href={README_EXTENSION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              Browser extension section of the README
+            </a>
+            .
+          </li>
+          <li>Create a token above and copy it.</li>
+          <li>
+            Open the extension&apos;s settings. Enter this server&apos;s URL (the address in your browser bar, without{' '}
+            <code className="font-mono">/dashboard</code>) and paste the token.
+          </li>
+          <li>Click Save. The extension checks the connection and shows whether it worked.</li>
+        </ol>
+      </div>
+    </div>
   )
 }
