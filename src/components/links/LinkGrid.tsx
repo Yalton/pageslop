@@ -14,6 +14,7 @@ import { SearchInput } from '@/components/links/SearchInput'
 import { TagFilterChip } from '@/components/links/TagFilterChip'
 import { GroupedView } from '@/components/links/GroupedView'
 import { BulkActionBar } from '@/components/links/BulkActionBar'
+import { LinkViewToolbar } from '@/components/links/LinkViewToolbar'
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,16 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { groupLinks } from '@/lib/utils/group-links'
 import { groupIdsByState, restoreTarget, toggleSelection } from '@/lib/utils/selection'
 import { filterLinks } from '@/lib/utils/search'
+import {
+  CLEAR_ALL_FILTERS,
+  applyLinkView,
+  categoryOptions,
+  domainOptions,
+  emptyFilterMessage,
+  linkViewHref,
+  parseLinkView,
+  type LinkViewPatch,
+} from '@/lib/utils/link-view'
 import { allLinksEmptyState, filterAllLinksView, filterArchivedView } from '@/lib/utils/all-links-filter'
 import { toast } from 'sonner'
 import { useLinks } from '@/lib/hooks/useLinks'
@@ -58,6 +69,7 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const tagFilter = searchParams.get('tag')
+  const linkView = useMemo(() => parseLinkView(searchParams), [searchParams])
 
   // Derive selectedLink from SWR data so it stays in sync after mutations
   const selectedLink = selectedLinkId ? links.find(l => l.id === selectedLinkId) ?? null : null
@@ -69,11 +81,14 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   )
   const emptyState = view === 'archived' ? null : allLinksEmptyState(links)
 
-  // Filter links client-side using search query and tag filter
+  // Filter and sort client-side: tag and search, then the toolbar's filters and sort
   const filteredLinks = useMemo(
-    () => filterLinks(visibleLinks, searchQuery, tagFilter),
-    [visibleLinks, searchQuery, tagFilter]
+    () => applyLinkView(filterLinks(visibleLinks, searchQuery, tagFilter), linkView),
+    [visibleLinks, searchQuery, tagFilter, linkView]
   )
+  const domains = useMemo(() => domainOptions(visibleLinks), [visibleLinks])
+  const categories = useMemo(() => categoryOptions(visibleLinks), [visibleLinks])
+  const noMatchMessage = emptyFilterMessage(searchQuery, tagFilter, linkView)
 
   // Order the links appear on screen, for shift-click ranges.
   const displayOrder = useMemo(
@@ -189,12 +204,27 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
     setSelectedLinkId(null)
   }
 
+  function viewHref(patch: LinkViewPatch) {
+    return linkViewHref(BASE_PATH[view], new URLSearchParams(searchParams.toString()), patch)
+  }
+
+  /** Toolbar changes replace the history entry so Back leaves the page instead of undoing each tweak. */
+  function handleViewChange(patch: LinkViewPatch) {
+    router.replace(viewHref(patch), { scroll: false })
+  }
+
+  /** Clears search, tag and facet filters together, so an empty result always has one way out. */
+  function handleClearAllFilters() {
+    setSearchQuery('')
+    handleViewChange(CLEAR_ALL_FILTERS)
+  }
+
   function handleTagClick(tagName: string) {
-    router.push(`${BASE_PATH[view]}?tag=${encodeURIComponent(tagName)}`)
+    router.push(viewHref({ tag: tagName }))
   }
 
   function handleClearTagFilter() {
-    router.push(BASE_PATH[view])
+    router.push(viewHref({ tag: null }))
   }
 
   return (
@@ -245,6 +275,10 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
           </Toggle>
         </div>
       </div>
+
+      {visibleLinks.length > 0 && (
+        <LinkViewToolbar view={linkView} domains={domains} categories={categories} onChange={handleViewChange} />
+      )}
 
       {view === 'archived' && visibleLinks.length > 0 && (
         <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
@@ -306,25 +340,14 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
       {/* No results state */}
       {visibleLinks.length > 0 && filteredLinks.length === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 py-16 text-center gap-3">
-          {searchQuery ? (
+          {noMatchMessage && (
             <>
-              <p className="text-sm text-muted-foreground">
-                No links match &quot;{searchQuery}&quot;
-              </p>
-              <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')}>
-                Clear search
+              <p className="text-sm text-muted-foreground">{noMatchMessage}</p>
+              <Button variant="ghost" size="sm" onClick={handleClearAllFilters}>
+                Clear all filters
               </Button>
             </>
-          ) : tagFilter ? (
-            <>
-              <p className="text-sm text-muted-foreground">
-                No links with tag &quot;{tagFilter}&quot;
-              </p>
-              <Button variant="ghost" size="sm" onClick={handleClearTagFilter}>
-                Clear filter
-              </Button>
-            </>
-          ) : null}
+          )}
         </div>
       )}
 
