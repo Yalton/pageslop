@@ -35,6 +35,7 @@ import {
   applyLinkView,
   categoryOptions,
   domainOptions,
+  statusOptions,
   emptyFilterMessage,
   linkViewHref,
   parseLinkView,
@@ -93,6 +94,7 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   )
   const domains = useMemo(() => domainOptions(visibleLinks), [visibleLinks])
   const categories = useMemo(() => categoryOptions(visibleLinks), [visibleLinks])
+  const statuses = useMemo(() => statusOptions(visibleLinks), [visibleLinks])
   const favicons = useMemo(() => siteFavicons(visibleLinks), [visibleLinks])
   const noMatchMessage = emptyFilterMessage(searchQuery, tagFilter, linkView)
 
@@ -304,6 +306,7 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
           view={linkView}
           domains={domains}
           categories={categories}
+          statuses={statuses}
           onChange={handleViewChange}
           websiteOpen={websiteFilterOpen}
           onWebsiteOpenChange={setWebsiteFilterOpen}
