@@ -172,8 +172,8 @@ function SidebarContent({
           <Button
             variant="ghost"
             className={cn(
-              "w-full justify-start gap-3 text-sm font-semibold",
-              collapsed && "justify-center px-0"
+              "justify-start gap-3 text-sm font-semibold",
+              collapsed ? "w-full justify-center px-0" : "min-w-0 flex-1 shrink"
             )}
             onClick={handleLogOut}
           >

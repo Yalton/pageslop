@@ -44,11 +44,12 @@ export function LinkCard({
   selected = false,
   onToggleSelect,
 }: LinkCardProps) {
+  const [imgError, setImgError] = useState(false)
+
   if (link.status === 'pending') {
     return <LinkSkeleton variant="grid" />
   }
 
-  const [imgError, setImgError] = useState(false)
   const hue = domainToHue(link.domain || '')
   const domainInitial = (link.domain || link.url).charAt(0).toUpperCase()
   const visibleTags = link.tags?.slice(0, 3) ?? []
@@ -152,13 +153,14 @@ export function LinkCard({
         {visibleTags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {visibleTags.map((tag) => (
-              <Badge
-                key={tag.id}
-                variant="secondary"
-                className="text-xs cursor-pointer hover:bg-secondary/80"
-                onClick={(e) => { e.stopPropagation(); onTagClick?.(tag.name) }}
-              >
-                {tag.name}
+              <Badge key={tag.id} variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80" asChild>
+                <button
+                  type="button"
+                  aria-label={`Show links tagged ${tag.name}`}
+                  onClick={(e) => { e.stopPropagation(); onTagClick?.(tag.name) }}
+                >
+                  {tag.name}
+                </button>
               </Badge>
             ))}
             {extraTagCount > 0 && (
@@ -170,8 +172,18 @@ export function LinkCard({
         )}
       </div>
 
-      {/* Actions menu */}
-      <div className="absolute top-2 right-2" onClick={e => e.stopPropagation()}>
+      {/* Open link + actions menu */}
+      <div className="absolute top-2 right-2 flex gap-1" onClick={e => e.stopPropagation()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7 bg-background/80 hover:bg-background"
+          asChild
+        >
+          <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label="Open link in new tab" title="Open link in new tab">
+            <ExternalLink className="size-4" />
+          </a>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

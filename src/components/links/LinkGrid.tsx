@@ -446,6 +446,10 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
         onDelete={deleteLink}
         onUndoDelete={undoDelete}
         onMutate={() => mutate()}
+        onTagClick={(tagName) => {
+          handleCloseDetail()
+          handleTagClick(tagName)
+        }}
       />
     </div>
   )

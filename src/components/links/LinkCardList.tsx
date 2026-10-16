@@ -101,13 +101,14 @@ export function LinkCardList({
       {visibleTags.length > 0 && (
         <div className="hidden sm:flex items-center gap-1 shrink-0">
           {visibleTags.map((tag) => (
-            <Badge
-              key={tag.id}
-              variant="secondary"
-              className="text-xs cursor-pointer hover:bg-secondary/80"
-              onClick={(e) => { e.stopPropagation(); onTagClick?.(tag.name) }}
-            >
-              {tag.name}
+            <Badge key={tag.id} variant="secondary" className="text-xs cursor-pointer hover:bg-secondary/80" asChild>
+              <button
+                type="button"
+                aria-label={`Show links tagged ${tag.name}`}
+                onClick={(e) => { e.stopPropagation(); onTagClick?.(tag.name) }}
+              >
+                {tag.name}
+              </button>
             </Badge>
           ))}
         </div>
@@ -135,8 +136,13 @@ export function LinkCardList({
       {/* Timestamp */}
       <span className="text-sm text-muted-foreground shrink-0 ml-auto">{relativeTime}</span>
 
-      {/* Actions */}
-      <div onClick={e => e.stopPropagation()}>
+      {/* Open link + actions */}
+      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+        <Button variant="ghost" size="icon" className="size-7 shrink-0" asChild>
+          <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label="Open link in new tab" title="Open link in new tab">
+            <ExternalLink className="size-4" />
+          </a>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
