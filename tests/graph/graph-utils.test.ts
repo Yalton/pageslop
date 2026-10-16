@@ -2,6 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { LINK_DEFAULTS } from '../fixtures/link-defaults'
 import {
   buildGraphData,
+  createCentringForce,
+  pullStrength,
+  ISOLATED_PULL,
+  CONNECTED_PULL,
+  type PullNode,
   countCategories,
   crossLinkNodes,
   CATEGORY_COLORS,
@@ -360,5 +365,20 @@ describe('countCategories', () => {
   it('leaves out links All Links does not show', () => {
     const stashed = { ...makeLink('s', [], 'News'), stashState: 'inbox' } as LinkWithTags
     expect(countCategories([stashed]).has('News')).toBe(false)
+  })
+})
+
+describe('centring force', () => {
+  it('pulls isolated nodes harder than connected ones', () => {
+    expect(pullStrength({})).toBe(ISOLATED_PULL)
+    expect(pullStrength({ neighbors: [{}] })).toBe(CONNECTED_PULL)
+    const iso: PullNode = { x: 100, y: -50 }
+    const conn: PullNode = { x: 100, y: -50, neighbors: [{}] }
+    const f = createCentringForce()
+    f.initialize([iso, conn])
+    f(1)
+    expect(iso.vx).toBeCloseTo(-100 * ISOLATED_PULL)
+    expect(iso.vy).toBeCloseTo(50 * ISOLATED_PULL)
+    expect(conn.vx).toBeCloseTo(-100 * CONNECTED_PULL)
   })
 })

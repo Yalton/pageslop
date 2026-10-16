@@ -19,6 +19,9 @@ import {
   dimmedLinkWidth,
   withAlpha,
   countCategories,
+  createCentringForce,
+  FIT_PADDING,
+  FIT_DURATION_MS,
   type GraphNode,
   type GraphLink,
 } from './graphUtils'
@@ -164,9 +167,19 @@ export default function ForceGraph() {
     node.fy = node.y
   }, [])
 
+  // Fit once after the first settle; later stops must not reset the user's zoom/pan
+  const hasFitRef = useRef(false)
   const onEngineStop = useCallback(() => {
-    graphRef.current?.zoomToFit(400, 80)
+    if (hasFitRef.current) return
+    hasFitRef.current = true
+    graphRef.current?.zoomToFit(FIT_DURATION_MS, FIT_PADDING)
   }, [])
+
+  // Weak centring force keeps unconnected nodes near the cluster
+  const hasData = !isLoading && links.length > 0
+  useEffect(() => {
+    if (hasData) graphRef.current?.d3Force?.('centring', createCentringForce())
+  }, [hasData])
 
   const onToggleCategory = useCallback((cat: string) => {
     setVisibleCategories((prev) => {
