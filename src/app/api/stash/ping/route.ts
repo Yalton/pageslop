@@ -3,12 +3,12 @@
  * confirm the server URL and token (bearer token auth).
  */
 
-import { authenticateBearer } from '@/lib/auth/api-token'
+import { requireScope } from '@/lib/api/bearer'
 import { getUserEmail } from '@/lib/db/queries/users'
 
 export async function GET(req: Request): Promise<Response> {
-  const authed = await authenticateBearer(req)
-  if (!authed) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  const authed = await requireScope(req, 'stash')
+  if (authed instanceof Response) return authed
 
   const email = await getUserEmail(authed.userId)
   if (!email) return Response.json({ error: 'Unauthorized' }, { status: 401 })

@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { findTokenByHash, touchApiToken } from '@/lib/db/queries/api-tokens'
+import { normalizeScopes, type TokenScope } from '@/lib/auth/token-scopes'
 
 export const TOKEN_PREFIX = 'ps_'
 
@@ -21,9 +22,9 @@ export function generateToken(): { raw: string; hash: string } {
 
 /**
  * Authenticate a request by its `Authorization: Bearer ps_...` header.
- * Returns the owning user's id, or null for a missing, malformed, unknown or revoked token.
+ * Returns the owning user's id and the token's scopes, or null for a missing, malformed, unknown or revoked token.
  */
-export async function authenticateBearer(req: Request): Promise<{ userId: string } | null> {
+export async function authenticateBearer(req: Request): Promise<{ userId: string; scopes: TokenScope[] } | null> {
   const header = req.headers.get('authorization')
   if (!header) return null
 
@@ -38,5 +39,6 @@ export async function authenticateBearer(req: Request): Promise<{ userId: string
     await touchApiToken(row.id).catch(() => undefined)
   }
 
-  return { userId: row.userId }
+  // Unknown scope strings in the row grant nothing.
+  return { userId: row.userId, scopes: normalizeScopes(row.scopes) }
 }

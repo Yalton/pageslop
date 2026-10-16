@@ -13,6 +13,13 @@ import {
   type ApiTokenSummary,
   type CreatedApiToken,
 } from '@/lib/settings/token-format'
+import {
+  DEFAULT_TOKEN_SCOPES,
+  TOKEN_SCOPES,
+  TOKEN_SCOPE_LABELS,
+  isTokenScope,
+  type TokenScope,
+} from '@/lib/auth/token-scopes'
 
 const TOKENS_URL = '/api/settings/tokens'
 // Self-hosters of a fork can point this at their own docs.
@@ -32,6 +39,7 @@ const inputClass =
 export function ExtensionTokensCard() {
   const { data: tokens, error: loadError, isLoading, mutate } = useSWR<ApiTokenSummary[]>(TOKENS_URL, fetchTokens)
   const [name, setName] = useState('')
+  const [scopes, setScopes] = useState<TokenScope[]>(DEFAULT_TOKEN_SCOPES)
   const [creating, setCreating] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [created, setCreated] = useState<CreatedApiToken | null>(null)
@@ -45,13 +53,17 @@ export function ExtensionTokensCard() {
       setFormError(validation)
       return
     }
+    if (scopes.length === 0) {
+      setFormError('Choose at least one permission')
+      return
+    }
     setFormError(null)
     setCreating(true)
     try {
       const res = await fetch(TOKENS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({ name: name.trim(), scopes }),
       })
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null
@@ -62,6 +74,7 @@ export function ExtensionTokensCard() {
       setCreated(token)
       setCopied(false)
       setName('')
+      setScopes(DEFAULT_TOKEN_SCOPES)
       await mutate()
     } catch {
       setFormError('Could not create token')
@@ -107,10 +120,34 @@ export function ExtensionTokensCard() {
       </h2>
 
       <div className="bg-card rounded-lg border p-6">
-        <h3 className="font-semibold mb-1">Extension tokens</h3>
+        <h3 className="font-semibold mb-1">API tokens</h3>
         <p className="text-sm text-muted-foreground mb-4">
           The Firefox extension uses a token to save idle tabs to your To Revisit list. Create one token per browser.
+          Tokens can also read and save links through the{' '}
+          <code className="font-mono">/api/v1</code> REST API; give each token only the permissions it needs.
         </p>
+
+        <fieldset className="mb-3">
+          <legend className="text-sm font-medium mb-1">Permissions</legend>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {TOKEN_SCOPES.map((scope) => (
+              <label key={scope} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={scopes.includes(scope)}
+                  onChange={(e) =>
+                    setScopes((prev) =>
+                      e.target.checked
+                        ? TOKEN_SCOPES.filter((s) => s === scope || prev.includes(s))
+                        : prev.filter((s) => s !== scope),
+                    )
+                  }
+                />
+                {TOKEN_SCOPE_LABELS[scope]}
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <form onSubmit={handleCreate} className="flex flex-wrap gap-2">
           <input
@@ -186,6 +223,9 @@ export function ExtensionTokensCard() {
                   </span>
                   <span className="text-xs text-muted-foreground">
                     Last used {formatTokenDate(token.lastUsedAt)}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {(token.scopes ?? []).filter(isTokenScope).join(', ') || 'no permissions'}
                   </span>
                   <Button
                     type="button"

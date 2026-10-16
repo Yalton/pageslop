@@ -1,15 +1,44 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// /api/stash (and /api/stash/*) uses bearer-token auth and does its own 401s,
-// so it must not be redirected for lacking a session cookie.
-const publicPaths = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/about', '/api/auth', '/api/stash']
+// /api/stash and /api/v1 (and their subpaths) use bearer-token auth and return
+// their own 401/403 JSON, so they must not be redirected for lacking a session cookie.
+const publicPaths = ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/privacy', '/terms', '/about', '/api/auth', '/api/stash', '/api/v1']
+
+// Repeated decoding is bounded so a deeply nested encoding cannot loop forever.
+const MAX_DECODE_PASSES = 3
+
+/**
+ * Whether a pathname may use the public-path bypass. The prefix check runs on
+ * the raw pathname, so "/api/v1/%2e%2e/dashboard" would match "/api/v1/" yet
+ * could resolve elsewhere. Refuse the bypass if, after percent-decoding
+ * (repeatedly, for double encoding), any segment split on "/" or "\" is "." or
+ * "..", or if the pathname cannot be decoded at all.
+ */
+function hasNoDotSegments(pathname: string): boolean {
+  let decoded = pathname
+  for (let pass = 0; pass < MAX_DECODE_PASSES; pass++) {
+    let next: string
+    try {
+      next = decodeURIComponent(decoded)
+    } catch {
+      return false
+    }
+    if (next === decoded) break
+    decoded = next
+  }
+  if (/%[0-9a-f]{2}/i.test(decoded)) return false // still encoded after the last pass
+  return !decoded.split(/[/\\]/).some((segment) => segment === '.' || segment === '..')
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Allow public paths
-  if (publicPaths.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+  if (
+    hasNoDotSegments(pathname) &&
+    publicPaths.some((p) => pathname === p || pathname.startsWith(p + '/'))
+  ) {
     return NextResponse.next()
   }
 

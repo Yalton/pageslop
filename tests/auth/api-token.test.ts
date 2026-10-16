@@ -77,47 +77,51 @@ describe('authenticateBearer', () => {
   })
 
   it('looks up by hash, touches lastUsedAt, and returns the userId', async () => {
-    vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-1', userId: 'user-1', lastUsedAt: null })
-    await expect(authenticateBearer(req(`Bearer ${VALID_RAW}`))).resolves.toEqual({
-      userId: 'user-1',
-    })
+    vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-1', userId: 'user-1', lastUsedAt: null, scopes: ['stash'] })
+    await expect(authenticateBearer(req(`Bearer ${VALID_RAW}`))).resolves.toEqual({ userId: 'user-1', scopes: ['stash'] })
     expect(findTokenByHash).toHaveBeenCalledWith(hashToken(VALID_RAW))
     expect(touchApiToken).toHaveBeenCalledWith('tok-1')
   })
 
   it('does not touch lastUsedAt again within 5 minutes', async () => {
     const recent = new Date(Date.now() - 4 * 60_000)
-    vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-1', userId: 'user-1', lastUsedAt: recent })
-    await expect(authenticateBearer(req(`Bearer ${VALID_RAW}`))).resolves.toEqual({ userId: 'user-1' })
+    vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-1', userId: 'user-1', lastUsedAt: recent, scopes: ['stash'] })
+    await expect(authenticateBearer(req(`Bearer ${VALID_RAW}`))).resolves.toEqual({ userId: 'user-1', scopes: ['stash'] })
     expect(touchApiToken).not.toHaveBeenCalled()
   })
 
   it('touches lastUsedAt once it is older than 5 minutes', async () => {
     const stale = new Date(Date.now() - 6 * 60_000)
-    vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-1', userId: 'user-1', lastUsedAt: stale })
+    vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-1', userId: 'user-1', lastUsedAt: stale, scopes: ['stash'] })
     await authenticateBearer(req(`Bearer ${VALID_RAW}`))
     expect(touchApiToken).toHaveBeenCalledWith('tok-1')
   })
 
   it('accepts a lowercase "bearer" scheme', async () => {
-    vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-1', userId: 'user-1', lastUsedAt: null })
-    await expect(authenticateBearer(req(`bearer ${VALID_RAW}`))).resolves.toEqual({
-      userId: 'user-1',
-    })
+    vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-1', userId: 'user-1', lastUsedAt: null, scopes: ['stash'] })
+    await expect(authenticateBearer(req(`bearer ${VALID_RAW}`))).resolves.toEqual({ userId: 'user-1', scopes: ['stash'] })
   })
 
   it('still authenticates when touching lastUsedAt fails', async () => {
-    vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-1', userId: 'user-1', lastUsedAt: null })
+    vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-1', userId: 'user-1', lastUsedAt: null, scopes: ['stash'] })
     vi.mocked(touchApiToken).mockRejectedValueOnce(new Error('db hiccup'))
+    await expect(authenticateBearer(req(`Bearer ${VALID_RAW}`))).resolves.toEqual({ userId: 'user-1', scopes: ['stash'] })
+  })
+
+  it("returns the token's scopes, dropping any the server does not know", async () => {
+    vi.mocked(findTokenByHash).mockResolvedValueOnce({
+      id: 'tok-1', userId: 'user-1', lastUsedAt: null, scopes: ['links:read', 'admin', 'links:write'],
+    })
     await expect(authenticateBearer(req(`Bearer ${VALID_RAW}`))).resolves.toEqual({
       userId: 'user-1',
+      scopes: ['links:read', 'links:write'],
     })
   })
 
   it('works with a freshly generated token', async () => {
     const { raw, hash } = generateToken()
-    vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-2', userId: 'user-2', lastUsedAt: null })
-    await expect(authenticateBearer(req(`Bearer ${raw}`))).resolves.toEqual({ userId: 'user-2' })
+    vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-2', userId: 'user-2', lastUsedAt: null, scopes: ['stash'] })
+    await expect(authenticateBearer(req(`Bearer ${raw}`))).resolves.toEqual({ userId: 'user-2', scopes: ['stash'] })
     expect(findTokenByHash).toHaveBeenCalledWith(hash)
   })
 })
