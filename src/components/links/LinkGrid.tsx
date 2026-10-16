@@ -43,6 +43,8 @@ import {
 import { allLinksEmptyState, filterAllLinksView, filterArchivedView } from '@/lib/utils/all-links-filter'
 import { toast } from 'sonner'
 import { useLinks } from '@/lib/hooks/useLinks'
+import { useViewEnterAnimation } from '@/lib/hooks/useViewEnterAnimation'
+import { viewTransitionKey } from '@/lib/utils/view-transition'
 import type { LinkWithTags, StashState } from '@/types'
 
 /** 'grouped' is sections per category, 'site' sections per website. */
@@ -95,6 +97,10 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   const categories = useMemo(() => categoryOptions(visibleLinks), [visibleLinks])
   const favicons = useMemo(() => siteFavicons(visibleLinks), [visibleLinks])
   const noMatchMessage = emptyFilterMessage(searchQuery, tagFilter, linkView)
+  // Results fade in when the user changes the view, not when SWR refreshes the data.
+  const resultsRef = useViewEnterAnimation<HTMLDivElement>(
+    viewTransitionKey({ ...linkView, tag: tagFilter, mode: viewMode })
+  )
 
   // Order the links appear on screen, for shift-click ranges.
   const displayOrder = useMemo(() => {
@@ -378,6 +384,8 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
         </div>
       )}
 
+      {/* Results: one animated region so view changes fade in instead of snapping */}
+      <div ref={resultsRef} className="flex flex-1 flex-col empty:hidden">
       {/* No results state */}
       {visibleLinks.length > 0 && filteredLinks.length === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 py-16 text-center gap-3">
@@ -459,6 +467,7 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
           onToggleSelect={handleToggleSelect}
         />
       )}
+      </div>
 
       {selecting && (
         <BulkActionBar
