@@ -8,6 +8,14 @@ import {
   linkViewQuery,
   parseLinkView,
   sortLinks,
+  emptyFilterMessage,
+  facetFromSelect,
+  facetItems,
+  facetToSelect,
+  linkViewHref,
+  ANY_FACET,
+  CLEAR_ALL_FILTERS,
+  CLEAR_FACETS,
   DEFAULT_LINK_VIEW,
 } from '@/lib/utils/link-view'
 import type { LinkWithTags } from '@/types'
@@ -112,7 +120,10 @@ describe('sortLinks', () => {
     expect(ids(sortLinks([r, p, q], 'newest'))).toEqual(['p', 'r', 'q'])
     const s = makeLink('s', { createdAt: same })
     const t = makeLink('t', { createdAt: same })
-    expect(ids(sortLinks([t, s], 'newest'))).toEqual(ids(sortLinks([s, t], 'newest')))
+    // id descending, matching the server's ORDER BY created_at DESC, id DESC
+    expect(ids(sortLinks([s, t], 'newest'))).toEqual(['t', 's'])
+    expect(ids(sortLinks([t, s], 'newest'))).toEqual(['t', 's'])
+    expect(ids(sortLinks([t, s], 'oldest'))).toEqual(['s', 't'])
   })
 
   it('does not mutate the input', () => {
@@ -128,7 +139,7 @@ describe('applyLinkView', () => {
   const nodomain = makeLink('nd', { domain: null, url: 'https://www.github.com/y', category: 'Dev' })
 
   it('filters by domain, using the url hostname when domain is missing', () => {
-    expect(ids(applyLinkView([gh, yt, nodomain], { ...DEFAULT_LINK_VIEW, domain: 'github.com' }))).toEqual(['gh', 'nd'])
+    expect(ids(applyLinkView([gh, yt, nodomain], { ...DEFAULT_LINK_VIEW, domain: 'github.com' }))).toEqual(['nd', 'gh'])
   })
 
   it('filters by category', () => {
@@ -136,7 +147,7 @@ describe('applyLinkView', () => {
   })
 
   it('filters untagged and described links', () => {
-    expect(ids(applyLinkView([gh, yt, nodomain], { ...DEFAULT_LINK_VIEW, untagged: true }))).toEqual(['nd', 'yt'])
+    expect(ids(applyLinkView([gh, yt, nodomain], { ...DEFAULT_LINK_VIEW, untagged: true }))).toEqual(['yt', 'nd'])
     expect(ids(applyLinkView([gh, yt, nodomain], { ...DEFAULT_LINK_VIEW, described: true }))).toEqual(['gh'])
   })
 })
@@ -163,5 +174,64 @@ describe('options and active state', () => {
     expect(hasActiveLinkFilters(DEFAULT_LINK_VIEW)).toBe(false)
     expect(hasActiveLinkFilters({ ...DEFAULT_LINK_VIEW, sort: 'title' })).toBe(false)
     expect(hasActiveLinkFilters({ ...DEFAULT_LINK_VIEW, untagged: true })).toBe(true)
+  })
+})
+
+describe('linkViewHref', () => {
+  it('returns the bare path when no params remain', () => {
+    expect(linkViewHref('/dashboard', new URLSearchParams('tag=go'), { tag: null })).toBe('/dashboard')
+  })
+
+  it('keeps other params when a tag is set', () => {
+    expect(linkViewHref('/dashboard/archived', new URLSearchParams('sort=title&domain=a.com'), { tag: 'go' })).toBe(
+      '/dashboard/archived?sort=title&domain=a.com&tag=go',
+    )
+  })
+
+  it('clears facets but keeps sort and tag with CLEAR_FACETS', () => {
+    const current = new URLSearchParams('sort=oldest&tag=go&domain=a.com&category=Dev&untagged=1&described=1')
+    expect(linkViewHref('/dashboard', current, CLEAR_FACETS)).toBe('/dashboard?sort=oldest&tag=go')
+  })
+
+  it('clears facets and tag but keeps sort with CLEAR_ALL_FILTERS', () => {
+    const current = new URLSearchParams('sort=oldest&tag=go&domain=a.com&untagged=1')
+    expect(linkViewHref('/dashboard', current, CLEAR_ALL_FILTERS)).toBe('/dashboard?sort=oldest')
+  })
+})
+
+describe('emptyFilterMessage', () => {
+  it('is null when nothing filters', () => {
+    expect(emptyFilterMessage('  ', null, { ...DEFAULT_LINK_VIEW, sort: 'title' })).toBeNull()
+  })
+
+  it('names search, tag and every active facet', () => {
+    const view = { sort: 'newest' as const, domain: 'github.com', category: 'Dev', untagged: true, described: true }
+    expect(emptyFilterMessage(' rust ', 'go', view)).toBe(
+      'No links matching "rust", tagged "go", from github.com, in Dev, without tags, with a description',
+    )
+  })
+
+  it('mentions facets when only facets are active', () => {
+    expect(emptyFilterMessage('', null, { ...DEFAULT_LINK_VIEW, domain: 'a.com' })).toBe('No links from a.com')
+  })
+})
+
+describe('facet select helpers', () => {
+  it('maps null to the any value and back', () => {
+    expect(facetToSelect(null)).toBe(ANY_FACET)
+    expect(facetToSelect('a.com')).toBe('a.com')
+    expect(facetFromSelect(ANY_FACET)).toBeNull()
+    expect(facetFromSelect('a.com')).toBe('a.com')
+  })
+
+  it('adds a selected value missing from the options first, with count 0', () => {
+    const options = [{ value: 'b.com', count: 2 }]
+    expect(facetItems(options, 'gone.com')).toEqual([{ value: 'gone.com', count: 0 }, ...options])
+  })
+
+  it('leaves options alone when the selection is present or empty', () => {
+    const options = [{ value: 'b.com', count: 2 }]
+    expect(facetItems(options, 'b.com')).toBe(options)
+    expect(facetItems(options, null)).toBe(options)
   })
 })

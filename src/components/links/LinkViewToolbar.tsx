@@ -5,7 +5,12 @@ import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
+  ANY_FACET,
+  CLEAR_FACETS,
   LINK_SORTS,
+  facetFromSelect,
+  facetItems,
+  facetToSelect,
   LINK_SORT_LABELS,
   hasActiveLinkFilters,
   type FacetOption,
@@ -13,9 +18,6 @@ import {
   type LinkViewPatch,
   type LinkViewState,
 } from '@/lib/utils/link-view'
-
-// Radix Select reserves the empty string, so "no filter" needs its own value.
-const ANY = '__any'
 
 interface LinkViewToolbarProps {
   view: LinkViewState
@@ -38,15 +40,13 @@ function FacetSelect({
   onChange: (value: string | null) => void
 }) {
   return (
-    <Select value={value ?? ANY} onValueChange={(v) => onChange(v === ANY ? null : v)}>
+    <Select value={facetToSelect(value)} onValueChange={(v) => onChange(facetFromSelect(v))}>
       <SelectTrigger size="sm" aria-label={label} className="max-w-[200px]">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={ANY}>{anyLabel}</SelectItem>
-        {/* Keep a value from the URL selectable even when no visible link has it. */}
-        {value && !options.some((o) => o.value === value) && <SelectItem value={value}>{value}</SelectItem>}
-        {options.map((o) => (
+        <SelectItem value={ANY_FACET}>{anyLabel}</SelectItem>
+        {facetItems(options, value).map((o) => (
           <SelectItem key={o.value} value={o.value}>
             {o.value} <span className="text-muted-foreground">({o.count})</span>
           </SelectItem>
@@ -108,7 +108,7 @@ export function LinkViewToolbar({ view, domains, categories, onChange }: LinkVie
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onChange({ domain: null, category: null, untagged: false, described: false })}
+          onClick={() => onChange(CLEAR_FACETS)}
         >
           <X className="size-4" />
           Clear filters

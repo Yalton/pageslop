@@ -29,11 +29,12 @@ import { groupLinks } from '@/lib/utils/group-links'
 import { groupIdsByState, restoreTarget, toggleSelection } from '@/lib/utils/selection'
 import { filterLinks } from '@/lib/utils/search'
 import {
+  CLEAR_ALL_FILTERS,
   applyLinkView,
   categoryOptions,
   domainOptions,
-  hasActiveLinkFilters,
-  linkViewQuery,
+  emptyFilterMessage,
+  linkViewHref,
   parseLinkView,
   type LinkViewPatch,
 } from '@/lib/utils/link-view'
@@ -87,7 +88,7 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   )
   const domains = useMemo(() => domainOptions(visibleLinks), [visibleLinks])
   const categories = useMemo(() => categoryOptions(visibleLinks), [visibleLinks])
-  const filtersActive = hasActiveLinkFilters(linkView)
+  const noMatchMessage = emptyFilterMessage(searchQuery, tagFilter, linkView)
 
   // Order the links appear on screen, for shift-click ranges.
   const displayOrder = useMemo(
@@ -204,8 +205,7 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   }
 
   function viewHref(patch: LinkViewPatch) {
-    const query = linkViewQuery(new URLSearchParams(searchParams.toString()), patch)
-    return query ? `${BASE_PATH[view]}?${query}` : BASE_PATH[view]
+    return linkViewHref(BASE_PATH[view], new URLSearchParams(searchParams.toString()), patch)
   }
 
   /** Toolbar changes replace the history entry so Back leaves the page instead of undoing each tweak. */
@@ -213,8 +213,10 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
     router.replace(viewHref(patch), { scroll: false })
   }
 
-  function handleClearFilters() {
-    handleViewChange({ domain: null, category: null, untagged: false, described: false })
+  /** Clears search, tag and facet filters together, so an empty result always has one way out. */
+  function handleClearAllFilters() {
+    setSearchQuery('')
+    handleViewChange(CLEAR_ALL_FILTERS)
   }
 
   function handleTagClick(tagName: string) {
@@ -338,32 +340,14 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
       {/* No results state */}
       {visibleLinks.length > 0 && filteredLinks.length === 0 && (
         <div className="flex flex-col items-center justify-center flex-1 py-16 text-center gap-3">
-          {searchQuery ? (
+          {noMatchMessage && (
             <>
-              <p className="text-sm text-muted-foreground">
-                No links match &quot;{searchQuery}&quot;
-              </p>
-              <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')}>
-                Clear search
+              <p className="text-sm text-muted-foreground">{noMatchMessage}</p>
+              <Button variant="ghost" size="sm" onClick={handleClearAllFilters}>
+                Clear all filters
               </Button>
             </>
-          ) : tagFilter ? (
-            <>
-              <p className="text-sm text-muted-foreground">
-                No links with tag &quot;{tagFilter}&quot;
-              </p>
-              <Button variant="ghost" size="sm" onClick={handleClearTagFilter}>
-                Clear filter
-              </Button>
-            </>
-          ) : filtersActive ? (
-            <>
-              <p className="text-sm text-muted-foreground">No links match these filters</p>
-              <Button variant="ghost" size="sm" onClick={handleClearFilters}>
-                Clear filters
-              </Button>
-            </>
-          ) : null}
+          )}
         </div>
       )}
 
