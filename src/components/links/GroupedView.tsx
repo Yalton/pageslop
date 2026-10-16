@@ -11,6 +11,7 @@ import { LinkCard } from '@/components/links/LinkCard'
 import { LinkCardList } from '@/components/links/LinkCardList'
 import type { LinkWithTags } from '@/types'
 import type { SelectionProps } from '@/components/links/SelectCheckbox'
+import { CATEGORY_COLORS } from '@/components/graph/graphUtils'
 
 interface GroupedViewProps {
   links: LinkWithTags[]
@@ -85,18 +86,24 @@ export function GroupedView({
                 <ChevronRight
                   className="size-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90"
                 />
+                {!favicons && CATEGORY_COLORS[category] && (
+                  <span
+                    className="size-2.5 rounded-full"
+                    style={{ backgroundColor: CATEGORY_COLORS[category], boxShadow: `0 0 12px ${CATEGORY_COLORS[category]}` }}
+                    aria-hidden="true"
+                  />
+                )}
                 {favicons && (
                   <Avatar className="size-5">
                     <AvatarImage src={favicons.get(category)} alt="" />
                     <AvatarFallback className="text-[9px]">{category.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                 )}
-                <span className="text-sm font-semibold">
-                  {category}{' '}
-                  <span className="text-muted-foreground font-normal">
-                    ({categoryLinks.length})
-                  </span>
+                <span className="font-display text-base font-semibold tracking-tight">{category}</span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
+                  {categoryLinks.length}
                 </span>
+                <span className="ml-2 h-px flex-1 bg-gradient-to-r from-border to-transparent" aria-hidden="true" />
               </button>
             </Collapsible.Trigger>
 

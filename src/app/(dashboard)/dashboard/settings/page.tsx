@@ -264,7 +264,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col min-h-screen p-6">
-      <h1 className="text-[20px] font-semibold leading-[1.2] mb-6">Settings</h1>
+      <h1 className="text-3xl font-semibold tracking-tight mb-6">Settings</h1>
 
       <h2 className="text-lg font-semibold mt-2 mb-4">
         <span className="inline-flex items-center gap-2">
