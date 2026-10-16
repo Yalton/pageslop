@@ -6,6 +6,18 @@ import {
   CATEGORY_COLORS,
   NODE_BASE_RADIUS,
   NODE_TAG_SCALE,
+  clamp01,
+  lerp,
+  easeInOutCubic,
+  stepDim,
+  nodeAlpha,
+  linkAlpha,
+  dimmedLinkWidth,
+  withAlpha,
+  DIMMED_NODE_ALPHA,
+  DIMMED_LINK_ALPHA,
+  HIGHLIGHT_LINK_ALPHA,
+  DIMMED_LINK_WIDTH,
   type GraphNode,
   type GraphLink,
   type GraphData,
@@ -278,5 +290,57 @@ describe('Performance', () => {
     }
 
     expect(elapsed).toBeLessThan(500)
+  })
+})
+
+describe('hover fade helpers', () => {
+  it('clamp01 bounds values to 0..1', () => {
+    expect(clamp01(-0.5)).toBe(0)
+    expect(clamp01(0.4)).toBe(0.4)
+    expect(clamp01(2)).toBe(1)
+  })
+
+  it('lerp interpolates between two values', () => {
+    expect(lerp(10, 20, 0)).toBe(10)
+    expect(lerp(10, 20, 0.5)).toBe(15)
+    expect(lerp(10, 20, 1)).toBe(20)
+  })
+
+  it('easeInOutCubic hits endpoints and midpoint and is monotonic', () => {
+    expect(easeInOutCubic(0)).toBe(0)
+    expect(easeInOutCubic(1)).toBe(1)
+    expect(easeInOutCubic(0.5)).toBeCloseTo(0.5)
+    expect(easeInOutCubic(0.25)).toBeLessThan(0.25)
+    expect(easeInOutCubic(0.75)).toBeGreaterThan(0.75)
+    expect(easeInOutCubic(-1)).toBe(0)
+    expect(easeInOutCubic(2)).toBe(1)
+  })
+
+  it('stepDim moves toward the target at 1/duration per ms without overshoot', () => {
+    expect(stepDim(0, 1, 100, 200)).toBeCloseTo(0.5)
+    expect(stepDim(1, 0, 100, 200)).toBeCloseTo(0.5)
+    expect(stepDim(0.9, 1, 100, 200)).toBe(1)
+    expect(stepDim(0.1, 0, 100, 200)).toBe(0)
+    expect(stepDim(0.3, 0.3, 100, 200)).toBe(0.3)
+  })
+
+  it('stepDim jumps straight to target when duration is zero', () => {
+    expect(stepDim(0, 1, 16, 0)).toBe(1)
+  })
+
+  it('dimmed node alpha, link alpha and link width interpolate from dim factor', () => {
+    expect(nodeAlpha(0)).toBe(1)
+    expect(nodeAlpha(1)).toBeCloseTo(DIMMED_NODE_ALPHA)
+    expect(linkAlpha(0)).toBeCloseTo(HIGHLIGHT_LINK_ALPHA)
+    expect(linkAlpha(1)).toBeCloseTo(DIMMED_LINK_ALPHA)
+    expect(dimmedLinkWidth(3, 0)).toBe(3)
+    expect(dimmedLinkWidth(3, 1)).toBeCloseTo(DIMMED_LINK_WIDTH)
+    expect(dimmedLinkWidth(3, 0.5)).toBeCloseTo((3 + DIMMED_LINK_WIDTH) / 2)
+  })
+
+  it('withAlpha appends a two-digit hex alpha to a 6-digit hex color', () => {
+    expect(withAlpha('#3b82f6', 1)).toBe('#3b82f6ff')
+    expect(withAlpha('#3b82f6', 0)).toBe('#3b82f600')
+    expect(withAlpha('#3b82f6', 0.2667)).toBe('#3b82f644')
   })
 })

@@ -36,6 +36,53 @@ export const CATEGORY_COLORS: Record<string, string> = {
 export const NODE_BASE_RADIUS = 5
 export const NODE_TAG_SCALE = 0.4
 
+// Hover fade: dim factor 0 = nothing dimmed, 1 = fully dimmed
+export const DIM_FADE_MS = 200
+export const DIMMED_NODE_ALPHA = 0x44 / 255
+export const HIGHLIGHT_LINK_ALPHA = 0.6
+export const DIMMED_LINK_ALPHA = 0.05
+export const DIMMED_LINK_WIDTH = 0.3
+
+export function clamp01(v: number): number {
+  return Math.min(1, Math.max(0, v))
+}
+
+export function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t
+}
+
+export function easeInOutCubic(t: number): number {
+  const x = clamp01(t)
+  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2
+}
+
+/** Moves the linear dim progress toward target by dtMs/durationMs, never overshooting. */
+export function stepDim(current: number, target: number, dtMs: number, durationMs: number): number {
+  if (durationMs <= 0) return target
+  const step = dtMs / durationMs
+  return current < target ? Math.min(target, current + step) : Math.max(target, current - step)
+}
+
+/** Alpha of a non-highlighted node for an eased dim factor. */
+export function nodeAlpha(dim: number): number {
+  return lerp(1, DIMMED_NODE_ALPHA, dim)
+}
+
+/** Alpha of a non-highlighted link for an eased dim factor. */
+export function linkAlpha(dim: number): number {
+  return lerp(HIGHLIGHT_LINK_ALPHA, DIMMED_LINK_ALPHA, dim)
+}
+
+/** Width of a non-highlighted link for an eased dim factor. */
+export function dimmedLinkWidth(fullWidth: number, dim: number): number {
+  return lerp(fullWidth, DIMMED_LINK_WIDTH, dim)
+}
+
+/** Appends a 2-digit hex alpha to a #rrggbb color. */
+export function withAlpha(hex: string, alpha: number): string {
+  return hex + Math.round(clamp01(alpha) * 255).toString(16).padStart(2, '0')
+}
+
 /**
  * Builds the graph data (nodes and edges) from a list of LinkWithTags.
  *

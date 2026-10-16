@@ -11,6 +11,13 @@ import {
   CATEGORY_COLORS,
   NODE_BASE_RADIUS,
   NODE_TAG_SCALE,
+  DIM_FADE_MS,
+  easeInOutCubic,
+  stepDim,
+  nodeAlpha,
+  linkAlpha,
+  dimmedLinkWidth,
+  withAlpha,
   type GraphNode,
   type GraphLink,
 } from './graphUtils'
@@ -41,6 +48,13 @@ export default function ForceGraph() {
 
   const highlightNodesRef = useRef<Set<GraphNode>>(new Set())
   const highlightLinksRef = useRef<Set<GraphLink>>(new Set())
+
+  // Hover fade: linear progress 0..1 (eased at paint time), its target, and the rAF handle
+  const dimRef = useRef(0)
+  const dimTargetRef = useRef(0)
+  const rafRef = useRef<number | null>(null)
+  // While true the canvas must keep repainting even if the simulation has stopped
+  const [fading, setFading] = useState(false)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const graphRef = useRef<any>(null)
@@ -75,6 +89,36 @@ export default function ForceGraph() {
     return data
   }, [links, visibleCategories])
 
+  // Advance the dim factor toward its target each frame; clear highlights once faded out
+  const startFade = useCallback(() => {
+    if (rafRef.current !== null) return
+    setFading(true)
+    let last = performance.now()
+    const tick = (now: number) => {
+      dimRef.current = stepDim(dimRef.current, dimTargetRef.current, now - last, DIM_FADE_MS)
+      last = now
+      if (dimRef.current === dimTargetRef.current) {
+        rafRef.current = null
+        if (dimTargetRef.current === 0) {
+          highlightNodesRef.current = new Set()
+          highlightLinksRef.current = new Set()
+        }
+        setFading(false)
+        setRenderTick((t) => t + 1)
+        return
+      }
+      graphRef.current?.refresh?.()
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
   const handleNodeHover = useCallback(
     (node: GraphNode | null) => {
       const newHighlightNodes = new Set<GraphNode>()
@@ -94,12 +138,17 @@ export default function ForceGraph() {
         }
       }
 
-      highlightNodesRef.current = newHighlightNodes
-      highlightLinksRef.current = newHighlightLinks
+      // On hover-out keep the previous highlight sets so they can fade out
+      if (node) {
+        highlightNodesRef.current = newHighlightNodes
+        highlightLinksRef.current = newHighlightLinks
+      }
+      dimTargetRef.current = node ? 1 : 0
       setHoverNode(node)
       setRenderTick((t) => t + 1)
+      startFade()
     },
-    [],
+    [startFade],
   )
 
   const handleNodeClick = useCallback((node: GraphNode) => {
@@ -136,9 +185,9 @@ export default function ForceGraph() {
 
       let color = CATEGORY_COLORS[node.link.category ?? 'Other'] ?? '#6b7280'
 
-      // Dim non-highlighted nodes when a hover is active
+      // Dim non-highlighted nodes by the eased fade factor
       if (highlights.size > 0 && !highlights.has(node)) {
-        color = color + '44'
+        color = withAlpha(color, nodeAlpha(easeInOutCubic(dimRef.current)))
       }
 
       ctx.beginPath()
@@ -206,10 +255,9 @@ export default function ForceGraph() {
   const linkWidth = useCallback(
     (link: GraphLink) => {
       const highlights = highlightLinksRef.current
-      if (highlights.size === 0 || highlights.has(link)) {
-        return Math.min(1 + link.sharedTagCount, 4)
-      }
-      return 0.3
+      const fullWidth = Math.min(1 + link.sharedTagCount, 4)
+      if (highlights.size === 0 || highlights.has(link)) return fullWidth
+      return dimmedLinkWidth(fullWidth, easeInOutCubic(dimRef.current))
     },
     [renderTick],
   )
@@ -220,7 +268,7 @@ export default function ForceGraph() {
       if (highlights.size === 0 || highlights.has(link)) {
         return 'rgba(150,150,150,0.6)'
       }
-      return 'rgba(150,150,150,0.05)'
+      return `rgba(150,150,150,${linkAlpha(easeInOutCubic(dimRef.current))})`
     },
     [renderTick],
   )
@@ -269,6 +317,7 @@ export default function ForceGraph() {
           onNodeHover={handleNodeHover as any}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           onNodeDragEnd={handleNodeDragEnd as any}
+          autoPauseRedraw={!fading}
           warmupTicks={100}
           cooldownTicks={300}
           d3AlphaDecay={0.02}
