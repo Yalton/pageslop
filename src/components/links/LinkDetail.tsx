@@ -30,6 +30,7 @@ interface LinkDetailProps {
   onDelete: (id: string) => void
   onUndoDelete: (link: Link) => void
   onMutate: () => void
+  onTagClick?: (tagName: string) => void
 }
 
 function LinkDetailContent({
@@ -38,12 +39,14 @@ function LinkDetailContent({
   onDelete,
   onUndoDelete,
   onMutate,
+  onTagClick,
 }: {
   link: LinkWithTags
   onClose: () => void
   onDelete: (id: string) => void
   onUndoDelete: (link: Link) => void
   onMutate: () => void
+  onTagClick?: (tagName: string) => void
 }) {
   const hue = domainToHue(link.domain || '')
   const domainInitial = (link.domain || link.url).charAt(0).toUpperCase()
@@ -197,6 +200,7 @@ function LinkDetailContent({
           tags={link.tags}
           onTagAdded={onMutate}
           onTagRemoved={onMutate}
+          onTagClick={onTagClick}
         />
       </div>
 
@@ -220,7 +224,7 @@ function LinkDetailContent({
   )
 }
 
-export function LinkDetail({ link, open, onClose, onDelete, onUndoDelete, onMutate }: LinkDetailProps) {
+export function LinkDetail({ link, open, onClose, onDelete, onUndoDelete, onMutate, onTagClick }: LinkDetailProps) {
   const [isMobile, setIsMobile] = useState(false)
   const [mounted, setMounted] = useState(false)
 
@@ -249,6 +253,7 @@ export function LinkDetail({ link, open, onClose, onDelete, onUndoDelete, onMuta
               onDelete={onDelete}
               onUndoDelete={onUndoDelete}
               onMutate={onMutate}
+              onTagClick={onTagClick}
             />
           </div>
         </SheetContent>
@@ -268,6 +273,7 @@ export function LinkDetail({ link, open, onClose, onDelete, onUndoDelete, onMuta
           onDelete={onDelete}
           onUndoDelete={onUndoDelete}
           onMutate={onMutate}
+          onTagClick={onTagClick}
         />
       </DialogContent>
     </Dialog>

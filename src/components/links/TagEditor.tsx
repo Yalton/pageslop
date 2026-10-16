@@ -10,9 +10,10 @@ interface TagEditorProps {
   tags: Tag[]
   onTagAdded: () => void
   onTagRemoved: () => void
+  onTagClick?: (tagName: string) => void
 }
 
-export function TagEditor({ linkId, tags, onTagAdded, onTagRemoved }: TagEditorProps) {
+export function TagEditor({ linkId, tags, onTagAdded, onTagRemoved, onTagClick }: TagEditorProps) {
   const [inputValue, setInputValue] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -61,7 +62,18 @@ export function TagEditor({ linkId, tags, onTagAdded, onTagRemoved }: TagEditorP
             variant={tag.source === 'user' ? 'outline' : 'secondary'}
             className="gap-1 pr-1"
           >
-            {tag.name}
+            {onTagClick ? (
+              <button
+                type="button"
+                onClick={() => onTagClick(tag.name)}
+                className="hover:underline"
+                aria-label={`Show links tagged ${tag.name}`}
+              >
+                {tag.name}
+              </button>
+            ) : (
+              tag.name
+            )}
             <button
               type="button"
               onClick={() => handleRemoveTag(tag)}
