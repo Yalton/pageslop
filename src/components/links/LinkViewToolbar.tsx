@@ -12,6 +12,8 @@ import {
   facetItems,
   facetToSelect,
   LINK_SORT_LABELS,
+  LINK_STATUS_LABELS,
+  type LinkStatusFilter,
   hasActiveLinkFilters,
   type FacetOption,
   type LinkSort,
@@ -23,6 +25,7 @@ interface LinkViewToolbarProps {
   view: LinkViewState
   domains: FacetOption[]
   categories: FacetOption[]
+  statuses: FacetOption[]
   onChange: (patch: LinkViewPatch) => void
   /** Open state of the website filter, so the site tabs' "more" button can open it. */
   websiteOpen?: boolean
@@ -73,6 +76,7 @@ export function LinkViewToolbar({
   view,
   domains,
   categories,
+  statuses,
   onChange,
   websiteOpen,
   onWebsiteOpenChange,
@@ -109,6 +113,23 @@ export function LinkViewToolbar({
           onChange={(category) => onChange({ category })}
         />
       )}
+      <Select
+        value={facetToSelect(view.status)}
+        onValueChange={(v) => onChange({ status: facetFromSelect(v) as LinkStatusFilter | null })}
+      >
+        <SelectTrigger size="sm" aria-label="Filter by status">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ANY_FACET}>All statuses</SelectItem>
+          {statuses.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {LINK_STATUS_LABELS[o.value as LinkStatusFilter]}{' '}
+              <span className="text-muted-foreground">({o.count})</span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <Toggle
         variant="outline"
         size="sm"

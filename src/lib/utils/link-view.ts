@@ -1,4 +1,4 @@
-import type { LinkWithTags } from '@/types'
+import type { LinkWithTags, UptimeStatus } from '@/types'
 import { domainKey } from '@/lib/utils/group-links'
 
 /**
@@ -15,12 +15,27 @@ export const LINK_SORT_LABELS: Record<LinkSort, string> = {
   domain: 'Website A–Z',
 }
 
+/**
+ * Status facet values. 'down' is "dead": the link's uptimeStatus is 'down',
+ * which is exactly what the red UptimeDot shows (two consecutive failed checks).
+ * Links whose scrape errored but never flipped to 'down' are not dead.
+ */
+export const LINK_STATUSES = ['down', 'up', 'unchecked'] as const satisfies readonly UptimeStatus[]
+export type LinkStatusFilter = (typeof LINK_STATUSES)[number]
+
+export const LINK_STATUS_LABELS: Record<LinkStatusFilter, string> = {
+  down: 'Dead',
+  up: 'Up',
+  unchecked: 'Unchecked',
+}
+
 export interface LinkViewState {
   sort: LinkSort
   domain: string | null
   category: string | null
   untagged: boolean
   described: boolean
+  status: LinkStatusFilter | null
 }
 
 export const DEFAULT_LINK_VIEW: LinkViewState = {
@@ -29,6 +44,7 @@ export const DEFAULT_LINK_VIEW: LinkViewState = {
   category: null,
   untagged: false,
   described: false,
+  status: null,
 }
 
 interface QueryReader {
@@ -43,6 +59,9 @@ export function parseLinkView(params: QueryReader): LinkViewState {
     category: params.get('category') || null,
     untagged: params.get('untagged') === '1',
     described: params.get('described') === '1',
+    status: (LINK_STATUSES as readonly string[]).includes(params.get('status') ?? '')
+      ? (params.get('status') as LinkStatusFilter)
+      : null,
   }
 }
 
@@ -62,7 +81,7 @@ export function linkViewQuery(current: URLSearchParams, patch: LinkViewPatch): s
 }
 
 /** Patch that turns off every facet filter (not the sort). */
-export const CLEAR_FACETS: LinkViewPatch = { domain: null, category: null, untagged: false, described: false }
+export const CLEAR_FACETS: LinkViewPatch = { domain: null, category: null, untagged: false, described: false, status: null }
 
 /** Patch that turns off every filter including ?tag=; the sort is kept. */
 export const CLEAR_ALL_FILTERS: LinkViewPatch = { ...CLEAR_FACETS, tag: null }
@@ -86,6 +105,7 @@ export function emptyFilterMessage(search: string, tag: string | null, view: Lin
     view.category && `in ${view.category}`,
     view.untagged && 'without tags',
     view.described && 'with a description',
+    view.status && `that are ${LINK_STATUS_LABELS[view.status].toLowerCase()}`,
   ].filter(Boolean)
   return parts.length ? `No links ${parts.join(', ')}` : null
 }
@@ -129,14 +149,15 @@ export function applyLinkView(links: LinkWithTags[], view: LinkViewState): LinkW
       (!view.domain || domainKey(link) === view.domain) &&
       (!view.category || link.category === view.category) &&
       (!view.untagged || link.tags.length === 0) &&
-      (!view.described || Boolean(link.description?.trim())),
+      (!view.described || Boolean(link.description?.trim())) &&
+      (!view.status || link.uptimeStatus === view.status),
   )
   return sortLinks(filtered, view.sort)
 }
 
 /** True when a filter (not just the sort) narrows the list. */
 export function hasActiveLinkFilters(view: LinkViewState): boolean {
-  return Boolean(view.domain || view.category || view.untagged || view.described)
+  return Boolean(view.domain || view.category || view.untagged || view.described || view.status)
 }
 
 export interface FacetOption {
@@ -162,6 +183,11 @@ export function categoryOptions(links: LinkWithTags[]): FacetOption[] {
   return [...countBy(links.map((l) => l.category))]
     .map(([value, count]) => ({ value, count }))
     .sort((a, b) => collator.compare(a.value, b.value))
+}
+
+/** Counts per status, in fixed order (Dead first); zero counts are kept so the options don't jump. */
+export function statusOptions(links: LinkWithTags[]): FacetOption[] {
+  return LINK_STATUSES.map((value) => ({ value, count: links.filter((l) => l.uptimeStatus === value).length }))
 }
 
 /** Radix Select reserves the empty string, so "no filter" is this value in the control. */

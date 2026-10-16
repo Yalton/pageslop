@@ -17,6 +17,7 @@ import {
   CLEAR_ALL_FILTERS,
   CLEAR_FACETS,
   DEFAULT_LINK_VIEW,
+  statusOptions,
 } from '@/lib/utils/link-view'
 import type { LinkWithTags } from '@/types'
 
@@ -57,7 +58,15 @@ describe('parseLinkView', () => {
       category: 'Dev',
       untagged: true,
       described: true,
+      status: null,
     })
+  })
+
+  it('reads and validates status', () => {
+    expect(parseLinkView(new URLSearchParams('status=down')).status).toBe('down')
+    expect(parseLinkView(new URLSearchParams('status=up')).status).toBe('up')
+    expect(parseLinkView(new URLSearchParams('status=unchecked')).status).toBe('unchecked')
+    expect(parseLinkView(new URLSearchParams('status=bogus')).status).toBeNull()
   })
 
   it('falls back to newest for an unknown sort', () => {
@@ -205,9 +214,9 @@ describe('emptyFilterMessage', () => {
   })
 
   it('names search, tag and every active facet', () => {
-    const view = { sort: 'newest' as const, domain: 'github.com', category: 'Dev', untagged: true, described: true }
+    const view = { sort: 'newest' as const, domain: 'github.com', category: 'Dev', untagged: true, described: true, status: 'down' as const }
     expect(emptyFilterMessage(' rust ', 'go', view)).toBe(
-      'No links matching "rust", tagged "go", from github.com, in Dev, without tags, with a description',
+      'No links matching "rust", tagged "go", from github.com, in Dev, without tags, with a description, that are dead',
     )
   })
 
@@ -233,5 +242,52 @@ describe('facet select helpers', () => {
     const options = [{ value: 'b.com', count: 2 }]
     expect(facetItems(options, 'b.com')).toBe(options)
     expect(facetItems(options, null)).toBe(options)
+  })
+})
+
+describe('status filter', () => {
+  const up = makeLink('u', { uptimeStatus: 'up' })
+  const down1 = makeLink('d1', { uptimeStatus: 'down' })
+  const down2 = makeLink('d2', { uptimeStatus: 'down', domain: 'other.com' })
+  const unchecked = makeLink('n', { uptimeStatus: 'unchecked' })
+  const all = [up, down1, down2, unchecked]
+
+  it('filters to dead, up or unchecked links', () => {
+    const ids = (status: 'down' | 'up' | 'unchecked') =>
+      applyLinkView(all, { ...DEFAULT_LINK_VIEW, status }).map((l) => l.id).sort()
+    expect(ids('down')).toEqual(['d1', 'd2'])
+    expect(ids('up')).toEqual(['u'])
+    expect(ids('unchecked')).toEqual(['n'])
+  })
+
+  it('combines with other filters', () => {
+    const out = applyLinkView(all, { ...DEFAULT_LINK_VIEW, status: 'down', domain: 'other.com' })
+    expect(out.map((l) => l.id)).toEqual(['d2'])
+  })
+
+  it('counts statuses, always listing dead first', () => {
+    expect(statusOptions(all)).toEqual([
+      { value: 'down', count: 2 },
+      { value: 'up', count: 1 },
+      { value: 'unchecked', count: 1 },
+    ])
+    expect(statusOptions([up])).toEqual([
+      { value: 'down', count: 0 },
+      { value: 'up', count: 1 },
+      { value: 'unchecked', count: 0 },
+    ])
+  })
+
+  it('is an active filter, round-trips the query and is cleared by clear-all', () => {
+    expect(hasActiveLinkFilters({ ...DEFAULT_LINK_VIEW, status: 'down' })).toBe(true)
+    const q = linkViewQuery(new URLSearchParams(), { status: 'down' })
+    expect(q).toBe('status=down')
+    expect(linkViewQuery(new URLSearchParams(q), CLEAR_FACETS)).toBe('')
+    expect(linkViewQuery(new URLSearchParams(q), CLEAR_ALL_FILTERS)).toBe('')
+  })
+
+  it('names the status in the empty message', () => {
+    expect(emptyFilterMessage('', null, { ...DEFAULT_LINK_VIEW, status: 'down' })).toBe('No links that are dead')
+    expect(emptyFilterMessage('', null, { ...DEFAULT_LINK_VIEW, status: 'unchecked' })).toBe('No links that are unchecked')
   })
 })
