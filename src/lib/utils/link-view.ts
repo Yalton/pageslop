@@ -160,6 +160,11 @@ export function hasActiveLinkFilters(view: LinkViewState): boolean {
   return Boolean(view.domain || view.category || view.untagged || view.described || view.status)
 }
 
+/** Number of active filters (not the sort); each facet and toggle counts once. */
+export function activeFilterCount(view: LinkViewState): number {
+  return [view.domain, view.category, view.untagged, view.described, view.status].filter(Boolean).length
+}
+
 export interface FacetOption {
   value: string
   count: number
