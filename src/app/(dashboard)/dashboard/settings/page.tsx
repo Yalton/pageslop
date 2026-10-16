@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Upload, FileDown, CheckCircle, AlertCircle, Key, Trash2, Lock } from 'lucide-react'
+import { Upload, FileDown, CheckCircle, AlertCircle, Key, Trash2, Lock, Database } from 'lucide-react'
 import { ExtensionTokensCard } from '@/components/settings/ExtensionTokensCard'
 import { McpConnectCard } from '@/components/settings/McpConnectCard'
 
@@ -266,7 +266,12 @@ export default function SettingsPage() {
     <div className="flex flex-col min-h-screen p-6">
       <h1 className="text-[20px] font-semibold leading-[1.2] mb-6">Settings</h1>
 
-      <h2 className="text-lg font-semibold mt-2 mb-4">Data Management</h2>
+      <h2 className="text-lg font-semibold mt-2 mb-4">
+        <span className="inline-flex items-center gap-2">
+          <Database className="size-5" />
+          Data Management
+        </span>
+      </h2>
 
       {/* Import section */}
       <div className="bg-card rounded-lg border p-6 mb-4">
@@ -423,12 +428,12 @@ export default function SettingsPage() {
               {keyError}
             </div>
           )}
+
+          <p className="mt-3 text-xs text-muted-foreground">
+            Your key is encrypted at rest and never stored in plain text. Only newly saved links will use LLM enrichment.
+          </p>
         </div>
       )}
-
-      <p className="mt-3 text-xs text-muted-foreground">
-        Your key is encrypted at rest and never stored in plain text. Only newly saved links will use LLM enrichment.
-      </p>
 
       {/* Browser Extension */}
       <ExtensionTokensCard />

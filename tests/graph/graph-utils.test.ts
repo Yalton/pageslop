@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { LINK_DEFAULTS } from '../fixtures/link-defaults'
 import {
   buildGraphData,
+  countCategories,
   crossLinkNodes,
   CATEGORY_COLORS,
   NODE_BASE_RADIUS,
@@ -342,5 +343,22 @@ describe('hover fade helpers', () => {
     expect(withAlpha('#3b82f6', 1)).toBe('#3b82f6ff')
     expect(withAlpha('#3b82f6', 0)).toBe('#3b82f600')
     expect(withAlpha('#3b82f6', 0.2667)).toBe('#3b82f644')
+  })
+})
+
+describe('countCategories', () => {
+  it('counts links per category and skips uncategorized ones', () => {
+    const counts = countCategories([
+      makeLink('a', [], 'Technology'),
+      makeLink('b', [], 'Technology'),
+      makeLink('c', [], 'Entertainment'),
+      makeLink('d', [], null),
+    ])
+    expect(Object.fromEntries(counts)).toEqual({ Technology: 2, Entertainment: 1 })
+  })
+
+  it('leaves out links All Links does not show', () => {
+    const stashed = { ...makeLink('s', [], 'News'), stashState: 'inbox' } as LinkWithTags
+    expect(countCategories([stashed]).has('News')).toBe(false)
   })
 })

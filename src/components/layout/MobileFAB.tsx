@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { usePathname } from "next/navigation"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,7 +13,11 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 
+// Pages where the FAB has nothing to do and would only cover content.
+const HIDDEN_ON = ["/dashboard/settings", "/dashboard/tags", "/dashboard/graph"]
+
 export function MobileFAB() {
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [url, setUrl] = useState("")
   const [loading, setLoading] = useState(false)
@@ -42,6 +47,8 @@ export function MobileFAB() {
       setLoading(false)
     }
   }
+
+  if (HIDDEN_ON.some((p) => pathname.startsWith(p))) return null
 
   return (
     <>

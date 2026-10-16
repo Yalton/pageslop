@@ -84,6 +84,19 @@ export function withAlpha(hex: string, alpha: number): string {
 }
 
 /**
+ * Links per category among the links the graph can show, for the legend.
+ * Uncategorized links are not counted: no legend chip can filter to them.
+ */
+export function countCategories(links: LinkWithTags[]): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const link of links) {
+    if (!isVisibleInAllLinks(link) || link.category === null) continue
+    counts.set(link.category, (counts.get(link.category) ?? 0) + 1)
+  }
+  return counts
+}
+
+/**
  * Builds the graph data (nodes and edges) from a list of LinkWithTags.
  *
  * - An empty `visibleCategories` set means "show all" categories.

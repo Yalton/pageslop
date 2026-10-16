@@ -25,7 +25,7 @@ const IDLE = 'border-input bg-transparent text-muted-foreground hover:bg-accent 
 const ACTIVE = 'border-transparent bg-accent text-accent-foreground font-medium'
 
 function Count({ value }: { value: number }) {
-  return <span className="text-muted-foreground tabular-nums">{value}</span>
+  return <span className="tabular-nums opacity-70">{value}</span>
 }
 
 /**
@@ -39,7 +39,7 @@ export function SiteTabs({ domains, selected, favicons, total, onSelect, onMore 
     <div
       role="toolbar"
       aria-label="Websites"
-      className="flex min-w-0 items-center gap-2 overflow-x-auto p-0.5 [scrollbar-width:thin]"
+      className="flex min-w-0 items-center gap-2 overflow-x-auto p-0.5 pr-8 [scrollbar-width:thin] [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]"
     >
       <button
         type="button"

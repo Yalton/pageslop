@@ -18,6 +18,7 @@ import {
   linkAlpha,
   dimmedLinkWidth,
   withAlpha,
+  countCategories,
   type GraphNode,
   type GraphLink,
 } from './graphUtils'
@@ -88,6 +89,8 @@ export default function ForceGraph() {
     crossLinkNodes(data)
     return data
   }, [links, visibleCategories])
+
+  const categoryCounts = useMemo(() => countCategories(links), [links])
 
   // Advance the dim factor toward its target each frame; clear highlights once faded out
   const startFade = useCallback(() => {
@@ -290,6 +293,7 @@ export default function ForceGraph() {
       <GraphControls
         visibleCategories={visibleCategories}
         onToggleCategory={onToggleCategory}
+        categoryCounts={categoryCounts}
         totalNodes={graphData.nodes.length}
         totalEdges={graphData.links.length}
       />
