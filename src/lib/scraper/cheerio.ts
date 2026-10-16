@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import { safeFetch } from '../net/ssrf-guard'
+import { resolveAssetUrl } from './resolve-asset-url'
 
 export interface ScrapeResult {
   title: string
@@ -12,7 +13,7 @@ export interface ScrapeResult {
 
 export async function scrapeUrl(url: string): Promise<ScrapeResult> {
   // safeFetch enforces the SSRF policy on the URL and every redirect hop
-  const { response: res } = await safeFetch(url, {
+  const { response: res, url: finalUrl } = await safeFetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Pageslop/1.0)' },
     signal: AbortSignal.timeout(8000), // 8s hard timeout
   })
@@ -29,20 +30,16 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
     || ''
 
   // Try multiple image meta tags in priority order
-  let ogImage = $('meta[property="og:image"]').attr('content')
+  const rawOgImage = $('meta[property="og:image"]').attr('content')
     || $('meta[property="og:image:url"]').attr('content')
     || $('meta[name="twitter:image"]').attr('content')
     || $('meta[name="twitter:image:src"]').attr('content')
     || null
 
-  // Resolve relative og:image URLs
-  if (ogImage && !ogImage.startsWith('http')) {
-    const base = new URL(url)
-    ogImage = new URL(ogImage, base.origin).href
-  }
+  const ogImage = resolveAssetUrl(rawOgImage, finalUrl)
 
   // Prefer high-res icons, then fall back to standard favicon
-  let favicon = $('link[rel="apple-touch-icon"]').attr('href')
+  const rawFavicon = $('link[rel="apple-touch-icon"]').attr('href')
     || $('link[rel="apple-touch-icon-precomposed"]').attr('href')
     || $('link[rel="icon"][sizes="192x192"]').attr('href')
     || $('link[rel="icon"][sizes="180x180"]').attr('href')
@@ -51,11 +48,7 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
     || $('link[rel="shortcut icon"]').attr('href')
     || null
 
-  // Resolve relative favicon URLs
-  if (favicon && !favicon.startsWith('http')) {
-    const base = new URL(url)
-    favicon = new URL(favicon, base.origin).href
-  }
+  const favicon = resolveAssetUrl(rawFavicon, finalUrl)
 
   // Extract body text for Phase 2 classification
   const bodyText = extractBodyText($)
