@@ -1,6 +1,6 @@
 /**
- * The Pageslop MCP server: tools that let an AI agent search, read and save
- * the token owner's links. /api/mcp builds one per request (stateless), bound
+ * The Pageslop MCP server: tools that let an AI agent manage the token owner's
+ * links. /api/mcp builds one per request (stateless), bound
  * to the user and scopes of the bearer token that made the request.
  *
  * Each tool checks its scope when called, so any valid token can connect and
@@ -11,11 +11,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import type { TokenScope } from '@/lib/auth/token-scopes'
-import { findDuplicate, getLinkWithTags, insertLink, listLinksPage } from '@/lib/db/queries/links'
-import { listTagsWithCount } from '@/lib/db/queries/tags'
+import { deleteLink, findDuplicate, getLinkWithTags, insertLink, listLinksPage, updateLinkFields } from '@/lib/db/queries/links'
+import { deleteLinkTag, linkTagToLink, listTagsWithCount, upsertTag } from '@/lib/db/queries/tags'
 import { enqueueScrapeJob } from '@/lib/queue/boss'
 import { decodeCursor } from '@/lib/links/cursor'
 import { toApiLink } from '@/lib/links/api-link'
+import { CATEGORIES, STASH_STATES } from '@/types'
 
 export interface McpAuth {
   userId: string
@@ -70,18 +71,19 @@ export function createMcpServer(auth: McpAuth): McpServer {
     {
       title: 'Search saved links',
       description:
-        "Search the user's saved Pageslop links, newest first. Filters are optional and combine with AND. " +
+        "Search the user's Pageslop links, newest first. Defaults to All Links; choose view for revisit or archived links. Filters are optional and combine with AND. " +
         'Returns { links, nextCursor }; pass nextCursor back as cursor for the next page (null means no more).',
       inputSchema: {
         q: z.string().max(500).optional().describe('Case-insensitive text to match in title, URL or description'),
         tag: z.string().max(100).optional().describe('Only links with this tag'),
         domain: z.string().max(253).optional().describe('Only links on this domain, e.g. "github.com"'),
+        view: z.enum(['saved', 'all', 'revisit', ...STASH_STATES]).optional().describe('saved is All Links; revisit is inbox plus read; all includes every link'),
         limit: z.number().int().min(1).max(MAX_LIMIT).optional().describe(`Page size, default ${DEFAULT_LIMIT}`),
         cursor: z.string().max(500).optional().describe('nextCursor from a previous search_links result'),
       },
       annotations: { readOnlyHint: true },
     },
-    async ({ q, tag, domain, limit, cursor: rawCursor }) => {
+    async ({ q, tag, domain, view, limit, cursor: rawCursor }) => {
       const denied = missingScope(auth, 'links:read')
       if (denied) return denied
 
@@ -97,6 +99,7 @@ export function createMcpServer(auth: McpAuth): McpServer {
           // Tags are stored lowercase; domains lowercase without a leading www.
           tag: text(tag)?.toLowerCase(),
           domain: text(domain)?.toLowerCase().replace(/^www\./, ''),
+          view: view ?? 'saved',
           limit: limit ?? DEFAULT_LIMIT,
           cursor,
         })
@@ -136,15 +139,16 @@ export function createMcpServer(auth: McpAuth): McpServer {
     'list_tags',
     {
       title: 'List tags',
-      description: "List the user's tags with how many saved links carry each, sorted by name.",
+      description: "List the user's tags with counts in the chosen link view, sorted by name.",
+      inputSchema: { view: z.enum(['saved', 'all', 'revisit']).optional().describe('Which links to count: saved (default), all, or revisit') },
       annotations: { readOnlyHint: true },
     },
-    async () => {
+    async ({ view }) => {
       const denied = missingScope(auth, 'links:read')
       if (denied) return denied
 
       try {
-        return ok({ tags: await listTagsWithCount(auth.userId) })
+        return ok({ tags: await listTagsWithCount(auth.userId, view ?? 'saved') })
       } catch (err) {
         console.error('[api/mcp] list_tags failed', err)
         return fail('Failed to list tags')
@@ -198,6 +202,94 @@ export function createMcpServer(auth: McpAuth): McpServer {
       }
     },
   )
+
+  server.registerTool('update_link', {
+    title: 'Update a link',
+    description: 'Edit the description or category, or move a link through the revisit states. Set stashState to null to return it to All Links.',
+    inputSchema: {
+      id: z.string().min(1).max(100),
+      description: z.string().max(10000).optional(),
+      category: z.enum(CATEGORIES).optional(),
+      stashState: z.enum(STASH_STATES).nullable().optional(),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+  }, async ({ id, description, category, stashState }) => {
+    const denied = missingScope(auth, 'links:manage')
+    if (denied) return denied
+    if (description === undefined && category === undefined && stashState === undefined) return fail('Provide a field to update')
+    try {
+      const updated = await updateLinkFields(auth.userId, id, {
+        ...(description !== undefined ? { description } : {}),
+        ...(category !== undefined ? { category, categorySource: 'user' as const } : {}),
+        ...(stashState !== undefined ? { stashState } : {}),
+        ...(stashState === 'inbox' ? { stashedAt: new Date() } : {}),
+      })
+      if (!updated) return fail(`Link not found: ${id}`)
+      const link = await getLinkWithTags(auth.userId, id)
+      return link ? ok({ link: toApiLink(link) }) : fail(`Link not found: ${id}`)
+    } catch (err) {
+      console.error('[api/mcp] update_link failed', err)
+      return fail('Failed to update link')
+    }
+  })
+
+  server.registerTool('add_link_tag', {
+    title: 'Add a tag to a link',
+    description: 'Add a user tag to one of your links. The tag name is normalized to lowercase.',
+    inputSchema: { id: z.string().min(1).max(100), name: z.string().trim().min(1).max(50) },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+  }, async ({ id, name }) => {
+    const denied = missingScope(auth, 'links:manage')
+    if (denied) return denied
+    try {
+      if (!await getLinkWithTags(auth.userId, id)) return fail(`Link not found: ${id}`)
+      const tag = await upsertTag(auth.userId, name, 'user')
+      await linkTagToLink(id, tag.id)
+      const link = await getLinkWithTags(auth.userId, id)
+      return link ? ok({ link: toApiLink(link) }) : fail(`Link not found: ${id}`)
+    } catch (err) {
+      console.error('[api/mcp] add_link_tag failed', err)
+      return fail('Failed to add tag')
+    }
+  })
+
+  server.registerTool('remove_link_tag', {
+    title: 'Remove a tag from a link',
+    description: 'Remove a tag by name from one of your links.',
+    inputSchema: { id: z.string().min(1).max(100), name: z.string().trim().min(1).max(50) },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+  }, async ({ id, name }) => {
+    const denied = missingScope(auth, 'links:manage')
+    if (denied) return denied
+    try {
+      const link = await getLinkWithTags(auth.userId, id)
+      if (!link) return fail(`Link not found: ${id}`)
+      const tag = link.tags.find((tag) => tag.name === name.toLowerCase())
+      if (!tag) return fail(`Tag not found on link: ${name}`)
+      await deleteLinkTag(id, tag.id)
+      const updated = await getLinkWithTags(auth.userId, id)
+      return updated ? ok({ link: toApiLink(updated) }) : fail(`Link not found: ${id}`)
+    } catch (err) {
+      console.error('[api/mcp] remove_link_tag failed', err)
+      return fail('Failed to remove tag')
+    }
+  })
+
+  server.registerTool('delete_link', {
+    title: 'Delete a link',
+    description: 'Permanently delete one of your links.',
+    inputSchema: { id: z.string().min(1).max(100) },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+  }, async ({ id }) => {
+    const denied = missingScope(auth, 'links:manage')
+    if (denied) return denied
+    try {
+      return await deleteLink(auth.userId, id) ? ok({ deleted: true }) : fail(`Link not found: ${id}`)
+    } catch (err) {
+      console.error('[api/mcp] delete_link failed', err)
+      return fail('Failed to delete link')
+    }
+  })
 
   return server
 }

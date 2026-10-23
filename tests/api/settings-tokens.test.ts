@@ -131,6 +131,21 @@ describe('POST /api/settings/tokens', () => {
     expect((await res.json()).scopes).toEqual(['links:read', 'links:write'])
   })
 
+  it('allows a separate management scope for agents that may edit or delete links', async () => {
+    await signedIn()
+    const { generateToken } = await import('@/lib/auth/api-token')
+    const { createApiToken } = await import('@/lib/db/queries/api-tokens')
+    vi.mocked(generateToken).mockReturnValue({ raw: RAW, hash: HASH })
+    vi.mocked(createApiToken).mockResolvedValue({
+      id: 'tok-manage', name: 'Agent', createdAt: new Date(), lastUsedAt: null,
+      scopes: ['links:read', 'links:write', 'links:manage'],
+    })
+    const { POST } = await import('@/app/api/settings/tokens/route')
+    const res = await POST(postReq({ name: 'Agent', scopes: ['links:manage', 'links:write', 'links:read'] }))
+    expect(res.status).toBe(201)
+    expect(createApiToken).toHaveBeenCalledWith('user-1', 'Agent', HASH, ['links:read', 'links:write', 'links:manage'])
+  })
+
   it.each([
     ['an unknown scope', ['admin']],
     ['an empty list', []],

@@ -116,7 +116,7 @@ export function ExtensionTokensCard() {
       <h3 className="font-semibold mb-1">API tokens</h3>
       <p className="text-sm text-muted-foreground mb-4">
         The Firefox extension uses a token to save idle tabs to your To Revisit list. Create one token per browser.
-        Tokens can also read and save links through the{' '}
+        Tokens can also read and manage links through the{' '}
         <code className="font-mono">/api/v1</code> REST API; give each token only the permissions it needs.
       </p>
 

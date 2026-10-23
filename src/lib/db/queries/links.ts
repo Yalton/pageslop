@@ -124,6 +124,8 @@ export interface ListLinksPageOptions {
   tag?: string
   /** Exact domain as stored (lowercase, no leading www.). */
   domain?: string
+  /** saved is the dashboard's All Links view; all includes every stash state. */
+  view?: 'saved' | 'all' | 'revisit' | 'inbox' | 'read' | 'kept' | 'archived'
   /** Page size; the caller enforces bounds. */
   limit: number
   /** The previous page's nextCursor, decoded with decodeCursor; null for the first page. */
@@ -136,7 +138,7 @@ function escapeLike(text: string): string {
 }
 
 /**
- * One page of a user's links in the All Links view (not stashed, or kept),
+ * One page of a user's links, filtered by view (All Links by default),
  * newest first, with tags. Keyset-paginated on (created_at, id): pass the
  * returned nextCursor (decoded) to get the next page. null means no more.
  */
@@ -146,8 +148,13 @@ export async function listLinksPage(
 ): Promise<{ links: LinkWithTags[]; nextCursor: string | null }> {
   const conditions: (SQL | undefined)[] = [
     eq(links.userId, userId),
-    or(isNull(links.stashState), eq(links.stashState, 'kept')),
   ]
+  switch (opts.view ?? 'saved') {
+    case 'saved': conditions.push(or(isNull(links.stashState), eq(links.stashState, 'kept'))); break
+    case 'revisit': conditions.push(inArray(links.stashState, ['inbox', 'read'])); break
+    case 'all': break
+    default: conditions.push(eq(links.stashState, opts.view!))
+  }
   if (opts.q) {
     const pattern = `%${escapeLike(opts.q)}%`
     conditions.push(or(ilike(links.title, pattern), ilike(links.url, pattern), ilike(links.description, pattern)))

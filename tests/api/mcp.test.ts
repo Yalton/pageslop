@@ -12,10 +12,15 @@ vi.mock('@/lib/db/queries/links', () => ({
   getLinkWithTags: vi.fn(),
   insertLink: vi.fn(),
   findDuplicate: vi.fn(),
+  updateLinkFields: vi.fn(),
+  deleteLink: vi.fn(),
 }))
 
 vi.mock('@/lib/db/queries/tags', () => ({
   listTagsWithCount: vi.fn(),
+  upsertTag: vi.fn(),
+  linkTagToLink: vi.fn(),
+  deleteLinkTag: vi.fn(),
 }))
 
 vi.mock('@/lib/queue/boss', () => ({
@@ -25,7 +30,7 @@ vi.mock('@/lib/queue/boss', () => ({
 import { encodeCursor } from '@/lib/links/cursor'
 import type { LinkWithTags } from '@/types'
 
-const ALL_SCOPES = ['stash', 'links:read', 'links:write']
+const ALL_SCOPES = ['stash', 'links:read', 'links:write', 'links:manage']
 
 function link(overrides: Partial<LinkWithTags> = {}): LinkWithTags {
   return {
@@ -68,6 +73,7 @@ const API_LINK = {
   ogImage: null,
   source: 'manual',
   stashState: null,
+  stashedAt: null,
   tags: ['rust'],
   createdAt: '2026-10-01T00:00:00.000Z',
   updatedAt: '2026-10-02T00:00:00.000Z',
@@ -154,19 +160,19 @@ describe('protocol', () => {
     expect(body.result.capabilities.tools).toBeDefined()
   })
 
-  it('lists the four tools', async () => {
+  it('lists link read and write tools', async () => {
     const { route } = await setup()
     const res = await route.POST(rpc('tools/list'))
     const body = await res.json()
     const names = body.result.tools.map((t: { name: string }) => t.name).sort()
-    expect(names).toEqual(['get_link', 'list_tags', 'save_link', 'search_links'])
+    expect(names).toEqual(['add_link_tag', 'delete_link', 'get_link', 'list_tags', 'remove_link_tag', 'save_link', 'search_links', 'update_link'])
   })
 
   it('lists tools even for a token without link scopes', async () => {
     const { route } = await setup({ userId: 'user-1', scopes: ['stash'] })
     const res = await route.POST(rpc('tools/list'))
     expect(res.status).toBe(200)
-    expect((await res.json()).result.tools).toHaveLength(4)
+    expect((await res.json()).result.tools).toHaveLength(8)
   })
 })
 
@@ -202,6 +208,7 @@ describe('search_links', () => {
       q: undefined,
       tag: undefined,
       domain: undefined,
+      view: 'saved',
       limit: 20,
       cursor: null,
     })
@@ -223,6 +230,7 @@ describe('search_links', () => {
       q: 'rust',
       tag: 'rust',
       domain: 'github.com',
+      view: 'saved',
       limit: 5,
       cursor,
     })
@@ -278,7 +286,7 @@ describe('list_tags', () => {
     const { call, tags } = await setup()
     vi.mocked(tags.listTagsWithCount).mockResolvedValue([{ name: 'rust', count: 3 }])
     const result = await call('list_tags')
-    expect(tags.listTagsWithCount).toHaveBeenCalledWith('user-1')
+    expect(tags.listTagsWithCount).toHaveBeenCalledWith('user-1', 'saved')
     expect(result.structuredContent).toEqual({ tags: [{ name: 'rust', count: 3 }] })
   })
 })
@@ -333,5 +341,57 @@ describe('save_link', () => {
     const result = await call('save_link', { url: 'https://example.com/' })
     expect(result.isError).toBe(true)
     expect(result.content[0].text).toBe('Failed to save link')
+  })
+})
+
+describe('revisit and write tools', () => {
+  it('searches revisit links with the selected view', async () => {
+    const { call, links } = await setup()
+    await call('search_links', { view: 'revisit' })
+    expect(links.listLinksPage).toHaveBeenCalledWith('user-1', expect.objectContaining({ view: 'revisit' }))
+  })
+
+  it('lists tags across every link on request', async () => {
+    const { call, tags } = await setup()
+    await call('list_tags', { view: 'all' })
+    expect(tags.listTagsWithCount).toHaveBeenCalledWith('user-1', 'all')
+  })
+
+  it('requires write scope for each mutation', async () => {
+    const { call, links, tags } = await setup({ userId: 'user-1', scopes: ['links:read', 'links:write'] })
+    for (const [name, args] of [
+      ['update_link', { id: 'link-1', stashState: 'read' }],
+      ['add_link_tag', { id: 'link-1', name: 'new' }],
+      ['remove_link_tag', { id: 'link-1', name: 'rust' }],
+      ['delete_link', { id: 'link-1' }],
+    ] as const) {
+      const result = await call(name, args)
+      expect(result.isError).toBe(true)
+      expect(result.content[0].text).toContain('links:manage')
+    }
+    expect(links.updateLinkFields).not.toHaveBeenCalled()
+    expect(links.deleteLink).not.toHaveBeenCalled()
+    expect(tags.upsertTag).not.toHaveBeenCalled()
+  })
+
+  it('updates the owned link and starts the revisit clock', async () => {
+    const { call, links } = await setup()
+    vi.mocked(links.updateLinkFields).mockResolvedValue(link() as never)
+    vi.mocked(links.getLinkWithTags).mockResolvedValue(link({ stashState: 'inbox' }))
+    const result = await call('update_link', { id: 'link-1', stashState: 'inbox' })
+    expect(links.updateLinkFields).toHaveBeenCalledWith('user-1', 'link-1', expect.objectContaining({
+      stashState: 'inbox', stashedAt: expect.any(Date),
+    }))
+    expect(result.structuredContent?.link).toEqual(expect.objectContaining({ stashState: 'inbox' }))
+  })
+
+  it('does not add a tag or delete a foreign link', async () => {
+    const { call, links, tags } = await setup({ userId: 'user-2', scopes: ALL_SCOPES })
+    vi.mocked(links.getLinkWithTags).mockResolvedValue(null)
+    vi.mocked(links.deleteLink).mockResolvedValue(false as never)
+    expect((await call('add_link_tag', { id: 'link-1', name: 'new' })).isError).toBe(true)
+    expect(tags.upsertTag).not.toHaveBeenCalled()
+    expect((await call('delete_link', { id: 'link-1' })).isError).toBe(true)
+    expect(links.deleteLink).toHaveBeenCalledWith('user-2', 'link-1')
   })
 })

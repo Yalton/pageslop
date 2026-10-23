@@ -13,6 +13,8 @@ vi.mock('@/lib/db/queries/links', () => ({
   getLinkWithTags: vi.fn(),
   insertLink: vi.fn(),
   findDuplicate: vi.fn(),
+  updateLinkFields: vi.fn(),
+  deleteLink: vi.fn(),
 }))
 
 vi.mock('@/lib/queue/boss', () => ({
@@ -22,7 +24,7 @@ vi.mock('@/lib/queue/boss', () => ({
 import { encodeCursor } from '@/lib/links/cursor'
 import type { LinkWithTags } from '@/types'
 
-const ALL_SCOPES = ['stash', 'links:read', 'links:write']
+const ALL_SCOPES = ['stash', 'links:read', 'links:write', 'links:manage']
 
 function link(overrides: Partial<LinkWithTags> = {}): LinkWithTags {
   return {
@@ -128,6 +130,7 @@ describe('GET /api/v1/links', () => {
       q: undefined,
       tag: undefined,
       domain: undefined,
+      view: 'saved',
       limit: 50,
       cursor: null,
     })
@@ -145,6 +148,7 @@ describe('GET /api/v1/links', () => {
           ogImage: null,
           source: 'manual',
           stashState: null,
+          stashedAt: null,
           tags: ['rust'],
           createdAt: '2026-10-01T00:00:00.000Z',
           updatedAt: '2026-10-02T00:00:00.000Z',
@@ -174,6 +178,7 @@ describe('GET /api/v1/links', () => {
       q: 'rust book',
       tag: 'rust',
       domain: 'example.com',
+      view: 'saved',
       limit: 10,
       cursor: { createdAt: '2026-10-01 00:00:00.123456', id: 'link-9' },
     })
@@ -186,6 +191,13 @@ describe('GET /api/v1/links', () => {
     expect(queries.listLinksPage).toHaveBeenCalledWith('user-1', expect.objectContaining({
       q: undefined, tag: undefined, domain: undefined, cursor: null,
     }))
+  })
+
+  it('selects revisit links and rejects unknown views', async () => {
+    const { list, queries } = await setup()
+    expect((await list.GET(req('/api/v1/links?view=revisit'))).status).toBe(200)
+    expect(queries.listLinksPage).toHaveBeenCalledWith('user-1', expect.objectContaining({ view: 'revisit' }))
+    expect((await list.GET(req('/api/v1/links?view=unknown'))).status).toBe(400)
   })
 
   it('accepts limit 200 and rejects limits outside 1..200', async () => {

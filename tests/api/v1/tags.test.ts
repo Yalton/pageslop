@@ -10,10 +10,10 @@ vi.mock('@/lib/db/queries/tags', () => ({
   listTagsWithCount: vi.fn(),
 }))
 
-function req(token: string | null = 'ps_valid') {
+function req(token: string | null = 'ps_valid', view?: string) {
   const headers: Record<string, string> = {}
   if (token) headers.authorization = `Bearer ${token}`
-  return new Request('http://localhost/api/v1/tags', { headers })
+  return new Request(`http://localhost/api/v1/tags${view ? `?view=${view}` : ''}`, { headers })
 }
 
 async function setup(auth: { userId: string; scopes: string[] } | null) {
@@ -35,7 +35,7 @@ describe('GET /api/v1/tags', () => {
     const res = await GET(req())
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ tags: [{ name: 'rust', count: 3 }] })
-    expect(listTagsWithCount).toHaveBeenCalledWith('user-1')
+    expect(listTagsWithCount).toHaveBeenCalledWith('user-1', 'saved')
   })
 
   it('returns 401 without a valid token', async () => {
@@ -50,5 +50,14 @@ describe('GET /api/v1/tags', () => {
     const res = await GET(req())
     expect(res.status).toBe(403)
     expect(listTagsWithCount).not.toHaveBeenCalled()
+  })
+
+  it('counts tags in every link or the revisit queue on request', async () => {
+    const { GET, listTagsWithCount } = await setup({ userId: 'user-1', scopes: ['links:read'] })
+    expect((await GET(req('ps_valid', 'all'))).status).toBe(200)
+    expect(listTagsWithCount).toHaveBeenCalledWith('user-1', 'all')
+    expect((await GET(req('ps_valid', 'revisit'))).status).toBe(200)
+    expect(listTagsWithCount).toHaveBeenCalledWith('user-1', 'revisit')
+    expect((await GET(req('ps_valid', 'wrong'))).status).toBe(400)
   })
 })

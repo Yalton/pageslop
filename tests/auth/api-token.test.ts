@@ -118,6 +118,15 @@ describe('authenticateBearer', () => {
     })
   })
 
+  it('preserves the separate link management scope', async () => {
+    vi.mocked(findTokenByHash).mockResolvedValueOnce({
+      id: 'tok-manage', userId: 'user-1', lastUsedAt: null, scopes: ['links:manage', 'links:read'],
+    })
+    await expect(authenticateBearer(req(`Bearer ${VALID_RAW}`))).resolves.toEqual({
+      userId: 'user-1', scopes: ['links:read', 'links:manage'],
+    })
+  })
+
   it('works with a freshly generated token', async () => {
     const { raw, hash } = generateToken()
     vi.mocked(findTokenByHash).mockResolvedValueOnce({ id: 'tok-2', userId: 'user-2', lastUsedAt: null, scopes: ['stash'] })

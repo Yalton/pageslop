@@ -49,4 +49,15 @@ describe('listTagsWithCount', () => {
     expect(h.leftJoin).not.toHaveBeenCalled()
     expect(h.innerJoin).toHaveBeenCalledTimes(2)
   })
+
+  it('counts all links or only revisit links when selected', async () => {
+    await listTagsWithCount('u1', 'all')
+    const allJoin = render(h.innerJoin.mock.calls[1][1])
+    expect(allJoin.sql).not.toContain('stash_state')
+    vi.clearAllMocks()
+    await listTagsWithCount('u1', 'revisit')
+    const revisitJoin = render(h.innerJoin.mock.calls[1][1])
+    expect(revisitJoin.sql).toContain('stash_state')
+    expect(revisitJoin.params).toEqual(expect.arrayContaining(['inbox', 'read']))
+  })
 })

@@ -92,14 +92,17 @@ export async function deleteLinkTag(linkId: string, tagId: string): Promise<void
 }
 
 /**
- * List a user's tags with the count of links each tag is applied to, counting
- * only links All Links shows (see isVisibleInAllLinks), so a tag's count
- * matches what filtering by it shows. Tags with no such links are left out.
+ * List a user's tags with the count of links each tag is applied to in the
+ * selected view. Tags with no links in that view are left out.
  * Returns tags sorted alphabetically by name.
  */
 export async function listTagsWithCount(
-  userId: string
+  userId: string,
+  view: 'saved' | 'all' | 'revisit' = 'saved',
 ): Promise<{ name: string; count: number }[]> {
+  const stateFilter = view === 'saved'
+    ? or(isNull(links.stashState), eq(links.stashState, 'kept'))
+    : view === 'revisit' ? inArray(links.stashState, ['inbox', 'read']) : undefined
   return db
     .select({
       name: tags.name,
@@ -111,7 +114,7 @@ export async function listTagsWithCount(
       links,
       and(
         eq(linkTags.linkId, links.id),
-        or(isNull(links.stashState), eq(links.stashState, 'kept')),
+        stateFilter,
       ),
     )
     .where(eq(tags.userId, userId))

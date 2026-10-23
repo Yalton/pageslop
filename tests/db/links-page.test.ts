@@ -67,6 +67,21 @@ describe('listLinksPage', () => {
     expect(orderBy).toEqual(['"links"."created_at" desc', '"links"."id" desc'])
   })
 
+  it('selects revisit, all and individual stash views without losing owner scope', async () => {
+    for (const [view, expected] of [
+      ['revisit', ['inbox', 'read']],
+      ['all', []],
+      ['archived', ['archived']],
+    ] as const) {
+      h.calls.length = 0
+      await listLinksPage('u1', { limit: 20, cursor: null, view })
+      const where = firstWhere()
+      expect(where.params).toContain('u1')
+      for (const value of expected) expect(where.params).toContain(value)
+      if (view === 'all') expect(where.sql).not.toContain('stash_state')
+    }
+  })
+
   it('fetches one extra row to detect a next page', async () => {
     await listLinksPage('u1', { limit: 2, cursor: null })
     expect(h.calls.find((c) => c.method === 'limit')!.args[0]).toBe(3)

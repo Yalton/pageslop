@@ -59,10 +59,11 @@ export function McpConnectCard() {
   return (
     <div className={settingsPanelClass}>
       <p className="text-sm text-muted-foreground mb-4">
-        AI agents such as Claude Code and Claude Desktop can search, read and save your links through
+        AI agents such as Claude Code and Claude Desktop can search, read and manage your links through
         Pageslop&apos;s Model Context Protocol server. Create an API token above with{' '}
         <code className="font-mono">Read links and tags</code> (and <code className="font-mono">Save links</code>{' '}
-        if the agent should save links), then replace <code className="font-mono">ps_...</code> below with it.
+        if the agent should save links, and <code className="font-mono">Edit, tag and delete links</code> if it should manage them),
+        then replace <code className="font-mono">ps_...</code> below with it.
       </p>
 
       <h3 className="text-sm font-semibold mb-2">Endpoint</h3>
