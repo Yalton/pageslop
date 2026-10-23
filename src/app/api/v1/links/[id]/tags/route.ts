@@ -3,8 +3,9 @@ import { requireScope, jsonError } from '@/lib/api/bearer'
 import { getLinkWithTags } from '@/lib/db/queries/links'
 import { upsertTag, linkTagToLink } from '@/lib/db/queries/tags'
 import { toApiLink } from '@/lib/links/api-link'
+import { MAX_TAG_NAME_LENGTH } from '@/lib/links/limits'
 
-const tagSchema = z.object({ name: z.string().trim().min(1).max(50) }).strict()
+const tagSchema = z.object({ name: z.string().trim().min(1).max(MAX_TAG_NAME_LENGTH) }).strict()
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   const authed = await requireScope(req, 'links:manage')
@@ -12,7 +13,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   let raw: unknown
   try { raw = await req.json() } catch { return jsonError(400, 'Invalid JSON body') }
   const parsed = tagSchema.safeParse(raw)
-  if (!parsed.success) return jsonError(400, 'Expected { name: string (1-50 chars) }')
+  if (!parsed.success) return jsonError(400, `Expected { name: string (1-${MAX_TAG_NAME_LENGTH} chars) }`)
   const { id } = await params
   try {
     if (!await getLinkWithTags(authed.userId, id)) return jsonError(404, 'Link not found')

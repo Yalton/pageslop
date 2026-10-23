@@ -14,6 +14,7 @@ import { useLinks } from '@/lib/hooks/useLinks'
 import { groupByDomain, groupLinks } from '@/lib/utils/group-links'
 import { filterLinks } from '@/lib/utils/search'
 import { cn } from '@/lib/utils'
+import { isHttpUrl } from '@/lib/links/http-url'
 import {
   needsDismissConfirm,
   openAllUrls,
@@ -28,9 +29,12 @@ type GroupMode = 'domain' | 'topic'
  * Opens a URL in a new tab and returns the window handle, or null when the
  * browser blocked the pop-up. `noopener` is deliberately NOT passed as a
  * window feature: with it, window.open always returns null and blocked tabs
- * become indistinguishable from opened ones. The opener is cut manually instead.
+ * become indistinguishable from opened ones. The opener is cut manually instead,
+ * synchronously, before the new page can run any script. Callers filter out
+ * non-http(s) URLs first (handleOpenAll); this refuses them again.
  */
 function openTab(url: string): Window | null {
+  if (!isHttpUrl(url)) return null
   const handle = window.open(url, '_blank')
   if (handle) handle.opener = null
   return handle
@@ -58,8 +62,9 @@ export function RevisitView() {
   }
 
   function handleOpenAll(groupLinksList: LinkWithTags[]) {
+    // Unsafe schemes are skipped up front so they are not reported as pop-up blocks
     const { openedIds, blockedCount } = openAllUrls(
-      groupLinksList.map((l) => ({ id: l.id, url: l.url })),
+      groupLinksList.filter((l) => isHttpUrl(l.url)).map((l) => ({ id: l.id, url: l.url })),
       openTab,
     )
     const toMark = openedIds.filter((id) => groupLinksList.find((l) => l.id === id)?.stashState === 'inbox')

@@ -168,6 +168,38 @@ describe('POST /api/links/[id]/tags', () => {
     expect(res.status).toBe(400)
   })
 
+  it('returns 400 when name is longer than 50 characters', async () => {
+    const { auth } = await import('@/lib/auth/server')
+    const { upsertTag } = await import('@/lib/db/queries/tags')
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce({
+      user: { id: 'user-1' },
+      session: {} as any,
+    } as any)
+    mockSelectResult = [mockLink]
+
+    const { POST } = await import('@/app/api/links/[id]/tags/route')
+    const req = new Request('http://localhost/api/links/link-1/tags', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'x'.repeat(51) }),
+      headers: { 'content-type': 'application/json' },
+    })
+
+    const res = await POST(req, { params: Promise.resolve({ id: 'link-1' }) })
+    expect(res.status).toBe(400)
+    expect(vi.mocked(upsertTag)).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 for a non-string name or a non-JSON body', async () => {
+    const { auth } = await import('@/lib/auth/server')
+    vi.mocked(auth.api.getSession).mockResolvedValue({ user: { id: 'user-1' }, session: {} as any } as any)
+    const { POST } = await import('@/app/api/links/[id]/tags/route')
+    for (const body of [JSON.stringify({ name: 42 }), 'not json', 'null']) {
+      const req = new Request('http://localhost/api/links/link-1/tags', { method: 'POST', body })
+      const res = await POST(req, { params: Promise.resolve({ id: 'link-1' }) })
+      expect(res.status).toBe(400)
+    }
+  })
+
   it('returns 404 for non-owned link', async () => {
     const { auth } = await import('@/lib/auth/server')
     vi.mocked(auth.api.getSession).mockResolvedValueOnce({

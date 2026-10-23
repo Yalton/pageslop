@@ -105,6 +105,31 @@ describe('generateNetscapeHTML', () => {
     expect(result).toContain('Cats &amp; Dogs &lt;Fun&gt; &quot;Quotes&quot;')
   })
 
+  it('HTML-escapes the URL in the HREF attribute', async () => {
+    const { generateNetscapeHTML } = await import('@/lib/utils/export-html')
+    const createdAt = new Date('2024-01-01T00:00:00.000Z')
+    const result = generateNetscapeHTML([
+      {
+        id: '1',
+        userId: 'u1',
+        url: 'https://a.com/?q="><script>alert(1)</script>&x=1',
+        title: 'T',
+        description: null,
+        ogImage: null,
+        favicon: null,
+        domain: 'a.com',
+        status: 'ready',
+        category: null,
+        createdAt,
+        updatedAt: createdAt,
+        ...LINK_DEFAULTS,
+        tags: [],
+      },
+    ])
+    expect(result).toContain('HREF="https://a.com/?q=&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;&amp;x=1"')
+    expect(result).not.toContain('<script>')
+  })
+
   it('uses URL as title fallback when title is null', async () => {
     const { generateNetscapeHTML } = await import('@/lib/utils/export-html')
     const links: LinkWithTags[] = [

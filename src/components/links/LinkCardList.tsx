@@ -20,6 +20,7 @@ import { EnrichmentBadge } from '@/components/links/EnrichmentBadge'
 import { SelectCheckbox, type SelectionProps } from '@/components/links/SelectCheckbox'
 import { isArchived } from '@/lib/utils/all-links-filter'
 import { cn } from '@/lib/utils'
+import { openExternal } from '@/lib/links/open-external'
 import type { LinkWithTags } from '@/types'
 
 interface LinkCardListProps extends SelectionProps {
@@ -64,7 +65,7 @@ export function LinkCardList({
   }
 
   function handleVisit() {
-    window.open(link.url, '_blank', 'noopener,noreferrer')
+    openExternal(link.url)
   }
 
   return (

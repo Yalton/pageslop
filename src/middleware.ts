@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { isSameOriginRequest, isUnsafeMethod } from '@/lib/auth/same-origin'
 
 // /api/stash, /api/v1 and /api/mcp (and their subpaths) use bearer-token auth and return
 // their own 401/403 JSON, so they must not be redirected for lacking a session cookie.
@@ -46,6 +47,14 @@ export function middleware(request: NextRequest) {
   const sessionToken = request.cookies.get('better-auth.session_token') || request.cookies.get('__Secure-better-auth.session_token')
   if (!sessionToken) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // CSRF: a cookie-authenticated write must come from the app's own origin.
+  // Bearer-token routes (/api/v1, /api/mcp, /api/stash) and Better Auth's own
+  // /api/auth routes returned above, so the extension and API clients never
+  // reach this check.
+  if (isUnsafeMethod(request.method) && !isSameOriginRequest(request.headers, process.env.BETTER_AUTH_URL, request.nextUrl.host)) {
+    return NextResponse.json({ error: 'Cross-origin request refused' }, { status: 403 })
   }
 
   return NextResponse.next()

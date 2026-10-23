@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { requireScope, jsonError } from '@/lib/api/bearer'
 import { deleteLink, getLinkWithTags, updateLinkFields } from '@/lib/db/queries/links'
 import { toApiLink } from '@/lib/links/api-link'
+import { MAX_DESCRIPTION_LENGTH } from '@/lib/links/limits'
 import { CATEGORIES, STASH_STATES } from '@/types'
 
 export async function GET(
@@ -29,7 +30,7 @@ export async function GET(
 }
 
 const patchSchema = z.object({
-  description: z.string().max(10000).optional(),
+  description: z.string().max(MAX_DESCRIPTION_LENGTH).optional(),
   category: z.enum(CATEGORIES).optional(),
   stashState: z.enum(STASH_STATES).nullable().optional(),
 }).strict().refine((value) => Object.keys(value).length > 0)

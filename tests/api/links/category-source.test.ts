@@ -44,3 +44,28 @@ describe('PATCH /api/links/[id] categorySource', () => {
     expect(updateLinkFields).toHaveBeenCalledWith('user-1', 'link-1', { description: 'hi' })
   })
 })
+
+describe('PATCH /api/links/[id] description validation', () => {
+  beforeEach(async () => {
+    vi.clearAllMocks()
+    const { auth } = await import('@/lib/auth/server')
+    vi.mocked(auth.api.getSession).mockResolvedValue({ user: { id: 'user-1' } } as never)
+  })
+
+  it.each([[42], [{ a: 1 }], [['x']], [null], ['x'.repeat(10001)]])('rejects description %#', async (description) => {
+    const { PATCH } = await import('@/app/api/links/[id]/route')
+    const res = await PATCH(patch({ description }), ctx)
+    expect(res.status).toBe(400)
+    const { updateLinkFields } = await import('@/lib/db/queries/links')
+    expect(updateLinkFields).not.toHaveBeenCalled()
+  })
+
+  it('accepts a description of exactly 10000 characters', async () => {
+    const { updateLinkFields } = await import('@/lib/db/queries/links')
+    vi.mocked(updateLinkFields).mockResolvedValue({ id: 'link-1' } as never)
+    const { PATCH } = await import('@/app/api/links/[id]/route')
+    const res = await PATCH(patch({ description: 'x'.repeat(10000) }), ctx)
+    expect(res.status).toBe(200)
+  })
+})
+

@@ -49,3 +49,32 @@ describe('POST /api/links duplicates', () => {
     expect(saved.map((s: { url: string }) => s.url)).toEqual(['https://a.com/', 'https://b.com/'])
   })
 })
+
+describe('POST /api/links limits', () => {
+  it('rejects more than 500 URLs in one request without saving any', async () => {
+    const urls = Array.from({ length: 501 }, (_, i) => `https://a.com/${i}`).join('\n')
+    const res = await post({ urls })
+    expect(res.status).toBe(400)
+    expect(insertLink).not.toHaveBeenCalled()
+  })
+
+  it('accepts exactly 500 URLs', async () => {
+    vi.mocked(findDuplicate).mockResolvedValue(null as never)
+    const urls = Array.from({ length: 500 }, (_, i) => `https://a.com/${i}`).join('\n')
+    const res = await post({ urls })
+    expect(res.status).toBe(202)
+    expect(insertLink).toHaveBeenCalledTimes(500)
+  })
+
+  it('refuses javascript: URLs on the session save path', async () => {
+    const res = await post({ urls: 'javascript:alert(document.cookie)' })
+    expect(res.status).toBe(400)
+    expect(insertLink).not.toHaveBeenCalled()
+  })
+
+  it.each([[{ urls: 42 }], [{}], [null]])('rejects a malformed body %p with 400', async (body) => {
+    const res = await post(body)
+    expect(res.status).toBe(400)
+  })
+})
+

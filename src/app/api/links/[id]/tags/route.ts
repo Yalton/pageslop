@@ -4,6 +4,7 @@ import { db } from '@/lib/db/client'
 import { links } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { upsertTag, linkTagToLink } from '@/lib/db/queries/tags'
+import { MAX_TAG_NAME_LENGTH } from '@/lib/links/limits'
 
 export async function POST(
   req: Request,
@@ -13,11 +14,20 @@ export async function POST(
   if (!session) return new Response('Unauthorized', { status: 401 })
 
   const { id: linkId } = await params
-  const body = await req.json() as { name?: string }
+  let body: { name?: unknown }
+  try {
+    body = await req.json()
+  } catch {
+    return Response.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
 
   // Validate name
-  if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
+  const name = typeof body === 'object' && body !== null && typeof body.name === 'string' ? body.name.trim() : ''
+  if (name.length === 0) {
     return Response.json({ error: 'Tag name is required' }, { status: 400 })
+  }
+  if (name.length > MAX_TAG_NAME_LENGTH) {
+    return Response.json({ error: `Tag name must be at most ${MAX_TAG_NAME_LENGTH} characters` }, { status: 400 })
   }
 
   // Verify link ownership
@@ -31,7 +41,7 @@ export async function POST(
     return Response.json({ error: 'Link not found' }, { status: 404 })
   }
 
-  const tag = await upsertTag(session.user.id, body.name, 'user')
+  const tag = await upsertTag(session.user.id, name, 'user')
   await linkTagToLink(linkId, tag.id)
 
   return Response.json({ tag }, { status: 201 })

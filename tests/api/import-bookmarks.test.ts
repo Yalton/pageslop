@@ -76,4 +76,59 @@ describe('POST /api/import/bookmarks', () => {
     expect(insertLink).toHaveBeenCalledWith('user-1', 'https://github.com/user/repo', { source: 'import' })
     expect(enqueueScrapeJob).toHaveBeenCalledTimes(2)
   })
+
+  it('rejects a file over 10 MB with 413 before parsing it', async () => {
+    const { auth } = await import('@/lib/auth/server')
+    const { insertLink } = await import('@/lib/db/queries/links')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: 'user-1' }, session: {} } as any)
+
+    const { POST } = await import('@/app/api/import/bookmarks/route')
+    const res = await POST(uploadRequest('x'.repeat(10 * 1024 * 1024 + 1)))
+
+    expect(res.status).toBe(413)
+    expect((await res.json()).error).toMatch(/too large/i)
+    expect(insertLink).not.toHaveBeenCalled()
+  })
+
+  it('rejects an oversized chunked upload with no Content-Length', async () => {
+    const { auth } = await import('@/lib/auth/server')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: 'user-1' }, session: {} } as any)
+
+    const chunk = new Uint8Array(1024 * 1024).fill(120)
+    let sent = 0
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (sent++ < 12) controller.enqueue(chunk)
+        else controller.close()
+      },
+    })
+    const req = new Request('http://localhost/api/import/bookmarks', {
+      method: 'POST',
+      headers: { 'content-type': 'multipart/form-data; boundary=x' },
+      body,
+      // @ts-expect-error -- Node's fetch needs duplex for a streamed body
+      duplex: 'half',
+    })
+
+    const { POST } = await import('@/app/api/import/bookmarks/route')
+    const res = await POST(req)
+    expect(res.status).toBe(413)
+  })
+
+  it('rejects more than 10000 bookmarks with 400 and saves none', async () => {
+    const { auth } = await import('@/lib/auth/server')
+    const { insertLink } = await import('@/lib/db/queries/links')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: 'user-1' }, session: {} } as any)
+
+    const entries = Array.from({ length: 10_001 }, (_, i) => `<DT><A HREF="https://e.com/${i}">${i}</A>`).join('\n')
+    const { POST } = await import('@/app/api/import/bookmarks/route')
+    const res = await POST(uploadRequest(`<DL><p>\n${entries}\n</DL><p>`))
+
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toMatch(/at most 10000/)
+    expect(insertLink).not.toHaveBeenCalled()
+  })
 })

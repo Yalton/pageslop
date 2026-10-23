@@ -76,6 +76,8 @@ function normalizeDomains(value) {
 	return out;
 }
 
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
 function normalizeServerUrl(value) {
 	if (typeof value !== "string" || value.trim() === "") return "";
 	let url;
@@ -84,7 +86,11 @@ function normalizeServerUrl(value) {
 	} catch {
 		return "";
 	}
-	if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+	if (url.protocol === "http:") {
+		// Plain http would send the API token in the clear; allow it only for a
+		// server on this machine.
+		if (!LOOPBACK_HOSTS.has(url.hostname)) return "";
+	} else if (url.protocol !== "https:") return "";
 	return (url.origin + url.pathname).replace(/\/+$/, "");
 }
 
