@@ -2,6 +2,8 @@ import { vi } from 'vitest'
 
 // Set test environment variables
 process.env.ENCRYPTION_KEY = '0'.repeat(64) // valid 64-char hex for tests
+process.env.BETTER_AUTH_SECRET = 'test-secret-'.padEnd(40, 'x') // >= 32 chars, not a placeholder
+process.env.BETTER_AUTH_URL = 'http://localhost:3000'
 
 // Mock Neon serverless driver
 vi.mock('@neondatabase/serverless', () => ({

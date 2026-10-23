@@ -45,9 +45,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy standalone output
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Copy standalone output. .next is owned by the runtime user so Next can
+# write its cache (image optimization, ISR) without root.
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 # Production node_modules for the worker and drizzle-kit, no devDependencies
@@ -69,6 +70,11 @@ RUN chmod +x ./docker-entrypoint.sh
 # Create screenshot storage directory
 RUN mkdir -p /app/data/screenshots && chown -R node:node /app/data
 VOLUME /app/data
+
+# Run as the image's unprivileged node user (uid 1000), same as the worker
+# service in docker-compose.yml. /app/data is chowned above, so a fresh
+# screenshots volume is created writable by this user.
+USER node
 
 EXPOSE 3000
 ENV PORT=3000

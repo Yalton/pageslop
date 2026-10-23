@@ -5,10 +5,18 @@ import { db } from '@/lib/db/client'
 import { sendEmail } from '@/lib/email/send'
 import { verificationEmail, passwordResetEmail } from '@/lib/email/templates'
 import { signupAllowed } from '@/lib/auth/signup'
+import { isBuildPhase, parseList, requireAuthSecret, requireAuthUrl } from '@/lib/env'
+
+// Fail at startup on a missing or placeholder secret/URL. `next build` imports
+// this module without runtime env, so the check is skipped during the build.
+const buildPhase = isBuildPhase()
+const secret = buildPhase ? process.env.BETTER_AUTH_SECRET : requireAuthSecret(process.env.BETTER_AUTH_SECRET)
+const baseURL = buildPhase ? process.env.BETTER_AUTH_URL : requireAuthUrl(process.env.BETTER_AUTH_URL)
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL,
-  trustedOrigins: [process.env.BETTER_AUTH_URL!],
+  secret,
+  baseURL,
+  trustedOrigins: baseURL ? [baseURL] : [],
   database: drizzleAdapter(db, { provider: 'pg' }),
   emailAndPassword: {
     enabled: true,
@@ -37,8 +45,13 @@ export const auth = betterAuth({
   },
   advanced: {
     useSecureCookies: true,
+    // Client IP for rate limiting. TRUSTED_IP_HEADER names the header your
+    // proxy sets (cf-connecting-ip behind Cloudflare). A multi-hop
+    // x-forwarded-for chain is only resolved when TRUSTED_PROXIES lists the
+    // proxy addresses; otherwise only a single-value header is trusted.
     ipAddress: {
-      ipAddressHeaders: ['cf-connecting-ip'],
+      ipAddressHeaders: parseList(process.env.TRUSTED_IP_HEADER, true) ?? ['x-forwarded-for'],
+      trustedProxies: parseList(process.env.TRUSTED_PROXIES),
     },
   },
   plugins: [nextCookies()], // must be last plugin
