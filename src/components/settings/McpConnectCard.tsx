@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { settingsPanelClass } from '@/components/settings/SettingsSections'
 
 const MCP_DOCS_URL =
-  process.env.NEXT_PUBLIC_MCP_DOCS_URL || 'https://github.com/Citreum-LLC/pageslop/blob/master/docs/mcp.md'
+  process.env.NEXT_PUBLIC_MCP_DOCS_URL || 'https://github.com/Yalton/pageslop/blob/master/docs/mcp.md'
 
 const preClass = 'flex-1 min-w-[240px] overflow-x-auto rounded-md border bg-muted px-3 py-2 font-mono text-xs'
 

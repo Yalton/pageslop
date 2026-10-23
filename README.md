@@ -2,6 +2,8 @@
 
 A self-hosted bookmark manager that classifies, tags, describes and organizes saved links for you. Paste a URL and Pageslop does the rest: no folders to create, no tags to type.
 
+![All links in the card grid, with images, categories and tags filled in automatically](docs/screenshots/dashboard.png)
+
 ## Features
 
 - **Instant save**: paste a URL; title, image and metadata are fetched automatically
@@ -15,6 +17,18 @@ A self-hosted bookmark manager that classifies, tags, describes and organizes sa
 - **Browser extension** (Firefox) that saves idle tabs to a "To Revisit" inbox and closes them
 - **REST API and MCP server** for scripts and AI agents ([docs/api.md](docs/api.md), [docs/mcp.md](docs/mcp.md))
 
+## Screenshots
+
+| Grouped by category | Relationship graph |
+| --- | --- |
+| ![Links grouped into collapsible category sections](docs/screenshots/grouped.png) | ![Force-directed graph linking bookmarks through shared tags](docs/screenshots/graph.png) |
+
+| Link details | Tags |
+| --- | --- |
+| ![Link detail panel with description, category, uptime check and editable tags](docs/screenshots/detail.png) | ![Tag overview with link counts](docs/screenshots/tags.png) |
+
+<p align="center"><img src="docs/screenshots/mobile.png" alt="Pageslop on a phone, links grouped by category" width="300"></p>
+
 ## Tech stack
 
 Next.js 15 (App Router), PostgreSQL 16 with Drizzle ORM, Better Auth (email and password), pg-boss for background jobs, Puppeteer/Chromium for screenshots, Tailwind CSS with shadcn/ui, and Docker Compose for deployment.
@@ -24,7 +38,7 @@ Next.js 15 (App Router), PostgreSQL 16 with Drizzle ORM, Better Auth (email and 
 You need Docker with the Compose plugin, `openssl`, and about 2 GB of free RAM (the worker runs Chromium).
 
 ```bash
-git clone https://github.com/Citreum-LLC/pageslop.git
+git clone https://github.com/Yalton/pageslop.git
 cd pageslop
 ./scripts/setup.sh                 # or: ./scripts/setup.sh https://links.example.com
 docker compose up -d --build

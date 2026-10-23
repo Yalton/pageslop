@@ -25,7 +25,7 @@ import {
 const TOKENS_URL = '/api/settings/tokens'
 // Self-hosters of a fork can point this at their own docs.
 const README_EXTENSION_URL =
-  process.env.NEXT_PUBLIC_EXTENSION_DOCS_URL || 'https://github.com/Citreum-LLC/pageslop#browser-extension'
+  process.env.NEXT_PUBLIC_EXTENSION_DOCS_URL || 'https://github.com/Yalton/pageslop#browser-extension'
 
 async function fetchTokens(url: string): Promise<ApiTokenSummary[]> {
   const res = await fetch(url)
