@@ -1,5 +1,5 @@
 # --- Base ---
-FROM node:22-slim AS base
+FROM node:23-slim AS base
 RUN apt-get update && apt-get install -y \
   chromium \
   chromium-sandbox \
