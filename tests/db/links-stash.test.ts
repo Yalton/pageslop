@@ -82,9 +82,9 @@ describe('insertLink', () => {
 
 describe('duplicate URLs', () => {
   it('insertLink stores the canonical URL', async () => {
-    h.insertReturning.mockResolvedValueOnce([{ id: 'l1', url: 'http://ombi.billbert.co/' }])
-    await insertLink('user-1', 'http://Ombi.Billbert.co')
-    expect(h.values).toHaveBeenCalledWith(expect.objectContaining({ url: 'http://ombi.billbert.co/' }))
+    h.insertReturning.mockResolvedValueOnce([{ id: 'l1', url: 'http://media.example.net/' }])
+    await insertLink('user-1', 'http://Media.Example.net')
+    expect(h.values).toHaveBeenCalledWith(expect.objectContaining({ url: 'http://media.example.net/' }))
   })
 
   it('insertLink returns the existing row instead of throwing when the URL is already saved', async () => {

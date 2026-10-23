@@ -27,7 +27,6 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Pageslop",
     description: "Save links. Skip the busywork. Auto-classify, tag, and organize your bookmarks.",
-    url: "https://pageslop.citreum.com",
     siteName: "Pageslop",
     type: "website",
   },

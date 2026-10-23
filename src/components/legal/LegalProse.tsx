@@ -83,3 +83,17 @@ export function LegalLink({
     </a>
   )
 }
+
+// Contact line for the legal pages. CONTACT_EMAIL is read per request, so each
+// self-hosted instance names its own operator without a rebuild.
+export function LegalContact({ prompt }: { prompt: string }) {
+  const email = process.env.CONTACT_EMAIL
+  if (!email) {
+    return <p>{prompt} Contact the operator of this Pageslop instance.</p>
+  }
+  return (
+    <p>
+      {prompt} Email <LegalLink href={`mailto:${email}`}>{email}</LegalLink>.
+    </p>
+  )
+}

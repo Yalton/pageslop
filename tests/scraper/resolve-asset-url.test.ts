@@ -2,15 +2,15 @@ import { describe, it, expect } from 'vitest'
 import { resolveAssetUrl } from '@/lib/scraper/resolve-asset-url'
 
 describe('resolveAssetUrl', () => {
-  const page = 'https://ombi.billbert.co/app/index.html'
+  const page = 'https://media.example.net/app/index.html'
   it('resolves root-relative paths against the page origin', () => {
-    expect(resolveAssetUrl('/assets/img/logo.png', 'https://repo.billbert.co/x')).toBe('https://repo.billbert.co/assets/img/logo.png')
+    expect(resolveAssetUrl('/assets/img/logo.png', 'https://repo.example.net/x')).toBe('https://repo.example.net/assets/img/logo.png')
   })
   it('resolves ~/ style paths as a path segment', () => {
-    expect(resolveAssetUrl('~/images/logo.png', page)).toBe('https://ombi.billbert.co/app/~/images/logo.png')
+    expect(resolveAssetUrl('~/images/logo.png', page)).toBe('https://media.example.net/app/~/images/logo.png')
   })
   it('resolves document-relative paths against the page path', () => {
-    expect(resolveAssetUrl('img/a.png', page)).toBe('https://ombi.billbert.co/app/img/a.png')
+    expect(resolveAssetUrl('img/a.png', page)).toBe('https://media.example.net/app/img/a.png')
   })
   it('resolves protocol-relative URLs', () => {
     expect(resolveAssetUrl('//cdn.x.com/a.png', page)).toBe('https://cdn.x.com/a.png')

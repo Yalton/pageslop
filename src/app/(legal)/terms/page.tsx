@@ -1,11 +1,14 @@
 import type { Metadata } from "next"
 import {
+  LegalContact,
   LegalArticle,
-  LegalLink,
   LegalList,
   LegalSection,
   LegalTitle,
 } from "@/components/legal/LegalProse"
+
+// Dynamic so LegalContact reads CONTACT_EMAIL at request time, not build time.
+export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -67,9 +70,7 @@ export default function TermsPage() {
       </LegalSection>
 
       <LegalSection title="Contact">
-        <p>
-          Questions? Email <LegalLink href="mailto:dalton@citreum.com">dalton@citreum.com</LegalLink>.
-        </p>
+        <LegalContact prompt="Questions?" />
       </LegalSection>
     </LegalArticle>
   )

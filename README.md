@@ -1,81 +1,143 @@
 # Pageslop
 
-An intelligent bookmark manager that automatically classifies, tags, describes, and organizes saved links. Paste a URL and Pageslop does the rest — no folders to create, no tags to type, no management overhead.
+A self-hosted bookmark manager that classifies, tags, describes and organizes saved links for you. Paste a URL and Pageslop does the rest: no folders to create, no tags to type.
 
 ## Features
 
-- **Instant save** — Paste a URL, get title, image, and metadata fetched automatically
-- **Auto-classification** — Rule-based tag generation, descriptions, and category assignment with no user effort
-- **BYOK LLM** — Bring your own Anthropic API key for higher-quality AI-powered tags and descriptions
-- **Search & filter** — Client-side full-text search across titles, tags, descriptions, and URLs
-- **Tag browsing** — Browse all tags with counts, click to filter
-- **Grouped view** — View links clustered by category with collapsible sections
-- **Uptime monitoring** — Scheduled health checks with green/red/gray status dots per link
-- **Relational graph** — Force-directed visualization showing how bookmarks connect through shared tags
-- **Import/export** — Import browser bookmark HTML files, export as JSON or HTML
-- **Email verification** — Secure signup with email verification via Zoho SMTP
-- **Password reset** — Forgot password flow with email reset links
+- **Instant save**: paste a URL; title, image and metadata are fetched automatically
+- **Auto-classification**: rule-based tags, descriptions and categories with no effort from you
+- **Bring your own LLM key**: add an Anthropic API key for better AI-generated tags and descriptions
+- **Search and filter** across titles, tags, descriptions and URLs
+- **Tag browsing** with counts, and a **grouped view** by category
+- **Uptime monitoring**: scheduled health checks with a status dot per link
+- **Relationship graph**: a force-directed view of how bookmarks connect through shared tags
+- **Import and export**: import browser bookmark HTML files, export as JSON or HTML
+- **Browser extension** (Firefox) that saves idle tabs to a "To Revisit" inbox and closes them
+- **REST API and MCP server** for scripts and AI agents ([docs/api.md](docs/api.md), [docs/mcp.md](docs/mcp.md))
 
-## Tech Stack
+## Tech stack
 
-- **Framework:** Next.js 15 (App Router, standalone output)
-- **Database:** PostgreSQL 16 with Drizzle ORM
-- **Auth:** Better Auth (email/password, email verification)
-- **Queue:** pg-boss for async scraping, enrichment, and monitoring jobs
-- **LLM:** Anthropic Claude API (optional, BYOK)
-- **UI:** Tailwind CSS, shadcn/ui, Radix primitives
-- **Graph:** react-force-graph-2d (Canvas 2D rendering)
-- **Email:** Nodemailer with Zoho SMTP
-- **Deployment:** Docker Compose (app + worker + postgres)
+Next.js 15 (App Router), PostgreSQL 16 with Drizzle ORM, Better Auth (email and password), pg-boss for background jobs, Puppeteer/Chromium for screenshots, Tailwind CSS with shadcn/ui, and Docker Compose for deployment.
 
-## Quick Start
+## Self-hosting with Docker
 
-### Docker (recommended)
+You need Docker with the Compose plugin, `openssl`, and about 2 GB of free RAM (the worker runs Chromium).
 
 ```bash
-cp .env.example .env
-cp .env.db.example .env.db
-# Edit both with your credentials (the pageslop_app password must match), then:
-chmod 600 .env .env.db
-docker compose up -d
+git clone https://github.com/Citreum-LLC/pageslop.git
+cd pageslop
+./scripts/setup.sh                 # or: ./scripts/setup.sh https://links.example.com
+docker compose up -d --build
 ```
 
-The app auto-pushes the database schema on first startup. Access at `http://localhost:3847`.
+`scripts/setup.sh` writes `.env` and `.env.db` with fresh random secrets and never overwrites existing files. The first start builds the images and creates the database schema, which takes a few minutes.
 
-### Development
+Open <http://localhost:3847> and sign up. If you have not configured SMTP, the verification link is printed in the app log:
 
 ```bash
-npm install
-cp .env.example .env
-# Edit .env — set DATABASE_URL to a local Postgres instance
-
-# Push schema
-npx drizzle-kit push
-
-# Start dev server
-npm run dev
-
-# Start worker (separate terminal, requires Node 20+)
-node --env-file=.env --import tsx src/workers/scrape.worker.ts
+docker compose logs app | grep '\[email\]'
 ```
 
-## Environment Variables
+Once your account exists, consider closing registration: set `ALLOW_SIGNUP=false` and `NEXT_PUBLIC_ALLOW_SIGNUP=false` in `.env`, then run `docker compose up -d --build`.
+
+### Running on a server
+
+The app is published on `127.0.0.1:3847` by default, so it is reachable only from the host itself. Put a reverse proxy with HTTPS in front of it (Caddy, nginx, Traefik, Cloudflare Tunnel), and set `BETTER_AUTH_URL` in `.env` to the public URL, for example `https://links.example.com`.
+
+Sign-in needs HTTPS. The session cookie is marked `Secure`, which browsers accept over plain HTTP only on `localhost`. To reach the app directly on another interface, set `PAGESLOP_BIND` (and optionally `PAGESLOP_PORT`) in `.env`.
+
+A minimal Caddyfile:
+
+```
+links.example.com {
+    reverse_proxy 127.0.0.1:3847
+}
+```
+
+### Services
+
+| Service  | Port                        | Description                                         |
+| -------- | --------------------------- | --------------------------------------------------- |
+| `app`    | 3847 on `127.0.0.1`         | Next.js web server; applies the schema on start     |
+| `worker` | none                        | Background jobs: scraping, enrichment, monitoring, import |
+| `db`     | none (compose network only) | PostgreSQL 16, data in `./data/postgres`            |
+
+The worker runs Chromium inside its sandbox, using the seccomp profile in `chromium-seccomp.json`.
+
+### Updating
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+Schema changes are applied automatically when the app container starts.
+
+### Backups
+
+All state lives in PostgreSQL plus the `screenshots` volume. To dump the database:
+
+```bash
+docker compose exec db pg_dump -U pageslop pageslop > pageslop-$(date +%F).sql
+```
+
+## Configuration
+
+Settings live in `.env` (read by the app and worker) and `.env.db` (read only by the database). See [.env.example](.env.example) and [.env.db.example](.env.db.example) for comments on every value.
 
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `DATABASE_URL_DIRECT` | Direct PostgreSQL connection (for pg-boss LISTEN/NOTIFY) |
-| `BETTER_AUTH_SECRET` | Random 32+ character secret for session signing |
-| `BETTER_AUTH_URL` | Public URL of the app (e.g., `https://pageslop.citreum.com`) |
-| `ENCRYPTION_KEY` | 64-character hex string for AES-256-GCM API key encryption |
-| `SMTP_HOST` | SMTP server hostname (default: `smtp.zoho.com`) |
-| `SMTP_PORT` | SMTP port (default: `465`) |
-| `SMTP_USER` | SMTP login email |
-| `SMTP_PASS` | SMTP password or app-specific password |
-| `SMTP_FROM` | Sender display (e.g., `Pageslop <noreply@yourdomain.com>`) |
+| `BETTER_AUTH_URL` | Public URL of the app, for example `https://links.example.com` |
+| `BETTER_AUTH_SECRET` | Session signing secret, at least 32 random characters (`openssl rand -base64 32`) |
+| `ENCRYPTION_KEY` | 64 hex characters for encrypting stored API keys (`openssl rand -hex 32`) |
+| `PAGESLOP_BIND` | Address Docker Compose publishes the app on. Default `127.0.0.1` |
+| `PAGESLOP_PORT` | Host port for the app. Default `3847` |
+| `SMTP_HOST` | SMTP server. Leave empty to write emails to the app log instead of sending them |
+| `SMTP_PORT` | SMTP port. Default `465` |
+| `SMTP_SECURE` | `true` for implicit TLS, `false` for STARTTLS. Default: `true` on port 465 |
+| `SMTP_USER` | SMTP login |
+| `SMTP_PASS` | SMTP password or app password |
+| `SMTP_FROM` | Sender, for example `Pageslop <noreply@example.com>` |
 | `ALLOW_SIGNUP` | `false` disables new account sign-up server-side. Default `true` |
 | `NEXT_PUBLIC_ALLOW_SIGNUP` | `false` hides sign-up links in the UI. Inlined at build time, so rebuild after changing. Default `true` |
+| `CONTACT_EMAIL` | Contact address shown on the privacy and terms pages |
+| `NEXT_PUBLIC_EXTENSION_DOCS_URL` | Where the settings page links for extension setup. Defaults to this README |
 | `STASH_EXPIRE_DAYS` | Days before stashed links in the inbox or read state are auto-archived (never deleted). Default `14` |
+
+The privacy and terms pages under `src/app/(legal)/` are a starting point written for a small hosted instance. If you run Pageslop for other people, review them for your situation.
+
+## Development
+
+Requires Node.js 22 and PostgreSQL 16.
+
+```bash
+npm ci
+
+# A throwaway database, if you don't have one
+docker run -d --name pageslop-dev-db -p 127.0.0.1:5432:5432 \
+  -e POSTGRES_USER=pageslop -e POSTGRES_PASSWORD=pageslop -e POSTGRES_DB=pageslop postgres:16-alpine
+
+cp .env.example .env
+# In .env: point both DATABASE_URL lines at
+# postgresql://pageslop:pageslop@localhost:5432/pageslop, set BETTER_AUTH_URL=http://localhost:3000,
+# and fill in BETTER_AUTH_SECRET and ENCRYPTION_KEY.
+
+npm run db:push       # create the schema
+npm run dev           # web app on http://localhost:3000
+npm run worker        # background worker, in a second terminal
+```
+
+Checks:
+
+```bash
+npx tsc --noEmit
+npm test
+npm run build
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
 ## Browser extension
 
@@ -84,19 +146,17 @@ The Firefox extension in `extension/` closes idle tabs and saves them to the **T
 ### Connect it
 
 1. In Pageslop, open **Settings → Browser extension**, enter a name such as "Firefox laptop" and create a token. Copy it right away: the token is shown only once. Revoke it from the same card at any time.
-2. Load the extension (see below), open its **Options** page, and enter your server URL (for example `https://pageslop.example.com`) and the token.
+2. Load the extension (see below), open its **Options** page, and enter your server URL (for example `https://links.example.com`) and the token.
 3. Click **Test connection**. Firefox asks for permission to access your server. Grant it. You should see ✓ with your account email.
 4. Set the idle hours (default 6), the maximum number of open tabs (default 25) and any domains that must never close, then enable **Auto-close idle tabs** and save. Use **Preview next sweep** to see what would close.
 
-Pinned, active, audible and private-window tabs, kept tabs, non-http pages and your Pageslop server's own pages are never closed. To keep a tab open regardless of idle time, right-click it and tick **Keep tab (never auto-close)**. With several tabs selected, the click applies to all of them. A kept tab stays kept across browser restarts. A duplicated tab, or a closed tab you reopen, keeps the mark too. The extension also remembers kept pages by URL, so a tab reopened by a session manager add-on such as Tab Session Manager is kept again, and any other tab on the same page counts as kept. Untick the box to forget a page. A kept page that no open tab has shown for 30 days is forgotten. Kept tabs do not count toward the maximum, and the popup shows how many tabs are kept. Sweeps run every 5 minutes. The popup can also stash on demand, stash the current tab, pause for an hour, or exclude the current domain. Stashed items you don't act on are archived after `STASH_EXPIRE_DAYS` days (default 14). Nothing is deleted.
+Pinned, active, audible and private-window tabs, kept tabs, non-http pages and your Pageslop server's own pages are never closed. To keep a tab open regardless of idle time, right-click it and tick **Keep tab (never auto-close)**. With several tabs selected, the click applies to all of them. A kept tab stays kept across browser restarts, and so does a duplicated tab or a closed tab you reopen. The extension also remembers kept pages by URL, so a tab reopened by a session manager add-on is kept again, and any other tab on the same page counts as kept. Untick the box to forget a page. A kept page that no open tab has shown for 30 days is forgotten. Kept tabs do not count toward the maximum.
 
-Version 0.2.0 adds keep tabs and asks for two new permissions on update: tab context menus, and access to recently closed tabs (Firefox's wording for the `sessions` API, which stores the keep mark).
+Sweeps run every 5 minutes. The popup can also stash on demand, stash the current tab, pause for an hour, or exclude the current domain. Stashed items you don't act on are archived after `STASH_EXPIRE_DAYS` days (default 14). Nothing is deleted. On Firefox for Android the extension needs version 142 or later.
 
-Version 0.3.0 asks for no new permissions. A sweep also leaves tabs open that started playing audio or that you used while it was saving them, requests to the server time out after 30 seconds, and excluded domains accept IPv6 addresses. On Firefox for Android it needs version 142 or later.
+The extension talks only to the server URL you configure, and asks for host permission for that origin alone.
 
-Version 0.3.1 keeps the keep mark on tabs reopened by session manager add-ons, by also remembering kept pages by URL. No new permissions.
-
-### Development
+### Load it for development
 
 ```bash
 npm run ext:run    # launches a temporary Firefox profile with the extension loaded
@@ -106,19 +166,15 @@ npm run ext:build  # zip in web-ext-artifacts/
 
 You can also load it into your normal Firefox from `about:debugging` → **This Firefox** → **Load Temporary Add-on…** by selecting `extension/manifest.json`. Temporary add-ons are removed when Firefox restarts.
 
-### Permanent install
+### Install it permanently
 
-Release Firefox only installs signed add-ons permanently. Submit the zip from `npm run ext:build` to [addons.mozilla.org](https://addons.mozilla.org/developers/) as an **unlisted** add-on. Signing is free and automatic, and unlisted add-ons are not shown publicly. Alternatively, sign from the command line with your AMO API credentials:
+Release Firefox only installs signed add-ons permanently. Signing is free on [addons.mozilla.org](https://addons.mozilla.org/developers/) as an **unlisted** add-on, which is not shown publicly. Add-on IDs are unique on AMO, so first change `browser_specific_settings.gecko.id` in `extension/manifest.json` to an ID of your own, such as `tab-stash@yourdomain.com`. Then either upload the zip from `npm run ext:build`, or sign from the command line with your AMO API credentials:
 
 ```bash
 npx web-ext sign --source-dir extension --channel unlisted --api-key "$AMO_JWT_ISSUER" --api-secret "$AMO_JWT_SECRET"
 ```
 
 Install the signed `.xpi` it produces by opening it in Firefox.
-
-### Self-hosting
-
-Each Pageslop instance belongs to a single owner. The extension talks only to the server URL you configure, and it asks for host permission for that origin alone. To run your own: deploy Pageslop, create your account, then set `ALLOW_SIGNUP=false` so nobody else can sign up, and point the extension at your instance.
 
 ## Architecture
 
@@ -134,10 +190,10 @@ Each Pageslop instance belongs to a single owner. The extension talks only to th
                            │
               ┌────────────┼────────────┐
               │            │            │
-       ┌──────▼──────┐ ┌──▼───┐ ┌──────▼──────┐
-       │  PostgreSQL  │ │pg-boss│ │   Anthropic  │
-       │   (data)     │ │(queue)│ │   API (BYOK) │
-       └─────────────┘ └──┬───┘ └─────────────┘
+       ┌──────▼──────┐ ┌───▼───┐ ┌──────▼──────┐
+       │ PostgreSQL  │ │pg-boss│ │  Anthropic  │
+       │   (data)    │ │(queue)│ │  API (BYOK) │
+       └─────────────┘ └───┬───┘ └─────────────┘
                            │
                     ┌──────▼──────┐
                     │   Worker    │ ← scrape, enrich,
@@ -145,14 +201,12 @@ Each Pageslop instance belongs to a single owner. The extension talks only to th
                     └─────────────┘
 ```
 
-## Docker Services
+The worker fetches pages that users save. All of its outbound requests, including Chromium's, go through an SSRF guard that refuses private, loopback, link-local and cloud metadata addresses (`src/lib/net/`).
 
-| Service | Port | Description |
-|---------|------|-------------|
-| `app` | 3847 | Next.js web server |
-| `worker` | — | Background job processor (scrape, enrich, monitor) |
-| `db` | — (internal only) | PostgreSQL 16 |
+## Security
+
+Please report vulnerabilities privately; see [SECURITY.md](SECURITY.md).
 
 ## License
 
-Proprietary. All rights reserved.
+Pageslop is free software under the [GNU Affero General Public License v3.0](LICENSE). If you run a modified version as a network service, the AGPL requires you to offer its source code to the people who use it.
