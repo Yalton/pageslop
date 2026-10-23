@@ -13,6 +13,12 @@ const buildPhase = isBuildPhase()
 const secret = buildPhase ? process.env.BETTER_AUTH_SECRET : requireAuthSecret(process.env.BETTER_AUTH_SECRET)
 const baseURL = buildPhase ? process.env.BETTER_AUTH_URL : requireAuthUrl(process.env.BETTER_AUTH_URL)
 
+// TRUSTED_IP_HEADER=none trusts no header, for an app port reachable without a
+// proxy that overwrites one: clients could otherwise send any IP and get a fresh
+// rate-limit bucket per request. Rate limiting then uses one shared bucket.
+const ipHeaders = parseList(process.env.TRUSTED_IP_HEADER, true) ?? ['x-forwarded-for']
+const ipAddressHeaders = ipHeaders.includes('none') ? [] : ipHeaders
+
 export const auth = betterAuth({
   secret,
   baseURL,
@@ -21,6 +27,8 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    // A reset after a compromise must sign the attacker out everywhere.
+    revokeSessionsOnPasswordReset: true,
     disableSignUp: !signupAllowed(process.env.ALLOW_SIGNUP),
     sendResetPassword: async ({ user, url }) => {
       const { subject, html } = passwordResetEmail(url)
@@ -50,7 +58,7 @@ export const auth = betterAuth({
     // x-forwarded-for chain is only resolved when TRUSTED_PROXIES lists the
     // proxy addresses; otherwise only a single-value header is trusted.
     ipAddress: {
-      ipAddressHeaders: parseList(process.env.TRUSTED_IP_HEADER, true) ?? ['x-forwarded-for'],
+      ipAddressHeaders,
       trustedProxies: parseList(process.env.TRUSTED_PROXIES),
     },
   },

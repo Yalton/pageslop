@@ -46,7 +46,7 @@ The app is published on `127.0.0.1:3847` by default, so it is reachable only fro
 
 Sign-in needs HTTPS. The session cookie is marked `Secure`, which browsers accept over plain HTTP only on `localhost`. To reach the app directly on another interface, set `PAGESLOP_BIND` (and optionally `PAGESLOP_PORT`) in `.env`.
 
-Auth rate limiting keys on the client IP, read from `TRUSTED_IP_HEADER` (default `x-forwarded-for`). Set it to the header your proxy writes, for example `cf-connecting-ip` behind Cloudflare.
+Auth rate limiting keys on the client IP, read from `TRUSTED_IP_HEADER` (default `x-forwarded-for`). Set it to the header your proxy writes, for example `cf-connecting-ip` behind Cloudflare. If you expose the app port without a proxy that overwrites that header, set `TRUSTED_IP_HEADER=none`; otherwise clients can send a fake IP and get around the sign-in rate limit.
 
 A minimal Caddyfile:
 
@@ -94,7 +94,7 @@ Settings live in `.env` (read by the app and worker) and `.env.db` (read only by
 | `BETTER_AUTH_URL` | Public URL of the app, for example `https://links.example.com` |
 | `BETTER_AUTH_SECRET` | Session signing secret, at least 32 random characters (`openssl rand -base64 32`) |
 | `ENCRYPTION_KEY` | 64 hex characters for encrypting stored API keys (`openssl rand -hex 32`) |
-| `TRUSTED_IP_HEADER` | Header(s) holding the client IP for auth rate limiting, comma-separated (e.g. `cf-connecting-ip`, `x-real-ip`). Default `x-forwarded-for`. Set `TRUSTED_PROXIES` to your proxy IPs/CIDRs to resolve a multi-hop `x-forwarded-for` chain |
+| `TRUSTED_IP_HEADER` | Header(s) holding the client IP for auth rate limiting, comma-separated (e.g. `cf-connecting-ip`, `x-real-ip`). Default `x-forwarded-for`. `none` trusts no header (use it when the port is exposed without a proxy). Set `TRUSTED_PROXIES` to your proxy IPs/CIDRs to resolve a multi-hop `x-forwarded-for` chain |
 | `PAGESLOP_BIND` | Address Docker Compose publishes the app on. Default `127.0.0.1` |
 | `PAGESLOP_PORT` | Host port for the app. Default `3847` |
 | `SMTP_HOST` | SMTP server. Leave empty to write emails to the app log instead of sending them |
