@@ -11,6 +11,7 @@ import { findDuplicate, getLinkWithTags, insertLink, listLinksPage } from '@/lib
 import { enqueueScrapeJob } from '@/lib/queue/boss'
 import { decodeCursor } from '@/lib/links/cursor'
 import { toApiLink } from '@/lib/links/api-link'
+import { isHttpUrl } from '@/lib/links/http-url'
 
 const DEFAULT_LIMIT = 50
 const MAX_LIMIT = 200
@@ -65,15 +66,6 @@ const saveBodySchema = z.object({
   url: z.string().max(MAX_URL_LENGTH),
   title: z.string().max(MAX_TITLE_LENGTH).optional(),
 })
-
-function isHttpUrl(raw: string): boolean {
-  try {
-    const { protocol } = new URL(raw.trim())
-    return protocol === 'http:' || protocol === 'https:'
-  } catch {
-    return false
-  }
-}
 
 export async function POST(req: Request): Promise<Response> {
   const authed = await requireScope(req, 'links:write')

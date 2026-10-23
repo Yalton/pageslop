@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth/server'
 import { headers } from 'next/headers'
 import { deleteLink, updateLinkFields } from '@/lib/db/queries/links'
+import { MAX_DESCRIPTION_LENGTH } from '@/lib/links/limits'
 import { CATEGORIES, STASH_STATES, type StashState } from '@/types'
 
 export async function DELETE(
@@ -28,7 +29,7 @@ export async function PATCH(
   if (!session) return new Response('Unauthorized', { status: 401 })
 
   const { id } = await params
-  let body: { description?: string; category?: string; stashState?: unknown }
+  let body: { description?: unknown; category?: string; stashState?: unknown }
   try {
     body = await req.json()
   } catch {
@@ -36,6 +37,17 @@ export async function PATCH(
   }
   if (typeof body !== 'object' || body === null) {
     return Response.json({ error: 'Body must be a JSON object' }, { status: 400 })
+  }
+
+  // Validate description if provided: a string, capped like /api/v1 and MCP
+  if (
+    body.description !== undefined &&
+    (typeof body.description !== 'string' || body.description.length > MAX_DESCRIPTION_LENGTH)
+  ) {
+    return Response.json(
+      { error: `description must be a string of at most ${MAX_DESCRIPTION_LENGTH} characters` },
+      { status: 400 },
+    )
   }
 
   // Validate category if provided
@@ -59,7 +71,7 @@ export async function PATCH(
     stashState?: StashState | null
     stashedAt?: Date
   } = {}
-  if (body.description !== undefined) data.description = body.description
+  if (typeof body.description === 'string') data.description = body.description
   if (body.category !== undefined) {
     data.category = body.category
     data.categorySource = 'user' // hand-picked: enrichment must not overwrite it

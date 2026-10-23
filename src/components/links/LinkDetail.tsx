@@ -21,6 +21,7 @@ import { TagEditor } from '@/components/links/TagEditor'
 import { UptimeDot } from '@/components/links/UptimeDot'
 import { EnrichmentBadge } from '@/components/links/EnrichmentBadge'
 import { domainToHue } from '@/lib/utils/domain-color'
+import { openExternal } from '@/lib/links/open-external'
 import type { Link, LinkWithTags } from '@/types'
 
 interface LinkDetailProps {
@@ -61,7 +62,7 @@ function LinkDetailContent({
   }
 
   function handleVisit() {
-    window.open(link.url, '_blank', 'noopener,noreferrer')
+    openExternal(link.url)
   }
 
   function handleDelete() {

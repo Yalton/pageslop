@@ -10,12 +10,13 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth/server'
 import { headers } from 'next/headers'
 import { bulkAddTag } from '@/lib/db/queries/tags'
+import { MAX_TAG_NAME_LENGTH } from '@/lib/links/limits'
 
 const MAX_IDS = 500
 
 const bulkSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(MAX_IDS),
-  name: z.string().trim().min(1).max(50),
+  name: z.string().trim().min(1).max(MAX_TAG_NAME_LENGTH),
 })
 
 export async function POST(req: Request): Promise<Response> {
@@ -31,7 +32,7 @@ export async function POST(req: Request): Promise<Response> {
 
   const parsed = bulkSchema.safeParse(raw)
   if (!parsed.success) {
-    return Response.json({ error: `Expected { ids: string[] (1-${MAX_IDS}), name: string (1-50 chars) }` }, { status: 400 })
+    return Response.json({ error: `Expected { ids: string[] (1-${MAX_IDS}), name: string (1-${MAX_TAG_NAME_LENGTH} chars) }` }, { status: 400 })
   }
 
   const { tag, added } = await bulkAddTag(session.user.id, parsed.data.ids, parsed.data.name)

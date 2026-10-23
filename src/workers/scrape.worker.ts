@@ -99,12 +99,13 @@ async function main() {
         })
         .where(eq(schema.links.id, linkId))
 
-      // Store raw content for Phase 2 classification
+      // Store raw content for Phase 2 classification. scrapeUrl caps rawHtml
+      // at MAX_HTML_BYTES and returns '' for non-HTML resources.
       await db.insert(schema.rawContent)
         .values({
           linkId,
           bodyText: result.bodyText,
-          rawHtml: result.rawHtml,
+          rawHtml: result.rawHtml || null,
         })
 
       // Chain enrich job after successful scrape

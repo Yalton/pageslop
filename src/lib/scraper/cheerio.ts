@@ -1,6 +1,21 @@
 import * as cheerio from 'cheerio'
 import { safeFetch } from '../net/ssrf-guard'
 import { resolveAssetUrl } from './resolve-asset-url'
+import { readLimited } from '../net/read-limited'
+
+/** Most of a page's body read for metadata; <head> tags come first, so 2 MB is plenty. */
+export const MAX_HTML_BYTES = 2 * 1024 * 1024
+
+/**
+ * Whether a Content-Type is worth parsing as a page. A missing header is
+ * treated as HTML; text/* (incl. text/plain) and XHTML/XML are parsed too.
+ * PDFs, images, video, archives and JSON are not.
+ */
+function isParsableContentType(contentType: string | null): boolean {
+  if (!contentType) return true
+  const type = contentType.split(';')[0].trim().toLowerCase()
+  return type.startsWith('text/') || type === 'application/xml' || type.endsWith('+xml')
+}
 
 export interface ScrapeResult {
   title: string
@@ -18,7 +33,17 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
     signal: AbortSignal.timeout(8000), // 8s hard timeout
   })
 
-  const rawHtml = await res.text()
+  // A non-page resource saves fine with empty metadata (the worker stores null
+  // title/description and queues a screenshot); its body is never read.
+  if (!isParsableContentType(res.headers.get('content-type'))) {
+    await res.body?.cancel().catch(() => {})
+    return { title: '', description: '', ogImage: null, favicon: null, bodyText: null, rawHtml: '' }
+  }
+
+  // Read at most MAX_HTML_BYTES, so a huge or endless body cannot exhaust memory
+  // or bloat raw_content. A cut-off page still parses: cheerio closes open tags.
+  const { bytes } = await readLimited(res.body, MAX_HTML_BYTES)
+  const rawHtml = new TextDecoder().decode(bytes)
   const $ = cheerio.load(rawHtml)
 
   const title = $('meta[property="og:title"]').attr('content')
