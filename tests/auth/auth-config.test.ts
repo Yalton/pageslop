@@ -20,6 +20,7 @@ type AuthOptions = {
   secret?: string
   baseURL?: string
   trustedOrigins: string[]
+  emailAndPassword: { revokeSessionsOnPasswordReset?: boolean }
   advanced: { ipAddress: { ipAddressHeaders: string[]; trustedProxies?: string[] } }
 }
 
@@ -86,5 +87,15 @@ describe('auth server config', () => {
     const options = await loadAuthOptions()
     expect(options.advanced.ipAddress.ipAddressHeaders).toEqual(['cf-connecting-ip'])
     expect(options.advanced.ipAddress.trustedProxies).toEqual(['172.18.0.1', '10.0.0.0/24'])
+  })
+  it('trusts no client IP header when TRUSTED_IP_HEADER=none', async () => {
+    process.env.TRUSTED_IP_HEADER = 'None'
+    const options = await loadAuthOptions()
+    expect(options.advanced.ipAddress.ipAddressHeaders).toEqual([])
+  })
+
+  it('revokes all sessions when the password is reset', async () => {
+    const options = await loadAuthOptions()
+    expect(options.emailAndPassword.revokeSessionsOnPasswordReset).toBe(true)
   })
 })
