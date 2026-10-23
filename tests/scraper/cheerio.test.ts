@@ -163,3 +163,53 @@ describe('scrapeUrl', () => {
     expect(fetch).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('scrapeUrl body limits', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+  })
+
+  it.each(['application/pdf', 'image/png', 'application/octet-stream', 'video/mp4', 'application/json'])(
+    'skips parsing a %s response and returns empty metadata',
+    async (type) => {
+      const body = new ReadableStream({ pull: (c) => c.enqueue(new Uint8Array(1024)) }) // endless
+      vi.mocked(fetch).mockResolvedValueOnce(new Response(body, { headers: { 'content-type': type } }))
+
+      const result = await scrapeUrl('https://example.com/file')
+      expect(result).toEqual({ title: '', description: '', ogImage: null, favicon: null, bodyText: null, rawHtml: '' })
+    },
+  )
+
+  it.each(['text/html; charset=utf-8', 'application/xhtml+xml', 'text/plain'])('parses a %s response', async (type) => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response('<html><head><title>T</title></head><body>x</body></html>', { headers: { 'content-type': type } }),
+    )
+    expect((await scrapeUrl('https://example.com')).title).toBe('T')
+  })
+
+  it('reads at most MAX_HTML_BYTES of an oversized page and still extracts <head> metadata', async () => {
+    const { MAX_HTML_BYTES } = await import('@/lib/scraper/cheerio')
+    const head = new TextEncoder().encode('<html><head><title>Big</title></head><body>')
+    const filler = new Uint8Array(64 * 1024).fill(97)
+    let sentHead = false
+    let pulled = 0
+    const body = new ReadableStream<Uint8Array>({
+      pull(c) {
+        if (!sentHead) {
+          sentHead = true
+          c.enqueue(head)
+        } else {
+          pulled++
+          c.enqueue(filler) // never closes
+        }
+      },
+    })
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(body, { headers: { 'content-type': 'text/html' } }))
+
+    const result = await scrapeUrl('https://example.com')
+    expect(result.title).toBe('Big')
+    expect(result.rawHtml.length).toBe(MAX_HTML_BYTES)
+    expect(pulled).toBeLessThan(MAX_HTML_BYTES / filler.byteLength + 4)
+  })
+})
+

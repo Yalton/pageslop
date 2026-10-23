@@ -6,16 +6,31 @@ import { parseUrls } from '@/lib/links/parse-urls'
 import { normalizeUrl } from '@/lib/links/normalize-url'
 import type { SaveLinksRequest, LinkWithDuplicate } from '@/types'
 
+/** Most URLs one save request may contain, matching the bulk link routes. */
+const MAX_URLS = 500
+
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session) return new Response('Unauthorized', { status: 401 })
 
-  const body: SaveLinksRequest = await req.json()
+  let body: SaveLinksRequest
+  try {
+    body = await req.json()
+  } catch {
+    return Response.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  if (typeof body !== 'object' || body === null || typeof body.urls !== 'string') {
+    return Response.json({ error: 'Expected { urls: string }' }, { status: 400 })
+  }
+
   // One entry per canonical URL, so a URL pasted twice is saved once.
   const urlList = [...new Set(parseUrls(body.urls).map(normalizeUrl))]
 
   if (urlList.length === 0) {
     return Response.json({ error: 'No valid URLs provided' }, { status: 400 })
+  }
+  if (urlList.length > MAX_URLS) {
+    return Response.json({ error: `Too many URLs (${urlList.length}); save at most ${MAX_URLS} at a time` }, { status: 400 })
   }
 
   const saved: LinkWithDuplicate[] = []
