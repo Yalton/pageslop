@@ -25,8 +25,10 @@ services:
       args:
         NEXT_PUBLIC_ALLOW_SIGNUP: ${NEXT_PUBLIC_ALLOW_SIGNUP:-true}
     restart: unless-stopped
+    # Published on 127.0.0.1 by default, for a reverse proxy on the same host.
+    # Set PAGESLOP_BIND=0.0.0.0 (or one interface address) in .env to expose it.
     ports:
-      - "192.168.50.112:3847:3000"
+      - "${PAGESLOP_BIND:-127.0.0.1}:${PAGESLOP_PORT:-3847}:3000"
     env_file: .env
     environment:
       # This service alone pushes the DB schema (see docker-entrypoint.sh).

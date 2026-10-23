@@ -48,3 +48,10 @@ next-env.d.ts
 
 # web-ext sign upload tracking
 /extension/.amo-upload-uuid
+
+# local agent and editor tooling
+/.claude/
+/.serena/
+/.superpowers/
+/.worktrees/
+/.beads/

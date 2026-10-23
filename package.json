@@ -8,8 +8,8 @@
     "start": "next start",
     "worker": "node --env-file=.env --import tsx src/workers/scrape.worker.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
+    "db:migrate": "node --env-file=.env node_modules/drizzle-kit/bin.cjs migrate",
+    "db:push": "node --env-file=.env node_modules/drizzle-kit/bin.cjs push",
     "test": "vitest run",
     "test:watch": "vitest",
     "ext:run": "web-ext run --source-dir extension",
@@ -70,5 +70,6 @@
     "undici": "^7.30.0",
     "vite": "^8.3.5",
     "shell-quote": "^1.11.0"
-  }
+  },
+  "license": "AGPL-3.0-only"
 }

@@ -1,12 +1,15 @@
 import type { Metadata } from "next"
 import {
+  LegalContact,
   LegalArticle,
   LegalCode,
-  LegalLink,
   LegalList,
   LegalSection,
   LegalTitle,
 } from "@/components/legal/LegalProse"
+
+// Dynamic so LegalContact reads CONTACT_EMAIL at request time, not build time.
+export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -54,7 +57,7 @@ export default function PrivacyPage() {
 
       <LegalSection title="Data deletion">
         <p>
-          You can delete individual links from your dashboard. To delete your entire account and all associated data, contact us at the email below.
+          You can delete individual links from your dashboard. To delete your entire account and all associated data, use <strong>Delete My Account</strong> in Settings.
         </p>
       </LegalSection>
 
@@ -65,9 +68,7 @@ export default function PrivacyPage() {
       </LegalSection>
 
       <LegalSection title="Contact">
-        <p>
-          Questions about privacy? Email <LegalLink href="mailto:dalton@citreum.com">dalton@citreum.com</LegalLink>.
-        </p>
+        <LegalContact prompt="Questions about privacy?" />
       </LegalSection>
     </LegalArticle>
   )

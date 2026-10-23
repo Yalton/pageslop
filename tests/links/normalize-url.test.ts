@@ -3,8 +3,8 @@ import { normalizeUrl } from '@/lib/links/normalize-url'
 
 describe('normalizeUrl', () => {
   it('adds the root slash so a bare host and host/ match', () => {
-    expect(normalizeUrl('http://ombi.billbert.co')).toBe(normalizeUrl('http://ombi.billbert.co/'))
-    expect(normalizeUrl('http://ombi.billbert.co')).toBe('http://ombi.billbert.co/')
+    expect(normalizeUrl('http://media.example.net')).toBe(normalizeUrl('http://media.example.net/'))
+    expect(normalizeUrl('http://media.example.net')).toBe('http://media.example.net/')
   })
 
   it('lowercases scheme and host and drops default ports', () => {

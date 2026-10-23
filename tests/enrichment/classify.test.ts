@@ -388,9 +388,9 @@ describe('buildTags()', () => {
   })
 
   it('puts shared topic tags first, using the description and URL', () => {
-    const tags = buildTags('', 'jellyfin.billbert.co', 'Jellyfin', {
+    const tags = buildTags('', 'jellyfin.example.net', 'Jellyfin', {
       description: 'Stream your movie library',
-      url: 'https://jellyfin.billbert.co/web',
+      url: 'https://jellyfin.example.net/web',
     })
     expect(tags.slice(0, 2).sort()).toEqual(['media', 'self-hosted'])
   })

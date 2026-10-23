@@ -4,13 +4,13 @@ import { normalizeTag } from '@/lib/enrichment/classify'
 
 describe('matchTopics', () => {
   it('tags self-hosted apps on private hosts from the title alone', () => {
-    expect(matchTopics({ title: 'Jellyfin', url: 'https://jellyfin.billbert.co/' })).toContain('self-hosted')
+    expect(matchTopics({ title: 'Jellyfin', url: 'https://jellyfin.example.net/' })).toContain('self-hosted')
     expect(matchTopics({ title: 'Slop Director', url: 'http://192.168.50.24:3000/' })).toContain('self-hosted')
     expect(matchTopics({ title: 'Pi-hole flowController', url: 'http://192.168.50.78/admin' })).toContain('self-hosted')
   })
 
   it('finds social from a host label', () => {
-    expect(matchTopics({ title: 'Postiz Register', url: 'https://social.citreum.com' })).toContain('social')
+    expect(matchTopics({ title: 'Postiz Register', url: 'https://social.example.net' })).toContain('social')
   })
 
   it('finds ai from a title word', () => {

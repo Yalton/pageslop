@@ -1,14 +1,20 @@
 import nodemailer from 'nodemailer'
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.zoho.com',
-  port: Number(process.env.SMTP_PORT) || 465,
-  secure: true, // SSL
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-})
+// Without SMTP_HOST the instance has no mail server: emails (verification and
+// password reset links) are written to the server log instead, so a single-user
+// self-hosted instance can be set up with `docker compose logs app`.
+const smtpConfigured = Boolean(process.env.SMTP_HOST)
+const port = Number(process.env.SMTP_PORT) || 465
+
+const transporter = smtpConfigured
+  ? nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port,
+      // Port 465 is implicit TLS; other ports (587) upgrade with STARTTLS.
+      secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : port === 465,
+      auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined,
+    })
+  : null
 
 interface SendEmailOptions {
   to: string
@@ -17,7 +23,12 @@ interface SendEmailOptions {
 }
 
 export async function sendEmail({ to, subject, html }: SendEmailOptions) {
-  console.log(`[email] Sending "${subject}" to ${to} via ${process.env.SMTP_USER}`)
+  if (!transporter) {
+    const links = [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1])
+    console.log(`[email] SMTP_HOST is not set, so "${subject}" for ${to} was not sent. Links: ${links.join(' ')}`)
+    return
+  }
+  console.log(`[email] Sending "${subject}" to ${to}`)
   try {
     const info = await transporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
