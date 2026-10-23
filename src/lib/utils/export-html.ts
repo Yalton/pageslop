@@ -20,7 +20,7 @@ export function generateNetscapeHTML(links: LinkWithTags[]): string {
     .map((link) => {
       const addDate = Math.floor(link.createdAt.getTime() / 1000)
       const title = escapeHtml(link.title || link.url)
-      return `    <DT><A HREF="${link.url}" ADD_DATE="${addDate}">${title}</A>`
+      return `    <DT><A HREF="${escapeHtml(link.url)}" ADD_DATE="${addDate}">${title}</A>`
     })
     .join('\n')
 

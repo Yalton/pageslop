@@ -56,7 +56,7 @@ async function testConnection(form, permission) {
 	$("ping-result").textContent = "Testing…";
 	if (form.serverUrl === "") {
 		setConnected(false);
-		$("ping-result").textContent = "✗ Enter a valid http(s) server URL";
+		$("ping-result").textContent = "✗ Enter a valid https server URL (http only for localhost)";
 		return;
 	}
 	if (!(await permission)) {

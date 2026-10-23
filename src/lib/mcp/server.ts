@@ -16,6 +16,8 @@ import { deleteLinkTag, linkTagToLink, listTagsWithCount, upsertTag } from '@/li
 import { enqueueScrapeJob } from '@/lib/queue/boss'
 import { decodeCursor } from '@/lib/links/cursor'
 import { toApiLink } from '@/lib/links/api-link'
+import { isHttpUrl } from '@/lib/links/http-url'
+import { MAX_DESCRIPTION_LENGTH, MAX_TAG_NAME_LENGTH } from '@/lib/links/limits'
 import { CATEGORIES, STASH_STATES } from '@/types'
 
 export interface McpAuth {
@@ -46,15 +48,6 @@ function missingScope(auth: McpAuth, scope: TokenScope): CallToolResult | null {
   return fail(
     `Forbidden: this token lacks the "${scope}" scope. Create a Pageslop API token with "${scope}" in Settings and reconnect with it.`,
   )
-}
-
-function isHttpUrl(raw: string): boolean {
-  try {
-    const { protocol } = new URL(raw.trim())
-    return protocol === 'http:' || protocol === 'https:'
-  } catch {
-    return false
-  }
 }
 
 /** Trimmed text, or undefined when absent or blank. */
@@ -208,7 +201,7 @@ export function createMcpServer(auth: McpAuth): McpServer {
     description: 'Edit the description or category, or move a link through the revisit states. Set stashState to null to return it to All Links.',
     inputSchema: {
       id: z.string().min(1).max(100),
-      description: z.string().max(10000).optional(),
+      description: z.string().max(MAX_DESCRIPTION_LENGTH).optional(),
       category: z.enum(CATEGORIES).optional(),
       stashState: z.enum(STASH_STATES).nullable().optional(),
     },
@@ -236,7 +229,7 @@ export function createMcpServer(auth: McpAuth): McpServer {
   server.registerTool('add_link_tag', {
     title: 'Add a tag to a link',
     description: 'Add a user tag to one of your links. The tag name is normalized to lowercase.',
-    inputSchema: { id: z.string().min(1).max(100), name: z.string().trim().min(1).max(50) },
+    inputSchema: { id: z.string().min(1).max(100), name: z.string().trim().min(1).max(MAX_TAG_NAME_LENGTH) },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   }, async ({ id, name }) => {
     const denied = missingScope(auth, 'links:manage')
@@ -256,7 +249,7 @@ export function createMcpServer(auth: McpAuth): McpServer {
   server.registerTool('remove_link_tag', {
     title: 'Remove a tag from a link',
     description: 'Remove a tag by name from one of your links.',
-    inputSchema: { id: z.string().min(1).max(100), name: z.string().trim().min(1).max(50) },
+    inputSchema: { id: z.string().min(1).max(100), name: z.string().trim().min(1).max(MAX_TAG_NAME_LENGTH) },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   }, async ({ id, name }) => {
     const denied = missingScope(auth, 'links:manage')
