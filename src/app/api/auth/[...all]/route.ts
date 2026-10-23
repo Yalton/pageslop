@@ -1,16 +1,15 @@
 import { toNextJsHandler } from 'better-auth/next-js'
 import { auth } from '@/lib/auth/server'
+import { redactAuthPath } from '@/lib/auth/log'
 
 const handler = toNextJsHandler(auth)
 
 export async function GET(req: Request) {
-  const url = new URL(req.url)
-  console.log(`[auth] GET ${url.pathname}${url.search}`)
+  console.log(`[auth] GET ${redactAuthPath(new URL(req.url))}`)
   return handler.GET!(req)
 }
 
 export async function POST(req: Request) {
-  const url = new URL(req.url)
-  console.log(`[auth] POST ${url.pathname}`)
+  console.log(`[auth] POST ${redactAuthPath(new URL(req.url))}`)
   return handler.POST!(req)
 }

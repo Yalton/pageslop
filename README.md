@@ -68,6 +68,7 @@ node --env-file=.env --import tsx src/workers/scrape.worker.ts
 | `BETTER_AUTH_SECRET` | Random 32+ character secret for session signing |
 | `BETTER_AUTH_URL` | Public URL of the app (e.g., `https://pageslop.citreum.com`) |
 | `ENCRYPTION_KEY` | 64-character hex string for AES-256-GCM API key encryption |
+| `TRUSTED_IP_HEADER` | Header(s) holding the client IP for auth rate limiting, comma-separated (e.g. `cf-connecting-ip`, `x-real-ip`). Default `x-forwarded-for`. Set `TRUSTED_PROXIES` to your proxy IPs/CIDRs to resolve a multi-hop `x-forwarded-for` chain |
 | `SMTP_HOST` | SMTP server hostname (default: `smtp.zoho.com`) |
 | `SMTP_PORT` | SMTP port (default: `465`) |
 | `SMTP_USER` | SMTP login email |

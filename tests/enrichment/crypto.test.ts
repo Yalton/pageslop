@@ -64,6 +64,14 @@ describe('encryptApiKey / decryptApiKey / maskApiKey', () => {
     process.env.ENCRYPTION_KEY = savedKey
   })
 
+  it('decryptApiKey throws if ENCRYPTION_KEY is 64 chars but not hex (e.g. a placeholder)', async () => {
+    const { decryptApiKey } = await import('@/lib/enrichment/crypto')
+    const savedKey = process.env.ENCRYPTION_KEY
+    process.env.ENCRYPTION_KEY = 'g'.repeat(64)
+    expect(() => decryptApiKey('fake:beef:cafe')).toThrow(/64-char hex/)
+    process.env.ENCRYPTION_KEY = savedKey
+  })
+
   it("maskApiKey('sk-ant-api03-longkeyvalue') returns 'sk-a...alue' (first 4 + ... + last 4)", async () => {
     const { maskApiKey } = await import('@/lib/enrichment/crypto')
     const result = maskApiKey('sk-ant-api03-longkeyvalue')
