@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Please do not open a public issue for security problems. Report them privately through GitHub's [private vulnerability reporting](https://github.com/Citreum-LLC/pageslop/security/advisories/new).
+Please do not open a public issue for security problems. Report them privately through GitHub's [private vulnerability reporting](https://github.com/Yalton/pageslop/security/advisories/new).
 
 Include the affected version or commit, steps to reproduce, and the impact you expect. You should get a reply within a week. Once a fix is released, we credit reporters who want to be credited.
 
