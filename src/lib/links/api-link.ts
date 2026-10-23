@@ -17,15 +17,17 @@ export interface ApiLink {
   ogImage: string | null
   source: string
   stashState: string | null
+  stashedAt: string | null
   tags: string[]
   createdAt: string
   updatedAt: string
 }
 
 /** A link row, with or without tags (a freshly inserted link has none yet). */
-type LinkInput = Omit<ApiLink, 'tags' | 'createdAt' | 'updatedAt'> & {
+type LinkInput = Omit<ApiLink, 'tags' | 'createdAt' | 'updatedAt' | 'stashedAt'> & {
   createdAt: Date | string
   updatedAt: Date | string
+  stashedAt?: Date | string | null
   tags?: Pick<LinkWithTags['tags'][number], 'name'>[]
 }
 
@@ -42,6 +44,7 @@ export function toApiLink(link: LinkInput): ApiLink {
     ogImage: link.ogImage,
     source: link.source,
     stashState: link.stashState,
+    stashedAt: link.stashedAt ? new Date(link.stashedAt).toISOString() : null,
     tags: (link.tags ?? []).map((t) => t.name),
     createdAt: new Date(link.createdAt).toISOString(),
     updatedAt: new Date(link.updatedAt).toISOString(),

@@ -10,8 +10,12 @@ export async function GET(req: Request): Promise<Response> {
   const authed = await requireScope(req, 'links:read')
   if (authed instanceof Response) return authed
 
+  const view = new URL(req.url).searchParams.get('view') ?? 'saved'
+  if (view !== 'saved' && view !== 'all' && view !== 'revisit') {
+    return jsonError(400, 'view must be saved, all, or revisit')
+  }
   try {
-    const tags = await listTagsWithCount(authed.userId)
+    const tags = await listTagsWithCount(authed.userId, view)
     return Response.json({ tags })
   } catch (err) {
     console.error('[api/v1/tags] listTagsWithCount failed', err)

@@ -17,8 +17,9 @@ and `DELETE` return `405`.
 The endpoint uses the same `ps_` API tokens as the [REST API](api.md). Create
 one in **Settings → Browser Extension → API tokens** and give it:
 
-- `links:read` to search, read and list tags
+- `links:read` to search saved links, revisit items and tags
 - `links:write` as well if the agent should save links
+- `links:manage` if it should edit, tag or delete links
 
 Send it on every request:
 
@@ -85,14 +86,16 @@ the same [link object](api.md#link-object) as the REST API.
 
 ### `search_links` (links:read)
 
-Lists links newest first, the same set as the app's All Links view and
-`GET /api/v1/links`.
+Lists links newest first. The default view matches the app's All Links view
+and `GET /api/v1/links`; choose another view to include To Revisit or archived
+links.
 
 | Argument | Description |
 | -------- | ----------- |
 | `q`      | Case-insensitive substring match on title, URL or description |
 | `tag`    | Only links with this tag (case-insensitive) |
 | `domain` | Only links from this domain (`www.` is ignored) |
+| `view`   | `saved` (default), `revisit`, `all`, `inbox`, `read`, `kept` or `archived` |
 | `limit`  | Page size, 1 to 100. Default 20 |
 | `cursor` | `nextCursor` from a previous result, passed back unchanged |
 
@@ -106,8 +109,9 @@ exist or belongs to another user.
 
 ### `list_tags` (links:read)
 
-No arguments. Returns `{ "tags": [ { "name": "rust", "count": 3 } ] }`,
-alphabetical, counting links in the All Links view.
+Optional `view` argument: `saved` (default), `all`, or `revisit`. Returns
+`{ "tags": [ { "name": "rust", "count": 3 } ] }`, alphabetical, counting
+links in that view.
 
 ### `save_link` (links:write)
 
@@ -120,6 +124,22 @@ Saves the link and queues it for scraping and enrichment, exactly like
 `POST /api/v1/links`. Returns `{ "link": { ... }, "duplicate": false }`. If
 the URL (in canonical form) is already saved, returns the existing link with
 `"duplicate": true` and changes nothing.
+
+### `update_link` (links:manage)
+
+Argument `id` plus at least one of `description`, `category` or `stashState`.
+Use `stashState: "inbox"` to add a link to To Revisit, `"read"` to mark it
+visited, `"kept"` to keep it in All Links, `"archived"` to archive it, or
+`null` to clear its stash state. Returns the updated `{ "link": { ... } }`.
+
+### `add_link_tag` and `remove_link_tag` (links:manage)
+
+Arguments `id` and `name` (1–50 characters). Add or remove a tag on the
+specified link. Returns the updated `{ "link": { ... } }`.
+
+### `delete_link` (links:manage)
+
+Argument `id`. Permanently deletes the link. Returns `{ "deleted": true }`.
 
 ## Testing by hand
 

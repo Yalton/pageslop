@@ -47,9 +47,13 @@ export async function GET(req: Request): Promise<Response> {
   // Tags are stored lowercase; domains lowercase without a leading www.
   const tag = param(url, 'tag')?.toLowerCase()
   const domain = param(url, 'domain')?.toLowerCase().replace(/^www\./, '')
+  const view = param(url, 'view') ?? 'saved'
+  if (!['saved', 'all', 'revisit', 'inbox', 'read', 'kept', 'archived'].includes(view)) {
+    return jsonError(400, 'view must be saved, all, revisit, inbox, read, kept, or archived')
+  }
 
   try {
-    const page = await listLinksPage(authed.userId, { q: param(url, 'q'), tag, domain, limit, cursor })
+    const page = await listLinksPage(authed.userId, { q: param(url, 'q'), tag, domain, view: view as 'saved' | 'all' | 'revisit' | 'inbox' | 'read' | 'kept' | 'archived', limit, cursor })
     return Response.json({ links: page.links.map(toApiLink), nextCursor: page.nextCursor })
   } catch (err) {
     console.error('[api/v1/links] listLinksPage failed', err)

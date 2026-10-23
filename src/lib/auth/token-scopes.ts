@@ -4,11 +4,12 @@
  *
  * - stash:       POST /api/stash and GET /api/stash/ping (browser extension)
  * - links:read:  GET /api/v1/links, /api/v1/links/:id, /api/v1/tags (and MCP search_links, get_link, list_tags)
- * - links:write: POST /api/v1/links (and MCP save_link)
+ * - links:write: save links (and MCP save_link)
+ * - links:manage: edit, tag and delete links (and corresponding MCP tools)
  *
  * Tokens created before scopes existed have ['stash'] (the column default).
  */
-export const TOKEN_SCOPES = ['stash', 'links:read', 'links:write'] as const
+export const TOKEN_SCOPES = ['stash', 'links:read', 'links:write', 'links:manage'] as const
 
 export type TokenScope = (typeof TOKEN_SCOPES)[number]
 
@@ -18,6 +19,7 @@ export const TOKEN_SCOPE_LABELS: Record<TokenScope, string> = {
   stash: 'Browser extension (stash tabs)',
   'links:read': 'Read links and tags (API)',
   'links:write': 'Save links (API)',
+  'links:manage': 'Edit, tag and delete links (API)',
 }
 
 export function isTokenScope(value: unknown): value is TokenScope {

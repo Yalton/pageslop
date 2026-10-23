@@ -1,6 +1,6 @@
 # Pageslop REST API (v1)
 
-A small JSON API for reading and saving your links from scripts and other
+A JSON API for reading and managing your links from scripts and other
 services. Every request is scoped to the user who owns the token.
 
 Base URL: your Pageslop server, e.g. `https://pageslop.example.com`. All
@@ -21,11 +21,14 @@ Authorization: Bearer ps_...
 | Scope         | Allows                                                     |
 | ------------- | ---------------------------------------------------------- |
 | `stash`       | `POST /api/stash`, `GET /api/stash/ping` (browser extension) |
-| `links:read`  | `GET /api/v1/links`, `GET /api/v1/links/:id`, `GET /api/v1/tags` |
-| `links:write` | `POST /api/v1/links`                                       |
+| `links:read`  | List and read links and tags |
+| `links:write` | Save links |
+| `links:manage` | Edit, tag and delete links |
 
 Tokens created before scopes existed have only `stash`, so they keep working
 for the extension but cannot use `/api/v1`. Create a new token for API use.
+Existing `links:write` tokens remain save-only; create a new token with
+`links:manage` to allow edits and deletion.
 
 Revoking a token in Settings takes effect immediately.
 
@@ -54,12 +57,13 @@ Errors are JSON with a single `error` string:
   "title": "A post",
   "description": "Summary from the page or enrichment",
   "domain": "example.com",
-  "category": "Tech",
+  "category": "Technology",
   "status": "ready",
   "favicon": "https://example.com/favicon.ico",
   "ogImage": null,
   "source": "manual",
   "stashState": null,
+  "stashedAt": null,
   "tags": ["rust", "databases"],
   "createdAt": "2026-10-16T12:00:00.000Z",
   "updatedAt": "2026-10-16T12:00:05.000Z"
@@ -70,7 +74,9 @@ Errors are JSON with a single `error` string:
 - `source`: `manual`, `import` or `stash`.
 - `stashState`: `null` for an ordinary saved link; for a stashed tab one of
   `inbox`, `read`, `kept` or `archived`. The list endpoint returns only `null`
-  and `kept` links; the single-link and save endpoints can return any.
+  and `kept` links by default; use `view` to access every state.
+- `stashedAt`: when the link was last stashed, or `null`. Links in `inbox` or
+  `read` are the To Revisit queue.
 
 ## Endpoints
 
@@ -84,6 +90,7 @@ Links view shows (stashed tabs still in To Revisit are left out).
 | `q`      | Case-insensitive substring match on title, URL or description |
 | `tag`    | Only links with this tag (case-insensitive) |
 | `domain` | Only links from this domain (`www.` is ignored) |
+| `view`   | `saved` (default; All Links), `revisit` (`inbox` and `read`), `all`, or one of `inbox`, `read`, `kept`, `archived` |
 | `limit`  | Page size, 1 to 200. Default 50 |
 | `cursor` | `nextCursor` from the previous page, passed back unchanged |
 
@@ -160,7 +167,8 @@ curl -s -X POST \
 
 Scope `links:read`. Your tags, alphabetical, with how many links (in the
 All Links view, matching `GET /api/v1/links?tag=`) carry each. Tags on no
-such link are left out.
+such link are left out. Set `view=all` to include tags on every link, or
+`view=revisit` to count only the To Revisit queue.
 
 ```json
 { "tags": [ { "name": "databases", "count": 12 }, { "name": "rust", "count": 3 } ] }
@@ -171,8 +179,34 @@ curl -s -H "Authorization: Bearer $PAGESLOP_TOKEN" \
   https://pageslop.example.com/api/v1/tags
 ```
 
+### `PATCH /api/v1/links/:id`
+
+Scope `links:manage`. Supply at least one of `description` (string, at most
+10,000 characters), `category` (one of the app's categories), or `stashState`
+(`inbox`, `read`, `kept`, `archived`, or `null`). A hand-picked category is
+preserved through later enrichment. Moving a link to `inbox` restarts its
+revisit expiry clock; moving it to `read` starts the clock if it has none.
+Returns `{ "link": { ... } }`. Unknown or another user's id returns 404.
+
+### `POST /api/v1/links/:id/tags`
+
+Scope `links:manage`. Send `{ "name": "research" }` (1–50 characters). Adds
+the lowercase tag to this link, creating it if needed. Repeating the call is
+safe. Returns the updated `{ "link": { ... } }`.
+
+### `DELETE /api/v1/links/:id/tags/:name`
+
+Scope `links:manage`. Removes a tag from this link by name, case-insensitively.
+URL-encode names containing spaces or special characters. Returns the updated
+`{ "link": { ... } }`. A missing link or tag returns 404.
+
+### `DELETE /api/v1/links/:id`
+
+Scope `links:manage`. Permanently deletes the link and its tag associations.
+Returns `{ "deleted": true }`; a missing link returns 404.
+
 ## MCP server for AI agents
 
 The same tokens and scopes work with Pageslop's Model Context Protocol
-endpoint at `/api/mcp`, so agents such as Claude Code can search and save
-your links. See [mcp.md](mcp.md).
+endpoint at `/api/mcp`, so agents can search and manage links directly.
+See [mcp.md](mcp.md).
