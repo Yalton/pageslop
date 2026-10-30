@@ -93,6 +93,15 @@ docker compose up -d --build
 
 Schema changes are applied automatically when the app container starts.
 
+Versions before 2026-10-23 let the paste box save links with any URL scheme (`javascript:`, `data:` and so on). The app no longer opens those, but they can still sit in the database. To list them, then delete them:
+
+```bash
+docker compose exec db psql -U pageslop pageslop -c "select id, url from links where url !~* '^https?://'"
+docker compose exec db psql -U pageslop pageslop -c "delete from links where url !~* '^https?://'"
+```
+
+Outside Docker, `node --env-file=.env scripts/non-http-links.mjs` lists them and `--delete` deletes them.
+
 ### Backups
 
 All state lives in PostgreSQL plus the `screenshots` volume. To dump the database:
