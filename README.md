@@ -141,7 +141,7 @@ cp .env.example .env
 # postgresql://pageslop:pageslop@localhost:5432/pageslop, set BETTER_AUTH_URL=http://localhost:3000,
 # and fill in BETTER_AUTH_SECRET and ENCRYPTION_KEY.
 
-npm run db:push       # create the schema
+npm run db:migrate    # create the schema
 npm run dev           # web app on http://localhost:3000
 npm run worker        # background worker, in a second terminal
 ```

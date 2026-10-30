@@ -1,12 +1,12 @@
 #!/bin/sh
 set -e
 
-# Only the service with RUN_MIGRATIONS=1 (app) pushes the schema; others wait
-# for it via depends_on so concurrent pushes can't race.
+# Only the service with RUN_MIGRATIONS=1 (app) migrates; others wait for it
+# via depends_on so concurrent runs can't race. A failed migration stops the
+# container instead of starting the app on a half-migrated schema.
 if [ "${RUN_MIGRATIONS:-}" = "1" ]; then
-  # Push database schema (idempotent — safe to run on every start)
-  echo "[entrypoint] Pushing database schema..."
-  node ./node_modules/.bin/drizzle-kit push --force 2>&1 || echo "[entrypoint] WARNING: schema push failed (may already be up to date)"
+  echo "[entrypoint] Applying database migrations..."
+  node ./scripts/migrate.mjs
 fi
 
 # Run the original command

@@ -18,7 +18,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # --- Production dependencies (runtime image only) ---
-# tsx (worker) and drizzle-kit (entrypoint schema push) are regular
+# tsx (worker) and drizzle-orm/pg (entrypoint migrations) are regular
 # dependencies so they survive --omit=dev.
 FROM base AS prod-deps
 WORKDIR /app
@@ -51,7 +51,7 @@ COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Production node_modules for the worker and drizzle-kit, no devDependencies
+# Production node_modules for the worker and migrations, no devDependencies
 COPY --from=prod-deps /app/node_modules ./node_modules
 
 # Copy worker source + libs it imports
@@ -59,8 +59,9 @@ COPY --from=builder /app/src/workers ./src/workers
 COPY --from=builder /app/src/lib ./src/lib
 COPY --from=builder /app/src/types ./src/types
 
-# Copy drizzle config for db:push
-COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+# Committed migrations and the script the entrypoint runs to apply them
+COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/scripts/migrate.mjs ./scripts/migrate.mjs
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 # Copy entrypoint script
