@@ -5,6 +5,7 @@ import {
 	normalizeSettings,
 	saveSettings,
 	serverOrigin,
+	hostPermissionPattern,
 } from "../../extension/settings.js";
 
 function fakeStorage(initial: Record<string, unknown> = {}) {
@@ -264,6 +265,23 @@ describe("serverOrigin", () => {
 	it("returns empty for empty or invalid input", () => {
 		expect(serverOrigin("")).toBe("");
 		expect(serverOrigin("nope")).toBe("");
+	});
+});
+
+describe("hostPermissionPattern", () => {
+	it.each([
+		["https://slop.example.org/sub", "https://slop.example.org/*"],
+		["https://slop.example.org:8443", "https://slop.example.org/*"],
+		["http://localhost:3847", "http://localhost/*"],
+		["http://127.0.0.1:3000/", "http://127.0.0.1/*"],
+		["http://[::1]:3000", "http://[::1]/*"],
+	])("leaves the port out of %s", (url, pattern) => {
+		expect(hostPermissionPattern(url)).toBe(pattern);
+	});
+
+	it("returns empty for empty or invalid input", () => {
+		expect(hostPermissionPattern("")).toBe("");
+		expect(hostPermissionPattern("nope")).toBe("");
 	});
 });
 

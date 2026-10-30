@@ -129,6 +129,19 @@ export function serverOrigin(serverUrl) {
 	}
 }
 
+// Host permission pattern for the server. Firefox accepts a pattern with a
+// port and reports it as granted, but requests to that port still fail as
+// cross-origin, so the pattern names the host without its port.
+export function hostPermissionPattern(serverUrl) {
+	if (typeof serverUrl !== "string" || serverUrl === "") return "";
+	try {
+		const url = new URL(serverUrl);
+		return `${url.protocol}//${url.hostname}/*`;
+	} catch {
+		return "";
+	}
+}
+
 export async function loadSettings(storageArea) {
 	return normalizeSettings(await storageArea.get(null));
 }

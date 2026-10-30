@@ -175,7 +175,7 @@ Pinned, active, audible and private-window tabs, kept tabs, non-http pages and y
 
 Sweeps run every 5 minutes. The popup can also stash on demand, stash the current tab, pause for an hour, or exclude the current domain. Stashed items you don't act on are archived after `STASH_EXPIRE_DAYS` days (default 14). Nothing is deleted. On Firefox for Android the extension needs version 142 or later.
 
-The extension talks only to the server URL you configure, and asks for host permission for that origin alone.
+The extension talks only to the server URL you configure, and asks for host permission for that server's host alone (all ports, because Firefox does not honour a permission limited to one port).
 
 ### Load it for development
 

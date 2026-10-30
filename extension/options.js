@@ -1,10 +1,10 @@
 import { ping } from "./api.js";
 import { selectTabsToStash } from "./select-tabs.js";
 import {
+	hostPermissionPattern,
 	loadSettings,
 	normalizeSettings,
 	saveSettings,
-	serverOrigin,
 } from "./settings.js";
 
 const storage = browser.storage.local;
@@ -39,9 +39,9 @@ function setConnected(ok) {
 
 // permissions.request() only works during a user gesture, so this must be called
 // synchronously from a click handler, before anything is awaited.
-function requestHostPermission(origin) {
-	if (origin === "") return Promise.resolve(false);
-	return browser.permissions.request({ origins: [`${origin}/*`] });
+function requestHostPermission(pattern) {
+	if (pattern === "") return Promise.resolve(false);
+	return browser.permissions.request({ origins: [pattern] });
 }
 
 async function showPing(form) {
@@ -99,7 +99,7 @@ function failed(target) {
 
 $("test").addEventListener("click", () => {
 	const form = normalizeSettings(readForm());
-	const permission = requestHostPermission(serverOrigin(form.serverUrl));
+	const permission = requestHostPermission(hostPermissionPattern(form.serverUrl));
 	testConnection(form, permission).catch((error) => {
 		setConnected(false);
 		failed("ping-result")(error);
@@ -108,9 +108,9 @@ $("test").addEventListener("click", () => {
 
 $("save").addEventListener("click", () => {
 	const raw = readForm();
-	const origin = serverOrigin(normalizeSettings(raw).serverUrl);
+	const pattern = hostPermissionPattern(normalizeSettings(raw).serverUrl);
 	const permission =
-		origin === "" ? Promise.resolve(true) : requestHostPermission(origin);
+		pattern === "" ? Promise.resolve(true) : requestHostPermission(pattern);
 	save(raw, permission).catch(failed("save-result"));
 });
 
@@ -146,10 +146,12 @@ async function init() {
 	const settings = await loadSettings(storage);
 	fillForm(settings);
 	setConnected(false);
-	const origin = serverOrigin(settings.serverUrl);
-	if (origin === "" || settings.token === "") return;
+	const pattern = hostPermissionPattern(settings.serverUrl);
+	if (pattern === "" || settings.token === "") return;
 	// No user gesture here, so only check for an existing grant; never request one.
-	if (await browser.permissions.contains({ origins: [`${origin}/*`] }))
+	// A grant from before 0.3.3 named the port and no longer counts, so those
+	// installs show "not connected" until Test connection is clicked again.
+	if (await browser.permissions.contains({ origins: [pattern] }))
 		await showPing(settings);
 }
 
