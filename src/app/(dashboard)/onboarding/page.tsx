@@ -63,7 +63,7 @@ export default function OnboardingPage() {
 
           <button
             type="button"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/dashboard')}
             className="text-muted-foreground text-sm underline-offset-4 hover:underline"
           >
             Skip for now

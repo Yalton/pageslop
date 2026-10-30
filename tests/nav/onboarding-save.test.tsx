@@ -46,6 +46,14 @@ describe('onboarding save', () => {
     expect(push).not.toHaveBeenCalled()
   })
 
+  it('skips straight to the dashboard', async () => {
+    const user = userEvent.setup()
+    render(<OnboardingPage />)
+    await user.click(screen.getByRole('button', { name: 'Skip for now' }))
+    expect(push).toHaveBeenCalledWith('/dashboard')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('goes to the dashboard when the save succeeds', async () => {
     fetchMock.mockResolvedValue(new Response('{"saved":[]}', { status: 201 }))
     await submit('https://example.com')
