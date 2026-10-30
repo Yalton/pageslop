@@ -32,7 +32,7 @@ function hasNoDotSegments(pathname: string): boolean {
   return !decoded.split(/[/\\]/).some((segment) => segment === '.' || segment === '..')
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Allow public paths

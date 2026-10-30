@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { NextRequest } from 'next/server'
-import { middleware } from '@/middleware'
+import { proxy } from '@/proxy'
 
 const COOKIE = { cookie: 'better-auth.session_token=abc' }
 
 function run(path: string, method: string, headers: Record<string, string> = {}) {
-  return middleware(new NextRequest(`http://localhost:3000${path}`, { method, headers }))
+  return proxy(new NextRequest(`http://localhost:3000${path}`, { method, headers }))
 }
 
 afterEach(() => vi.unstubAllEnvs())

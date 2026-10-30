@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { NextRequest } from 'next/server'
-import { middleware } from '@/middleware'
+import { proxy } from '@/proxy'
 
 function run(path: string, method = 'GET') {
-  return middleware(new NextRequest(`http://localhost${path}`, { method }))
+  return proxy(new NextRequest(`http://localhost${path}`, { method }))
 }
 
 describe('middleware /api/v1 bypass', () => {

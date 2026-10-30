@@ -4,7 +4,7 @@
  * requests whose Origin is not this app, which covers same-site subdomains
  * and browsers that treat cookies without SameSite as None.
  *
- * Runs in middleware (edge runtime), so it uses only Web APIs.
+ * Runs in the proxy (src/proxy.ts) and uses only Web APIs.
  */
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
