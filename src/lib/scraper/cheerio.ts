@@ -3,6 +3,7 @@ import { safeFetch } from '../net/ssrf-guard'
 import { resolveAssetUrl } from './resolve-asset-url'
 import { readLimited } from '../net/read-limited'
 import { MAX_SCRAPED_DESCRIPTION_LENGTH, MAX_TITLE_LENGTH, truncateText } from '../links/limits'
+import { extractDescription } from '../enrichment/describe'
 
 /** Most of a page's body read for metadata; <head> tags come first, so 2 MB is plenty. */
 export const MAX_HTML_BYTES = 2 * 1024 * 1024
@@ -53,6 +54,7 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
 
   const description = truncateText($('meta[property="og:description"]').attr('content')
     || $('meta[name="description"]').attr('content')
+    || firstParagraph($)
     || '', MAX_SCRAPED_DESCRIPTION_LENGTH)
 
   // Try multiple image meta tags in priority order
@@ -108,6 +110,27 @@ function extractBodyText($: cheerio.CheerioAPI): string | null {
   }
   walk($('body').toArray())
   return parts.join(' ').replace(/\s+/g, ' ').trim().slice(0, BODY_TEXT_MAX) || null
+}
+
+/** Shortest text that counts as a real paragraph, not a caption or button label. */
+const MIN_PARAGRAPH_CHARS = 60
+
+/**
+ * For pages with no meta description (Wikipedia, many docs sites): the first
+ * real <p> in the main content, citation markers removed, cut at a sentence
+ * boundary. Reading <p> elements skips skip links, taglines and hatnotes that
+ * would otherwise lead the body text.
+ */
+function firstParagraph($: cheerio.CheerioAPI): string {
+  const scope = $('main, [role="main"], article').first()
+  const paragraphs = (scope.length ? scope : $('body')).find('p').toArray()
+  for (const p of paragraphs) {
+    const el = $(p).clone()
+    el.find('sup, style, script').remove()
+    const text = el.text().replace(/\s+/g, ' ').trim()
+    if (text.length >= MIN_PARAGRAPH_CHARS) return extractDescription(text)
+  }
+  return ''
 }
 
 /** Body text from stored HTML, extracted the same way scrapeUrl does it. */

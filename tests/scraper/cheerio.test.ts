@@ -37,6 +37,32 @@ describe('scrapeUrl', () => {
     expect(result.ogImage).toBe('https://example.com/img.jpg')
   })
 
+  it('falls back to the first article paragraph when the page has no meta description', async () => {
+    // Trimmed from a Wikipedia article: skip link, tagline, hatnote, empty paragraph, citation
+    const html = `<html><head><title>Bauhaus - Wikipedia</title></head><body>
+      <a class="mw-jump-link" href="#bodyContent">Jump to content</a>
+      <nav><ul><li>Main page</li></ul></nav>
+      <main id="content">
+        <h1>Bauhaus</h1>
+        <div id="siteSub">From Wikipedia, the free encyclopedia</div>
+        <div class="hatnote">For other uses, see Bauhaus (disambiguation).</div>
+        <p class="mw-empty-elt"></p>
+        <p>The <b>Staatliches Bauhaus</b>, commonly known as the Bauhaus, was a German art school operational from 1919 to 1933 that combined crafts and the fine arts.<sup class="reference">[1]</sup> The school became famous for its approach to design.</p>
+      </main></body></html>`
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
+
+    const result = await scrapeUrl('https://en.wikipedia.org/wiki/Bauhaus')
+    expect(result.description).toMatch(/^The Staatliches Bauhaus, commonly known as the Bauhaus/)
+    expect(result.description).not.toContain('[1]')
+    expect(result.description).not.toContain('Jump to content')
+  })
+
+  it('leaves the description empty when the page has no meta description or real paragraph', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('<html><body><p>Hi</p><div>Some loose text that is not a paragraph at all here</div></body></html>'))
+    const result = await scrapeUrl('https://example.com')
+    expect(result.description).toBe('')
+  })
+
   it('caps the scraped title at 500 and the description at 2000 characters', async () => {
     const html = `<html><head><title>${'t'.repeat(5000)}</title>
       <meta name="description" content="${'d'.repeat(50000)}" /></head><body></body></html>`
