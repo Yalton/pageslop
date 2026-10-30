@@ -90,6 +90,41 @@ typography:
     fontSize: "0.75rem"
     fontWeight: 600
     lineHeight: 1.33
+  micro:
+    fontFamily: "Source Sans 3, system-ui, sans-serif"
+    fontSize: "9px"
+    fontWeight: 700
+  hero-sm:
+    fontFamily: "Zilla Slab, Rockwell, serif"
+    fontSize: "40px"
+    fontWeight: 700
+    lineHeight: 1.02
+    letterSpacing: "-0.02em"
+  hero-md:
+    fontFamily: "Zilla Slab, Rockwell, serif"
+    fontSize: "56px"
+    fontWeight: 700
+    lineHeight: 1.02
+    letterSpacing: "-0.02em"
+  hero:
+    fontFamily: "Zilla Slab, Rockwell, serif"
+    fontSize: "64px"
+    fontWeight: 700
+    lineHeight: 1.02
+    letterSpacing: "-0.02em"
+  section:
+    fontFamily: "Zilla Slab, Rockwell, serif"
+    fontSize: "32px"
+    fontWeight: 700
+    lineHeight: 1.1
+  feature-title:
+    fontFamily: "Zilla Slab, Rockwell, serif"
+    fontSize: "21px"
+    fontWeight: 700
+  lede:
+    fontFamily: "Source Sans 3, system-ui, sans-serif"
+    fontSize: "19px"
+    fontWeight: 400
 rounded:
   sm: "2px"
   md: "4px"
@@ -225,6 +260,14 @@ A neutral graphite (or warm off-white) instrument with a single ink-blue accent;
 - **Body Small** (400, 13.5px, 1.375): card descriptions, muted, clamped to two lines.
 - **Control** (600, 0.875rem): buttons and nav items.
 - **Label** (600, 0.75rem): tab domain, category label, tag pills, counts. Sentence case; no tracking, no uppercase.
+- **Micro** (700, 9px): the initial letter in a 14px favicon placeholder on a card tab.
+
+The landing page (`src/app/page.tsx`) is a marketing surface and adds larger steps:
+
+- **Hero** (700, 40px on phones, 56px from 640px, 64px from 1024px, line-height 1.02, -0.02em): the one headline.
+- **Section** (700, 32px, 1.1): section headings.
+- **Feature title** (700, 21px): headings inside the three index-card blocks.
+- **Lede** (400, 19px from 640px, 1.125rem below): the paragraph under the hero headline.
 
 ### Named Rules
 **The Slab Names Things Rule.** Zilla Slab is for names only: page headings, card titles, group headings, tag names and the wordmark. Metadata, controls and body text stay in Source Sans 3.

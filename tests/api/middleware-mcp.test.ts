@@ -31,3 +31,9 @@ describe('middleware /api/mcp bypass', () => {
     expect(run(path).status).toBe(307)
   })
 })
+
+describe('middleware landing images', () => {
+  it('serves the landing page images without a session cookie', () => {
+    expect(run('/landing/youtube.png').headers.get('x-middleware-next')).toBe('1')
+  })
+})
