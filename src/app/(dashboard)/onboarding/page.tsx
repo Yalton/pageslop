@@ -17,12 +17,13 @@ export default function OnboardingPage() {
 
     setIsLoading(true)
     try {
-      await fetch('/api/links', {
+      const res = await fetch('/api/links', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ urls: url }),
       })
-      router.push('/')
+      if (!res.ok) throw new Error(`Save failed with ${res.status}`)
+      router.push('/dashboard')
     } catch {
       toast.error("Couldn't save that link. Check the URL and try again.")
     } finally {
