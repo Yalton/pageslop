@@ -59,7 +59,7 @@ Errors are JSON with a single `error` string:
   "domain": "example.com",
   "category": "Technology",
   "status": "ready",
-  "favicon": "https://example.com/favicon.ico",
+  "favicon": "/api/images/6f1c0e8e-1f7a-4a53-9a86-0c9b1b2f7e11/favicon",
   "ogImage": null,
   "source": "manual",
   "stashState": null,
@@ -71,6 +71,11 @@ Errors are JSON with a single `error` string:
 ```
 
 - `status`: `pending` (just saved, not scraped yet), `ready` or `error`.
+- `favicon`, `ogImage`: paths on your Pageslop server, or `null`. The worker
+  downloads each page's icon and preview image once and serves its own copy
+  (`/api/images/...`), or a screenshot (`/api/screenshots/...`) when the page
+  has no preview image. Fetching them needs a signed-in browser session, not
+  an API token.
 - `source`: `manual`, `import` or `stash`.
 - `stashState`: `null` for an ordinary saved link; for a stashed tab one of
   `inbox`, `read`, `kept` or `archived`. The list endpoint returns only `null`

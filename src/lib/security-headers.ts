@@ -3,8 +3,9 @@
 // Next's App Router streams its payload through inline <script> tags, so
 // script-src needs 'unsafe-inline' unless every page renders dynamically with a
 // nonce; the policy still blocks scripts from other origins, plugins, framing
-// and form posts elsewhere. Link cards show favicons and preview images from
-// the sites users save, so img-src allows any http(s) origin.
+// and form posts elsewhere. The worker caches link favicons and preview images
+// (see image-cache.ts), so img-src needs no outside origin and a viewer's
+// browser never contacts the sites users save.
 
 export interface Header {
   key: string
@@ -17,7 +18,7 @@ export function contentSecurityPolicy(dev: boolean): string {
     // React's dev overlay and fast refresh evaluate code at runtime.
     'script-src': ["'self'", "'unsafe-inline'", ...(dev ? ["'unsafe-eval'"] : [])],
     'style-src': ["'self'", "'unsafe-inline'"],
-    'img-src': ["'self'", 'data:', 'blob:', 'https:', 'http:'],
+    'img-src': ["'self'", 'data:', 'blob:'],
     'font-src': ["'self'", 'data:'],
     'connect-src': ["'self'", ...(dev ? ['ws:'] : [])],
     'worker-src': ["'self'", 'blob:'],

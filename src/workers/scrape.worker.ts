@@ -1,6 +1,7 @@
 import { PgBoss } from 'pg-boss'
 import { scrapeUrl } from '../lib/scraper/cheerio'
 import { screenshotUrl } from '../lib/scraper/screenshot'
+import { isRemoteImageUrl, localiseLinkImages } from '../lib/scraper/image-cache'
 import { checkUrl } from '../lib/monitor/check-url'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
@@ -89,6 +90,34 @@ async function upgradeLegacyApiKeys() {
   if (rows.length > 0) console.log(`[worker] re-encrypted ${upgraded} of ${rows.length} legacy API key(s)`)
 }
 
+/**
+ * Queue an image-cache job for every link whose og:image or favicon still
+ * points at another site (links saved before images were cached). Runs once
+ * at startup; once cached, a link no longer matches.
+ */
+async function backfillImageCache() {
+  const rows = await db.execute<{ id: string }>(sql`
+    SELECT id FROM links
+    WHERE og_image ~* '^https?://' OR favicon ~* '^https?://'
+  `)
+  const linkIds = rows.rows.map((r) => r.id)
+  if (linkIds.length === 0) return
+  console.log(`[worker] backfill: queuing ${linkIds.length} links for image caching`)
+
+  const BATCH_SIZE = 50
+  for (let i = 0; i < linkIds.length; i += BATCH_SIZE) {
+    await boss.insert(
+      'cache-images',
+      linkIds.slice(i, i + BATCH_SIZE).map((linkId) => ({
+        data: { linkId },
+        retryLimit: 1,
+        retryDelay: 60,
+        expireInSeconds: 120,
+      })),
+    )
+  }
+}
+
 async function main() {
   await upgradeLegacyApiKeys()
   await boss.start()
@@ -98,7 +127,8 @@ async function main() {
   await boss.createQueue('monitor-sweep')
   await boss.createQueue('monitor')
   await boss.createQueue('stash-expire')
-  console.log('[worker] pg-boss started, listening for scrape, enrich, screenshot, monitor-sweep, monitor, and stash-expire jobs...')
+  await boss.createQueue('cache-images')
+  console.log('[worker] pg-boss started, listening for scrape, enrich, screenshot, cache-images, monitor-sweep, monitor, and stash-expire jobs...')
 
   // Register 24-hour cron for monitor sweep at 02:00 UTC (pg-boss upserts on restart)
   await boss.schedule('monitor-sweep', '0 2 * * *', {}, { tz: 'UTC' })
@@ -108,6 +138,7 @@ async function main() {
 
   // Run backfill for un-enriched links
   await backfillEnrichment()
+  await backfillImageCache()
 
   await boss.work<{ linkId: string; url: string; importJobId?: string }>('scrape', { localConcurrency: 5 }, async ([job]) => {
     const { linkId, url, importJobId } = job.data!
@@ -115,14 +146,16 @@ async function main() {
 
     try {
       const result = await scrapeUrl(url)
+      // Serve images from Pageslop, so viewers never contact the saved site
+      const images = await localiseLinkImages(linkId, { ogImage: result.ogImage, favicon: result.favicon })
 
       // Update link with scraped metadata
       await db.update(schema.links)
         .set({
           title: result.title || null,
           description: result.description || null,
-          ogImage: result.ogImage,
-          favicon: result.favicon,
+          ogImage: images.ogImage,
+          favicon: images.favicon,
           status: 'ready',
           updatedAt: new Date(),
         })
@@ -144,8 +177,8 @@ async function main() {
         expireInSeconds: 120,
       })
 
-      // Chain screenshot job if no og:image was found
-      if (!result.ogImage) {
+      // Chain screenshot job if no og:image was found or it could not be cached
+      if (!images.ogImage) {
         await boss.send('screenshot', { linkId, url }, {
           retryLimit: 1,
           retryDelay: 30,
@@ -314,6 +347,27 @@ async function main() {
         .where(eq(schema.links.id, linkId))
       console.log(`[worker] screenshot saved for link ${linkId}`)
     }
+  })
+
+  // cache-images: replace a link's remote og:image and favicon with cached copies
+  await boss.work<{ linkId: string }>('cache-images', { localConcurrency: 3 }, async ([job]) => {
+    const { linkId } = job.data!
+    const [link] = await db
+      .select({ url: schema.links.url, ogImage: schema.links.ogImage, favicon: schema.links.favicon })
+      .from(schema.links)
+      .where(eq(schema.links.id, linkId))
+      .limit(1)
+    if (!link || (!isRemoteImageUrl(link.ogImage) && !isRemoteImageUrl(link.favicon))) return
+
+    const images = await localiseLinkImages(linkId, { ogImage: link.ogImage, favicon: link.favicon })
+    await db.update(schema.links)
+      .set({ ...images, updatedAt: new Date() })
+      .where(eq(schema.links.id, linkId))
+
+    if (isRemoteImageUrl(link.ogImage) && !images.ogImage) {
+      await boss.send('screenshot', { linkId, url: link.url }, { retryLimit: 1, retryDelay: 30, expireInSeconds: 60 })
+    }
+    console.log(`[worker] cached images for link ${linkId}: og=${images.ogImage ? 'yes' : 'no'}, favicon=${images.favicon ? 'yes' : 'no'}`)
   })
 
   // monitor-sweep: fan out per-link monitor jobs on a 24-hour cron

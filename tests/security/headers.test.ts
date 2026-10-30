@@ -27,8 +27,8 @@ describe('contentSecurityPolicy', () => {
     expect(directive(policy, 'connect-src')).toContain('ws:')
   })
 
-  it('lets link cards show images from any site', () => {
-    expect(directive(contentSecurityPolicy(false), 'img-src')).toEqual(expect.arrayContaining(['https:', 'http:', 'data:']))
+  it('loads images only from the app itself', () => {
+    expect(directive(contentSecurityPolicy(false), 'img-src')).toEqual(["'self'", 'data:', 'blob:'])
   })
 })
 
