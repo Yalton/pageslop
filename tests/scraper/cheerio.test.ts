@@ -63,6 +63,25 @@ describe('scrapeUrl', () => {
     expect(result.description).toBe('')
   })
 
+  it('decodes entities a site encoded twice in its meta tags', async () => {
+    // postgresql.org ships content="Part&amp;nbsp;I.&amp;nbsp;Tutorial ..."
+    const html = `<html><head>
+      <meta property="og:title" content="Fish &amp;amp; Chips" />
+      <meta property="og:description" content="Part&amp;nbsp;I.&amp;nbsp;Tutorial Welcome &amp;#8212; &amp;lt;b&amp;gt;" />
+    </head><body></body></html>`
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
+
+    const result = await scrapeUrl('https://example.com')
+    expect(result.title).toBe('Fish & Chips')
+    expect(result.description).toBe('Part\u00a0I.\u00a0Tutorial Welcome \u2014 <b>')
+  })
+
+  it('keeps an ampersand that is not an entity', async () => {
+    const html = '<html><head><meta property="og:title" content="R&amp;D &amp; more" /></head><body></body></html>'
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
+    expect((await scrapeUrl('https://example.com')).title).toBe('R&D & more')
+  })
+
   it('caps the scraped title at 500 and the description at 2000 characters', async () => {
     const html = `<html><head><title>${'t'.repeat(5000)}</title>
       <meta name="description" content="${'d'.repeat(50000)}" /></head><body></body></html>`

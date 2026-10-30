@@ -48,14 +48,14 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
   const rawHtml = new TextDecoder().decode(bytes)
   const $ = cheerio.load(rawHtml)
 
-  const title = truncateText($('meta[property="og:title"]').attr('content')
+  const title = truncateText(decodeLeftoverEntities($('meta[property="og:title"]').attr('content')
     || $('title').text().trim()
-    || '', MAX_TITLE_LENGTH)
+    || ''), MAX_TITLE_LENGTH)
 
-  const description = truncateText($('meta[property="og:description"]').attr('content')
+  const description = truncateText(decodeLeftoverEntities($('meta[property="og:description"]').attr('content')
     || $('meta[name="description"]').attr('content')
     || firstParagraph($)
-    || '', MAX_SCRAPED_DESCRIPTION_LENGTH)
+    || ''), MAX_SCRAPED_DESCRIPTION_LENGTH)
 
   // Try multiple image meta tags in priority order
   const rawOgImage = $('meta[property="og:image"]').attr('content')
@@ -110,6 +110,17 @@ function extractBodyText($: cheerio.CheerioAPI): string | null {
   }
   walk($('body').toArray())
   return parts.join(' ').replace(/\s+/g, ' ').trim().slice(0, BODY_TEXT_MAX) || null
+}
+
+const ENTITY = /&(?:#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);/gi
+
+/**
+ * Some sites encode their meta tags twice (postgresql.org ships
+ * content="Part&amp;nbsp;I."), so the parsed value still holds entities.
+ * Decodes each leftover entity once; a bare "&" is left alone.
+ */
+function decodeLeftoverEntities(text: string): string {
+  return text.replace(ENTITY, (entity) => cheerio.load(entity, null, false).text())
 }
 
 /** Shortest text that counts as a real paragraph, not a caption or button label. */
