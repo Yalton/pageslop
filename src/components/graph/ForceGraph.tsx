@@ -27,6 +27,7 @@ import {
 } from './graphUtils'
 import type { LinkWithTags, Link } from '@/types'
 import { PageSpinner } from '@/components/ui/spinner'
+import { publicImageUrl } from '@/lib/utils/private-host'
 
 // Module-level image cache — never recreate inside paintNode
 const imageCache = new Map<string, HTMLImageElement>()
@@ -212,8 +213,9 @@ export default function ForceGraph() {
       ctx.fill()
 
       // Favicon rendering (only at sufficient zoom)
-      if (globalScale > 0.5 && node.link.favicon) {
-        const img = getImage(node.link.favicon)
+      const favicon = publicImageUrl(node.link.favicon)
+      if (globalScale > 0.5 && favicon) {
+        const img = getImage(favicon)
         if (img) {
           ctx.save()
           ctx.beginPath()
@@ -231,7 +233,7 @@ export default function ForceGraph() {
           ctx.textBaseline = 'middle'
           ctx.fillText(initial, x, y)
         }
-      } else if (!node.link.favicon) {
+      } else if (!favicon) {
         // No favicon — draw letter initial
         const domain = node.link.domain || node.link.url
         const initial = domain.charAt(0).toUpperCase()

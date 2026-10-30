@@ -1,13 +1,15 @@
 import type { LinkWithTags } from '@/types'
 import { domainKey } from '@/lib/utils/group-links'
 import { type LinkSort } from '@/lib/utils/link-view'
+import { publicImageUrl } from '@/lib/utils/private-host'
 
 /** Each site's favicon: the first one any of its links has. Sites without one are left out. */
 export function siteFavicons(links: LinkWithTags[]): Map<string, string> {
   const favicons = new Map<string, string>()
   for (const link of links) {
     const site = domainKey(link)
-    if (link.favicon && !favicons.has(site)) favicons.set(site, link.favicon)
+    const favicon = publicImageUrl(link.favicon)
+    if (favicon && !favicons.has(site)) favicons.set(site, favicon)
   }
   return favicons
 }

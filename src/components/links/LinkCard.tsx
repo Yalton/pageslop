@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils'
 import { CategoryLabel, categoryColor, categoryTabSlot } from '@/components/links/CategoryLabel'
 import { openExternal } from '@/lib/links/open-external'
 import type { LinkWithTags } from '@/types'
+import { publicImageUrl } from '@/lib/utils/private-host'
 
 /**
  * Covers the whole card with the button's ::after, so any click on the card lands on it.
@@ -70,7 +71,9 @@ export function LinkCard({
   const visibleTags = link.tags?.slice(0, 3) ?? []
   const extraTagCount = (link.tags?.length ?? 0) - 3
   const tabSlot = categoryTabSlot(link.category)
-  const showFavicon = Boolean(link.favicon) && !faviconError
+  const favicon = publicImageUrl(link.favicon)
+  const ogImage = publicImageUrl(link.ogImage)
+  const showFavicon = Boolean(favicon) && !faviconError
 
   function handleDelete() {
     onDelete(link.id)
@@ -111,7 +114,7 @@ export function LinkCard({
         style={{ borderTopColor: categoryColor(link.category) }}
       >
         {showFavicon ? (
-          <img src={link.favicon ?? undefined} alt="" className="size-3.5 shrink-0 rounded-[3px] object-contain" onError={() => setFaviconError(true)} />
+          <img src={favicon} alt="" className="size-3.5 shrink-0 rounded-[3px] object-contain" onError={() => setFaviconError(true)} />
         ) : (
           <span className="grid size-3.5 shrink-0 place-items-center rounded-[3px] bg-border text-[9px] font-bold text-foreground" aria-hidden="true">{initial}</span>
         )}
@@ -142,9 +145,9 @@ export function LinkCard({
         )}
         {/* Preview image, or a flat panel tinted by the site */}
         <div className="aspect-[16/9.5] w-full overflow-hidden border-b bg-muted">
-          {link.ogImage && !imgError ? (
+          {ogImage && !imgError ? (
             <img
-              src={link.ogImage}
+              src={ogImage}
               alt={link.title || ''}
               className="size-full object-cover motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out motion-safe:group-hover:scale-[1.03]"
               onError={() => setImgError(true)}
@@ -153,7 +156,7 @@ export function LinkCard({
             <div className="grid size-full place-items-center" style={{ backgroundColor: `hsl(${hue} var(--blank-panel))` }}>
               <span className="grid size-14 place-items-center rounded-xl border bg-card font-display text-[26px] font-bold">
                 {showFavicon ? (
-                  <img src={link.favicon ?? undefined} alt="" className="size-8 object-contain" onError={() => setFaviconError(true)} />
+                  <img src={favicon} alt="" className="size-8 object-contain" onError={() => setFaviconError(true)} />
                 ) : (
                   initial
                 )}

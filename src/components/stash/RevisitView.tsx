@@ -23,6 +23,7 @@ import {
   selectRevisitLinks,
 } from '@/lib/stash/revisit'
 import type { LinkWithTags, StashState } from '@/types'
+import { publicImageUrl } from '@/lib/utils/private-host'
 
 type GroupMode = 'domain' | 'topic'
 
@@ -159,7 +160,7 @@ export function RevisitView() {
           <header className="flex flex-wrap items-center gap-2">
             {mode === 'domain' && (
               <Avatar className="size-5 shrink-0">
-                <AvatarImage src={groupItems.find((l) => l.favicon)?.favicon || undefined} alt="" />
+                <AvatarImage src={groupItems.map((l) => publicImageUrl(l.favicon)).find(Boolean)} alt="" />
                 <AvatarFallback className="text-[9px]">{name.charAt(0).toUpperCase()}</AvatarFallback>
               </Avatar>
             )}

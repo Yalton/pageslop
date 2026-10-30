@@ -23,6 +23,7 @@ import { EnrichmentBadge } from '@/components/links/EnrichmentBadge'
 import { domainToHue } from '@/lib/utils/domain-color'
 import { openExternal } from '@/lib/links/open-external'
 import type { Link, LinkWithTags } from '@/types'
+import { publicImageUrl } from '@/lib/utils/private-host'
 
 interface LinkDetailProps {
   link: LinkWithTags | null
@@ -99,9 +100,9 @@ function LinkDetailContent({
     <div className="flex flex-col gap-4">
       {/* Hero image */}
       <div className="w-full h-[200px] overflow-hidden rounded-md">
-        {link.ogImage && !imgError ? (
+        {publicImageUrl(link.ogImage) && !imgError ? (
           <img
-            src={link.ogImage}
+            src={publicImageUrl(link.ogImage)}
             alt={link.title || ''}
             className="w-full h-full object-cover"
             onError={() => setImgError(true)}
@@ -111,8 +112,8 @@ function LinkDetailContent({
             className="w-full h-full flex items-center justify-center"
             style={{ backgroundColor: `hsl(${hue}, 65%, 55%)` }}
           >
-            {link.favicon ? (
-              <img src={link.favicon} alt="" className="size-16 object-contain" />
+            {publicImageUrl(link.favicon) ? (
+              <img src={publicImageUrl(link.favicon)} alt="" className="size-16 object-contain" />
             ) : (
               <span className="text-5xl font-semibold text-white">{domainInitial}</span>
             )}
@@ -128,7 +129,7 @@ function LinkDetailContent({
       {/* Domain row */}
       <div className="flex items-center gap-2">
         <Avatar className="size-4">
-          <AvatarImage src={link.favicon || undefined} alt="" />
+          <AvatarImage src={publicImageUrl(link.favicon)} alt="" />
           <AvatarFallback className="text-[8px]">{domainInitial}</AvatarFallback>
         </Avatar>
         <span className="text-sm text-muted-foreground">{link.domain || ''}</span>

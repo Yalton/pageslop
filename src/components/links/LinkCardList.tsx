@@ -23,6 +23,7 @@ import { isArchived } from '@/lib/utils/all-links-filter'
 import { cn } from '@/lib/utils'
 import { openExternal } from '@/lib/links/open-external'
 import type { LinkWithTags } from '@/types'
+import { publicImageUrl } from '@/lib/utils/private-host'
 
 interface LinkCardListProps extends SelectionProps {
   link: LinkWithTags
@@ -91,7 +92,7 @@ export function LinkCardList({
       )}
       {/* Favicon */}
       <Avatar className="size-5 shrink-0">
-        <AvatarImage src={link.favicon || undefined} alt="" />
+        <AvatarImage src={publicImageUrl(link.favicon)} alt="" />
         <AvatarFallback className="text-[8px]">{domainInitial}</AvatarFallback>
       </Avatar>
 
