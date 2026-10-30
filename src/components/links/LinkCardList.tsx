@@ -1,5 +1,6 @@
 'use client'
 
+import type { MouseEvent } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { Archive, ArchiveRestore, ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -68,20 +69,24 @@ export function LinkCardList({
     openExternal(link.url)
   }
 
+  function handleOpen(e: MouseEvent) {
+    if (selecting && onToggleSelect) onToggleSelect(link.id, e.shiftKey)
+    else onOpenDetail(link)
+  }
+
   return (
     <div
       className={cn(
-        'group h-16 px-4 flex items-center gap-3 cursor-pointer hover:bg-muted transition-colors border-b',
+        'group relative h-16 px-4 flex items-center gap-3 cursor-pointer hover:bg-muted transition-colors border-b',
         selected && 'bg-primary/10',
       )}
-      onClick={(e) => (selecting && onToggleSelect ? onToggleSelect(link.id, e.shiftKey) : onOpenDetail(link))}
     >
       {onToggleSelect && (
         <SelectCheckbox
           checked={selected}
           onToggle={(shiftKey) => onToggleSelect(link.id, shiftKey)}
           label={`Select ${link.title || link.url}`}
-          className={cn(!selecting && 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100')}
+          className={cn('relative z-10', !selecting && 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100')}
         />
       )}
       {/* Favicon */}
@@ -91,17 +96,28 @@ export function LinkCardList({
       </Avatar>
 
       {/* Uptime dot */}
-      <UptimeDot status={link.uptimeStatus} lastCheckedAt={link.lastCheckedAt} lastStatusCode={link.lastStatusCode} />
+      <span className="relative z-10 flex">
+        <UptimeDot status={link.uptimeStatus} lastCheckedAt={link.lastCheckedAt} lastStatusCode={link.lastStatusCode} />
+      </span>
 
       {/* Enrichment badge */}
-      <EnrichmentBadge source={link.enrichmentSource} error={link.enrichmentError} />
+      <span className="relative z-10 flex empty:hidden">
+        <EnrichmentBadge source={link.enrichmentSource} error={link.enrichmentError} />
+      </span>
 
-      {/* Title */}
-      <span className="text-sm font-semibold truncate flex-1">{link.title || link.url}</span>
+      {/* Title: a button stretched over the whole row, so the row opens from the keyboard */}
+      <button
+        type="button"
+        data-link-open=""
+        className="text-sm font-semibold truncate flex-1 text-left outline-none after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
+        onClick={handleOpen}
+      >
+        {link.title || link.url}
+      </button>
 
       {/* Tag pills (max 2, hidden on small screens) */}
       {visibleTags.length > 0 && (
-        <div className="hidden sm:flex items-center gap-1 shrink-0">
+        <div className="relative z-10 hidden sm:flex items-center gap-1 shrink-0">
           {visibleTags.map((tag) => (
             <Badge key={tag.id} variant="secondary" className={cn('text-xs', tagPillClass)} asChild>
               <button
@@ -139,7 +155,7 @@ export function LinkCardList({
       <span className="text-sm text-muted-foreground shrink-0 ml-auto">{relativeTime}</span>
 
       {/* Open link + actions */}
-      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+      <div className="relative z-10 flex items-center gap-1" onClick={e => e.stopPropagation()}>
         <Button variant="ghost" size="icon" className="size-7 shrink-0" asChild>
           <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label="Open link in new tab" title="Open link in new tab">
             <ExternalLink className="size-4" />

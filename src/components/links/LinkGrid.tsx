@@ -16,6 +16,7 @@ import { GroupedView } from '@/components/links/GroupedView'
 import { BulkActionBar } from '@/components/links/BulkActionBar'
 import { LinkViewToolbar } from '@/components/links/LinkViewToolbar'
 import { SiteTabs } from '@/components/links/SiteTabs'
+import { ShortcutHelp } from '@/components/links/ShortcutHelp'
 import {
   Dialog,
   DialogContent,
@@ -45,6 +46,7 @@ import { allLinksEmptyState, filterAllLinksView, filterArchivedView } from '@/li
 import { toast } from 'sonner'
 import { useLinks } from '@/lib/hooks/useLinks'
 import { useViewEnterAnimation } from '@/lib/hooks/useViewEnterAnimation'
+import { useLinkShortcuts } from '@/lib/hooks/useLinkShortcuts'
 import { viewTransitionKey } from '@/lib/utils/view-transition'
 import type { LinkWithTags, StashState } from '@/types'
 
@@ -73,6 +75,9 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   const selectAnchor = useRef<string | null>(null)
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
   const [websiteFilterOpen, setWebsiteFilterOpen] = useState(false)
+  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
+  const searchRef = useRef<HTMLDivElement>(null)
+  const saveRef = useRef<HTMLDivElement>(null)
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -103,6 +108,8 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   const resultsRef = useViewEnterAnimation<HTMLDivElement>(
     viewTransitionKey({ ...linkView, tag: tagFilter, mode: viewMode })
   )
+
+  useLinkShortcuts({ search: searchRef, save: saveRef, results: resultsRef, onHelp: () => setShortcutHelpOpen(true) })
 
   // Order the links appear on screen, for shift-click ranges.
   const displayOrder = useMemo(() => {
@@ -251,11 +258,11 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
       {/* Top bar: URL input + search + view toggle */}
       <div className="flex items-start gap-2 flex-wrap">
         {view === 'all' && (
-          <div className="flex-1 min-w-[200px]">
+          <div ref={saveRef} className="flex-1 min-w-[200px]">
             <SaveURLInput />
           </div>
         )}
-        <div className="flex-1 min-w-[160px] max-w-sm">
+        <div ref={searchRef} className="flex-1 min-w-[160px] max-w-sm">
           <SearchInput value={searchQuery} onChange={setSearchQuery} />
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -489,6 +496,8 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
           tagSuggestions={tagSuggestions}
         />
       )}
+
+      <ShortcutHelp open={shortcutHelpOpen} onOpenChange={setShortcutHelpOpen} />
 
       <Dialog open={confirmDeleteAll} onOpenChange={setConfirmDeleteAll}>
         <DialogContent>

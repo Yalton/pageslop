@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { Archive, ArchiveRestore, ExternalLink, MoreHorizontal, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { UNDO_WINDOW_MS } from '@/lib/links/pending-deletes'
@@ -24,6 +24,10 @@ import { cn } from '@/lib/utils'
 import { CATEGORY_COLORS } from '@/components/graph/graphUtils'
 import { openExternal } from '@/lib/links/open-external'
 import type { LinkWithTags } from '@/types'
+
+/** Covers the whole card with the button's ::after, so any click on the card lands on it. */
+const stretchedButtonClass =
+  'text-left outline-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring'
 
 interface LinkCardProps extends SelectionProps {
   link: LinkWithTags
@@ -75,6 +79,11 @@ export function LinkCard({
     openExternal(link.url)
   }
 
+  function handleOpen(e: MouseEvent) {
+    if (selecting && onToggleSelect) onToggleSelect(link.id, e.shiftKey)
+    else onOpenDetail(link)
+  }
+
   return (
     <div
       className={cn(
@@ -83,7 +92,6 @@ export function LinkCard({
         'hover:border-primary/50 hover:shadow-[0_14px_40px_-14px_hsl(var(--primary)/0.55)] motion-safe:hover:-translate-y-1',
         selected && 'border-primary ring-2 ring-primary',
       )}
-      onClick={(e) => (selecting && onToggleSelect ? onToggleSelect(link.id, e.shiftKey) : onOpenDetail(link))}
     >
       {onToggleSelect && (
         <SelectCheckbox
@@ -134,9 +142,13 @@ export function LinkCard({
             <AvatarImage src={link.favicon || undefined} alt="" />
             <AvatarFallback className="text-[8px]">{domainInitial}</AvatarFallback>
           </Avatar>
-          <UptimeDot status={link.uptimeStatus} lastCheckedAt={link.lastCheckedAt} lastStatusCode={link.lastStatusCode} />
+          <span className="relative z-10 flex">
+            <UptimeDot status={link.uptimeStatus} lastCheckedAt={link.lastCheckedAt} lastStatusCode={link.lastStatusCode} />
+          </span>
           <span className="text-sm text-muted-foreground truncate">{link.domain || ''}</span>
-          <EnrichmentBadge source={link.enrichmentSource} error={link.enrichmentError} />
+          <span className="relative z-10 flex empty:hidden">
+            <EnrichmentBadge source={link.enrichmentSource} error={link.enrichmentError} />
+          </span>
           {isArchived(link) && (
             <Badge variant="secondary" className="text-xs ml-auto shrink-0">
               Archived
@@ -154,9 +166,16 @@ export function LinkCard({
           )}
         </div>
 
-        {/* Title */}
+        {/* Title: a button stretched over the whole card, so the card opens from the keyboard */}
         {link.title && (
-          <p className="text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 transition-colors group-hover:text-primary">{link.title}</p>
+          <button
+            type="button"
+            data-link-open=""
+            className={cn(stretchedButtonClass, 'text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 transition-colors group-hover:text-primary')}
+            onClick={handleOpen}
+          >
+            {link.title}
+          </button>
         )}
 
         {/* Description */}
@@ -166,7 +185,7 @@ export function LinkCard({
 
         {/* Tag pills */}
         {visibleTags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div className="relative z-10 flex flex-wrap gap-1 self-start">
             {visibleTags.map((tag) => (
               <Badge key={tag.id} variant="secondary" className={cn('text-xs', tagPillClass)} asChild>
                 <button
@@ -187,8 +206,15 @@ export function LinkCard({
         )}
       </div>
 
+      {/* Untitled links still get a stretched button, labelled for screen readers only */}
+      {!link.title && (
+        <button type="button" data-link-open="" className={stretchedButtonClass} onClick={handleOpen}>
+          <span className="sr-only">{link.url}</span>
+        </button>
+      )}
+
       {/* Open link + actions menu */}
-      <div className="absolute top-2 right-2 flex gap-1" onClick={e => e.stopPropagation()}>
+      <div className="absolute top-2 right-2 z-10 flex gap-1" onClick={e => e.stopPropagation()}>
         <Button
           variant="ghost"
           size="icon"
