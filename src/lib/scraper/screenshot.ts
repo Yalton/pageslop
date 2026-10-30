@@ -3,6 +3,7 @@ import { mkdir } from 'node:fs/promises'
 import { type GuardedProxy, startGuardedProxy } from '../net/guarded-proxy'
 import { validateUrl } from '../net/ssrf-guard'
 import { SCREENSHOT_DIR, screenshotFilePath } from './screenshot-files'
+import { hostForLog } from '../net/log-url'
 
 
 // Schemes that never touch the network
@@ -64,7 +65,7 @@ export async function screenshotUrl(url: string, linkId: string): Promise<string
 
     return `/api/screenshots/${linkId}`
   } catch (err) {
-    console.error(`[screenshot] failed for ${url}:`, err)
+    console.error(`[screenshot] failed for link ${linkId} (${hostForLog(url)}):`, err)
     return null
   } finally {
     if (browser) await browser.close().catch(() => {})

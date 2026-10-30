@@ -13,6 +13,7 @@ import { categoryUpdate } from '../lib/enrichment/category-source'
 import { llmEnrich } from '../lib/enrichment/llm-enrich'
 import { archiveExpiredStash } from '../lib/db/queries/links'
 import { stashExpiryCutoff, stashExpireDays } from '../lib/stash/expiry'
+import { hostForLog } from '../lib/net/log-url'
 
 // DIRECT connection (no -pooler in hostname) — required for pg-boss LISTEN/NOTIFY
 const pool = new Pool({
@@ -110,7 +111,7 @@ async function main() {
 
   await boss.work<{ linkId: string; url: string; importJobId?: string }>('scrape', { localConcurrency: 5 }, async ([job]) => {
     const { linkId, url, importJobId } = job.data!
-    console.log(`[worker] scraping ${url} for link ${linkId}`)
+    console.log(`[worker] scraping link ${linkId} (${hostForLog(url)})`)
 
     try {
       const result = await scrapeUrl(url)
@@ -166,9 +167,9 @@ async function main() {
         }
       }
 
-      console.log(`[worker] completed scraping ${url}`)
+      console.log(`[worker] completed scraping link ${linkId}`)
     } catch (err) {
-      console.error(`[worker] failed scraping ${url}:`, err)
+      console.error(`[worker] failed scraping link ${linkId} (${hostForLog(url)}):`, err)
       await db.update(schema.links)
         .set({ status: 'error', updatedAt: new Date() })
         .where(eq(schema.links.id, linkId))
@@ -304,14 +305,14 @@ async function main() {
   // screenshot: take a browser screenshot for links with no og:image
   await boss.work<{ linkId: string; url: string }>('screenshot', { localConcurrency: 2 }, async ([job]) => {
     const { linkId, url } = job.data!
-    console.log(`[worker] screenshotting ${url} for link ${linkId}`)
+    console.log(`[worker] screenshotting link ${linkId} (${hostForLog(url)})`)
 
     const screenshotPath = await screenshotUrl(url, linkId)
     if (screenshotPath) {
       await db.update(schema.links)
         .set({ ogImage: screenshotPath, updatedAt: new Date() })
         .where(eq(schema.links.id, linkId))
-      console.log(`[worker] screenshot saved for ${url}`)
+      console.log(`[worker] screenshot saved for link ${linkId}`)
     }
   })
 
