@@ -66,6 +66,18 @@ export function requireAuthUrl(value: string | undefined): string {
   return url
 }
 
+/**
+ * Checks the auth settings the server cannot run without, plus ENCRYPTION_KEY
+ * when it is set (it is optional: only stored Anthropic keys need it). Called
+ * from src/instrumentation.ts so a bad .env stops the server at start instead
+ * of failing the first sign-in.
+ */
+export function validateServerEnv(env: Record<string, string | undefined>): void {
+  requireAuthSecret(env.BETTER_AUTH_SECRET)
+  requireAuthUrl(env.BETTER_AUTH_URL)
+  if (env.ENCRYPTION_KEY?.trim()) requireEncryptionKey(env.ENCRYPTION_KEY)
+}
+
 /** Returns the 32-byte AES key, or throws if ENCRYPTION_KEY is not 64 hex chars. */
 export function requireEncryptionKey(value: string | undefined): Buffer {
   const hex = value?.trim()

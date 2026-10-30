@@ -3,6 +3,7 @@ import {
   isBuildPhase,
   parseList,
   requireAuthSecret,
+  validateServerEnv,
   requireAuthUrl,
   requireEncryptionKey,
 } from '@/lib/env'
@@ -81,5 +82,29 @@ describe('isBuildPhase', () => {
     expect(isBuildPhase()).toBe(false)
     if (original === undefined) delete process.env.NEXT_PHASE
     else process.env.NEXT_PHASE = original
+  })
+})
+
+describe('validateServerEnv', () => {
+  const good = {
+    BETTER_AUTH_SECRET: 'a'.repeat(32),
+    BETTER_AUTH_URL: 'https://links.example.com',
+  }
+
+  it('accepts valid auth settings without an encryption key', () => {
+    expect(() => validateServerEnv(good)).not.toThrow()
+  })
+
+  it('rejects a placeholder secret', () => {
+    expect(() => validateServerEnv({ ...good, BETTER_AUTH_SECRET: 'change-me' })).toThrow(/placeholder/)
+  })
+
+  it('rejects a missing app URL', () => {
+    expect(() => validateServerEnv({ ...good, BETTER_AUTH_URL: undefined })).toThrow(/BETTER_AUTH_URL/)
+  })
+
+  it('rejects a malformed encryption key only when one is set', () => {
+    expect(() => validateServerEnv({ ...good, ENCRYPTION_KEY: 'short' })).toThrow(/ENCRYPTION_KEY/)
+    expect(() => validateServerEnv({ ...good, ENCRYPTION_KEY: '' })).not.toThrow()
   })
 })
