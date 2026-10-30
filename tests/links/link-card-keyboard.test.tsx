@@ -105,3 +105,28 @@ describe('LinkCard without a title', () => {
     expect(onOpenDetail).toHaveBeenCalledWith(untitled)
   })
 })
+
+describe.each(variants)('%s open-in-new-tab link', (_name, Card) => {
+  function renderWith(url: string) {
+    render(
+      <Card
+        link={{ ...link, url }}
+        onDelete={vi.fn()}
+        onUndoDelete={vi.fn()}
+        onOpenDetail={vi.fn()}
+        onTagClick={vi.fn()}
+        onToggleSelect={vi.fn()}
+      />,
+    )
+  }
+
+  it('links to an http(s) URL', () => {
+    renderWith('https://example.com/article')
+    expect(screen.getByRole('link', { name: 'Open link in new tab' }).getAttribute('href')).toBe('https://example.com/article')
+  })
+
+  it('renders no link for other schemes', () => {
+    renderWith('data:text/html,<script>alert(1)</script>')
+    expect(screen.queryByRole('link', { name: 'Open link in new tab' })).toBeNull()
+  })
+})

@@ -237,16 +237,22 @@ function RevisitRow({
         link.stashState === 'read' && 'opacity-60',
       )}
     >
-      <a
-        href={link.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={onOpen}
-        className="text-sm font-medium truncate min-w-0 flex-1 hover:underline underline-offset-4"
-        title={link.url}
-      >
-        {link.title || link.url}
-      </a>
+      {isHttpUrl(link.url) ? (
+        <a
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onOpen}
+          className="text-sm font-medium truncate min-w-0 flex-1 hover:underline underline-offset-4"
+          title={link.url}
+        >
+          {link.title || link.url}
+        </a>
+      ) : (
+        <span className="text-sm font-medium truncate min-w-0 flex-1" title={link.url}>
+          {link.title || link.url}
+        </span>
+      )}
 
       {link.category && link.category !== 'Other' && (
         <CategoryLabel category={link.category} />

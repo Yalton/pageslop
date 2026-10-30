@@ -21,6 +21,7 @@ import { SelectCheckbox, type SelectionProps } from '@/components/links/SelectCh
 import { isArchived } from '@/lib/utils/all-links-filter'
 import { cn } from '@/lib/utils'
 import { CategoryLabel, categoryColor, categoryTabSlot } from '@/components/links/CategoryLabel'
+import { isHttpUrl } from '@/lib/links/http-url'
 import { openExternal } from '@/lib/links/open-external'
 import type { LinkWithTags } from '@/types'
 import { publicImageUrl } from '@/lib/utils/private-host'
@@ -229,16 +230,18 @@ export function LinkCard({
         className="absolute top-[34px] right-2 z-10 flex gap-1 transition-opacity [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 has-[[data-state=open]]:opacity-100"
         onClick={e => e.stopPropagation()}
       >
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-7 bg-black/70 text-white hover:bg-black/85 hover:text-white"
-          asChild
-        >
-          <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label="Open link in new tab" title="Open link in new tab">
-            <ExternalLink className="size-4" />
-          </a>
-        </Button>
+        {isHttpUrl(link.url) && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7 bg-black/70 text-white hover:bg-black/85 hover:text-white"
+            asChild
+          >
+            <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label="Open link in new tab" title="Open link in new tab">
+              <ExternalLink className="size-4" />
+            </a>
+          </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

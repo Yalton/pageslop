@@ -21,6 +21,7 @@ import { EnrichmentBadge } from '@/components/links/EnrichmentBadge'
 import { SelectCheckbox, type SelectionProps } from '@/components/links/SelectCheckbox'
 import { isArchived } from '@/lib/utils/all-links-filter'
 import { cn } from '@/lib/utils'
+import { isHttpUrl } from '@/lib/links/http-url'
 import { openExternal } from '@/lib/links/open-external'
 import type { LinkWithTags } from '@/types'
 import { publicImageUrl } from '@/lib/utils/private-host'
@@ -157,11 +158,13 @@ export function LinkCardList({
 
       {/* Open link + actions */}
       <div className="relative z-10 flex items-center gap-1" onClick={e => e.stopPropagation()}>
-        <Button variant="ghost" size="icon" className="size-7 shrink-0" asChild>
-          <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label="Open link in new tab" title="Open link in new tab">
-            <ExternalLink className="size-4" />
-          </a>
-        </Button>
+        {isHttpUrl(link.url) && (
+          <Button variant="ghost" size="icon" className="size-7 shrink-0" asChild>
+            <a href={link.url} target="_blank" rel="noopener noreferrer" aria-label="Open link in new tab" title="Open link in new tab">
+              <ExternalLink className="size-4" />
+            </a>
+          </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
