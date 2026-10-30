@@ -170,6 +170,7 @@ export function LinkCard({
         {link.title && (
           <button
             type="button"
+            data-link-open=""
             className={cn(stretchedButtonClass, 'text-[15px] font-semibold leading-snug tracking-tight line-clamp-2 transition-colors group-hover:text-primary')}
             onClick={handleOpen}
           >
@@ -207,7 +208,7 @@ export function LinkCard({
 
       {/* Untitled links still get a stretched button, labelled for screen readers only */}
       {!link.title && (
-        <button type="button" className={stretchedButtonClass} onClick={handleOpen}>
+        <button type="button" data-link-open="" className={stretchedButtonClass} onClick={handleOpen}>
           <span className="sr-only">{link.url}</span>
         </button>
       )}

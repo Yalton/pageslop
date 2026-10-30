@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
+import { OPEN_SAVE_DIALOG_EVENT } from "@/lib/hooks/useLinkShortcuts"
 
 // Pages where the FAB has nothing to do and would only cover content.
 const HIDDEN_ON = ["/dashboard/settings", "/dashboard/tags", "/dashboard/graph"]
@@ -21,6 +22,13 @@ export function MobileFAB() {
   const [open, setOpen] = useState(false)
   const [url, setUrl] = useState("")
   const [loading, setLoading] = useState(false)
+
+  // The 'n' shortcut opens this dialog when the page has no visible inline save input.
+  useEffect(() => {
+    const onOpen = () => setOpen(true)
+    window.addEventListener(OPEN_SAVE_DIALOG_EVENT, onOpen)
+    return () => window.removeEventListener(OPEN_SAVE_DIALOG_EVENT, onOpen)
+  }, [])
 
   async function handleSave() {
     const trimmed = url.trim()

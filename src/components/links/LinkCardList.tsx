@@ -108,6 +108,7 @@ export function LinkCardList({
       {/* Title: a button stretched over the whole row, so the row opens from the keyboard */}
       <button
         type="button"
+        data-link-open=""
         className="text-sm font-semibold truncate flex-1 text-left outline-none after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
         onClick={handleOpen}
       >
