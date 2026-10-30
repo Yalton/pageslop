@@ -64,12 +64,14 @@ export default function ForceGraph() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const graphRef = useRef<any>(null)
 
-  const containerRef = useRef<HTMLDivElement>(null)
+  // Callback ref, not useRef: the container only mounts once loading finishes,
+  // so a mount-only effect would never see it
+  const [container, setContainer] = useState<HTMLDivElement | null>(null)
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
 
   // Track container dimensions via ResizeObserver
   useEffect(() => {
-    if (!containerRef.current) return
+    if (!container) return
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0]
       if (entry) {
@@ -77,9 +79,9 @@ export default function ForceGraph() {
         setDimensions({ width: Math.max(width, 100), height: Math.max(height, 100) })
       }
     })
-    observer.observe(containerRef.current)
+    observer.observe(container)
     return () => observer.disconnect()
-  }, [])
+  }, [container])
 
   // Dark mode detection
   const isDark = useMemo(() => {
@@ -313,7 +315,7 @@ export default function ForceGraph() {
         totalEdges={graphData.links.length}
       />
 
-      <div ref={containerRef} className="flex-1 overflow-hidden">
+      <div ref={setContainer} className="flex-1 overflow-hidden">
         <ForceGraph2D
           ref={graphRef}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
