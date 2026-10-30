@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
-	"name": "Pageslop Tab Stash",
-	"version": "0.3.1",
+	"name": "Pageslop Autoclose",
+	"version": "0.3.2",
 	"description": "Saves idle tabs to your own Pageslop server, then closes them.",
 	"icons": {
 		"48": "icons/icon.svg",
@@ -26,7 +26,7 @@
 		"type": "module"
 	},
 	"action": {
-		"default_title": "Pageslop Tab Stash",
+		"default_title": "Pageslop Autoclose",
 		"default_popup": "popup.html",
 		"default_icon": "icons/icon.svg"
 	},

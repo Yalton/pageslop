@@ -51,7 +51,7 @@ No single feature carries the product. Its value is the combination, in one plac
 ## Brand Commitments
 
 - Name: Pageslop.
-- The Firefox extension is being renamed away from "Tab Stash" (pageslop-06z); the new name is undecided.
+- The Firefox extension is called "Pageslop Autoclose" (renamed from "Pageslop Tab Stash", which clashed with an existing add-on).
 
 ## Evidence on Hand
 

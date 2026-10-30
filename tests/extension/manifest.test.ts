@@ -19,8 +19,8 @@ describe("manifest", () => {
 		]);
 	});
 
-	it("is version 0.3.1, so the signed update replaces 0.3.0", () => {
-		expect(manifest.version).toBe("0.3.1");
+	it("is version 0.3.2, so the signed update replaces 0.3.1", () => {
+		expect(manifest.version).toBe("0.3.2");
 	});
 
 	it("still requires Firefox 140", () => {
