@@ -5,7 +5,7 @@
  */
 
 import { db } from '@/lib/db/client'
-import { user } from '@/lib/db/schema'
+import { links, user } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 
 /**
@@ -53,4 +53,17 @@ export async function getUserEmail(userId: string): Promise<string | null> {
     .where(eq(user.id, userId))
     .limit(1)
   return row?.email ?? null
+}
+
+/**
+ * Deletes a user; the database cascades to their links, tags, sessions and
+ * tokens. Returns the ids of the deleted links so their screenshot files,
+ * which live outside the database, can be removed too.
+ */
+export async function deleteUserAccount(userId: string): Promise<string[]> {
+  return db.transaction(async (tx) => {
+    const rows = await tx.select({ id: links.id }).from(links).where(eq(links.userId, userId))
+    await tx.delete(user).where(eq(user.id, userId))
+    return rows.map((r) => r.id)
+  })
 }

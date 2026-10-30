@@ -22,6 +22,8 @@ export default function SettingsPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleteStatus, setDeleteStatus] = useState<'idle' | 'deleting'>('idle')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Change password state
   const [currentPassword, setCurrentPassword] = useState('')
@@ -558,22 +560,43 @@ export default function SettingsPage() {
                       className="rounded-md border border-destructive/50 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
                       disabled={deleteStatus === 'deleting'}
                     />
+                    <label htmlFor="delete-password" className="text-sm font-medium">
+                      Your password:
+                    </label>
+                    <input
+                      id="delete-password"
+                      type="password"
+                      autoComplete="current-password"
+                      value={deletePassword}
+                      onChange={(e) => {
+                        setDeletePassword(e.target.value)
+                        setDeleteError(null)
+                      }}
+                      className="rounded-md border border-destructive/50 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
+                      disabled={deleteStatus === 'deleting'}
+                    />
+                    {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
                     <div className="flex gap-2">
                       <Button
                         variant="destructive"
-                        disabled={deleteConfirmText !== 'DELETE' || deleteStatus === 'deleting'}
+                        disabled={deleteConfirmText !== 'DELETE' || deletePassword === '' || deleteStatus === 'deleting'}
                         onClick={async () => {
                           setDeleteStatus('deleting')
                           try {
                             const res = await fetch('/api/settings/account', {
                               method: 'DELETE',
                               headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ confirm: 'DELETE' }),
+                              body: JSON.stringify({ confirm: 'DELETE', password: deletePassword }),
                             })
                             if (res.ok) {
                               router.push('/login')
+                              return
                             }
+                            const data = await res.json().catch(() => null)
+                            setDeleteError(data?.error ?? 'Could not delete your account. Try again.')
+                            setDeleteStatus('idle')
                           } catch {
+                            setDeleteError('Could not reach the server. Try again.')
                             setDeleteStatus('idle')
                           }
                         }}
@@ -585,6 +608,8 @@ export default function SettingsPage() {
                         onClick={() => {
                           setShowDeleteConfirm(false)
                           setDeleteConfirmText('')
+                          setDeletePassword('')
+                          setDeleteError(null)
                         }}
                         disabled={deleteStatus === 'deleting'}
                       >
