@@ -7,6 +7,7 @@ import { PageSpinner } from '@/components/ui/spinner'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { CategoryLabel } from '@/components/links/CategoryLabel'
 import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
 import { SearchInput } from '@/components/links/SearchInput'
@@ -247,13 +248,11 @@ function RevisitRow({
       </a>
 
       {link.category && link.category !== 'Other' && (
-        <Badge variant="outline" className="text-xs shrink-0">
-          {link.category}
-        </Badge>
+        <CategoryLabel category={link.category} />
       )}
 
       {tags.map((tag) => (
-        <Badge key={tag.id} variant="secondary" className="text-xs shrink-0">
+        <Badge key={tag.id} variant="outline" className="rounded-sm text-xs font-semibold text-muted-foreground shrink-0">
           {tag.name}
         </Badge>
       ))}

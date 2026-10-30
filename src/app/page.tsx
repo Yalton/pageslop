@@ -51,21 +51,21 @@ export default async function MarketingPage() {
       <section className="mx-auto max-w-4xl px-6 pb-12 pt-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <div className="flex flex-col items-center text-center">
-            <Zap className="mb-4 size-8 text-primary" />
+            <Zap className="mb-4 size-8 text-ink" />
             <h2 className="text-[20px] font-semibold leading-[1.2]">Instant save</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Paste a link and it&apos;s saved. Title, image, and details fetched automatically.
             </p>
           </div>
           <div className="flex flex-col items-center text-center">
-            <Sparkles className="mb-4 size-8 text-primary" />
+            <Sparkles className="mb-4 size-8 text-ink" />
             <h2 className="text-[20px] font-semibold leading-[1.2]">Zero management</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               No folders to create. No tags to type. Everything is organized for you.
             </p>
           </div>
           <div className="flex flex-col items-center text-center">
-            <Cloud className="mb-4 size-8 text-primary" />
+            <Cloud className="mb-4 size-8 text-ink" />
             <h2 className="text-[20px] font-semibold leading-[1.2]">Always available</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Your links are saved in the cloud. Access them from any device, anytime.

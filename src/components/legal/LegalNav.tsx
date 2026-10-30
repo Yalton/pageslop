@@ -22,7 +22,7 @@ export function LegalNav() {
             aria-current={active ? "page" : undefined}
             className={cn(
               "rounded-md px-3 py-1.5 font-semibold text-muted-foreground transition-colors hover:text-foreground",
-              active && "bg-primary/10 text-primary hover:text-primary"
+              active && "bg-primary/10 text-ink hover:text-ink"
             )}
           >
             {item.label}

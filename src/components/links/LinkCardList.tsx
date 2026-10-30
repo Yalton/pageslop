@@ -119,7 +119,7 @@ export function LinkCardList({
       {visibleTags.length > 0 && (
         <div className="relative z-10 hidden sm:flex items-center gap-1 shrink-0">
           {visibleTags.map((tag) => (
-            <Badge key={tag.id} variant="secondary" className={cn('text-xs', tagPillClass)} asChild>
+            <Badge key={tag.id} variant="outline" className={cn('rounded-sm text-xs font-semibold text-muted-foreground', tagPillClass)} asChild>
               <button
                 type="button"
                 aria-label={`Show links tagged ${tag.name}`}

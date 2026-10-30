@@ -267,7 +267,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen p-6 lg:p-8">
       <div className="mx-auto max-w-5xl">
-        <h1 className="mb-6 text-3xl font-semibold tracking-tight">Settings</h1>
+        <h1 className="mb-6 text-3xl font-bold">Settings</h1>
 
         <div className="lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-8">
           <SettingsNav />
@@ -535,7 +535,7 @@ export default function SettingsPage() {
             </SettingsSection>
 
             <SettingsSection id="danger-zone">
-              <div className={cn(settingsPanelClass, 'border-destructive/30 hover:shadow-[0_8px_30px_-12px_hsl(var(--destructive)/0.35)]')}>
+              <div className={cn(settingsPanelClass, 'border-destructive/40')}>
                 <h3 className="font-semibold mb-1">Delete Account</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Permanently delete your account and all your data. This includes all saved links, tags, and settings. This action cannot be undone.

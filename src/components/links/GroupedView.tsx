@@ -99,11 +99,11 @@ export function GroupedView({
                     <AvatarFallback className="text-[9px]">{category.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                 )}
-                <span className="font-display text-base font-semibold tracking-tight">{category}</span>
+                <span className="font-display text-lg font-bold">{category}</span>
                 <span className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground">
                   {categoryLinks.length}
                 </span>
-                <span className="ml-2 h-px flex-1 bg-gradient-to-r from-border to-transparent" aria-hidden="true" />
+                <span className="ml-2 h-px flex-1 bg-border" aria-hidden="true" />
               </button>
             </Collapsible.Trigger>
 
@@ -112,8 +112,8 @@ export function GroupedView({
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                    gap: '16px',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                    gap: '26px 16px',
                   }}
                 >
                   {categoryLinks.map((link) => (

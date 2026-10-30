@@ -7,7 +7,7 @@ import type { UptimeStatus } from '@/types'
 const colorMap: Record<UptimeStatus, string> = {
   unchecked: 'bg-muted-foreground/40',
   up: 'bg-green-500',
-  down: 'bg-red-500',
+  down: 'bg-red-500 ring-[3px] ring-red-500/25',
 }
 
 const statusCodeLabels: Record<number, string> = {
@@ -47,7 +47,7 @@ export function UptimeDot({ status, lastCheckedAt, lastStatusCode }: UptimeDotPr
       <Tooltip>
         <TooltipTrigger asChild>
           <span
-            className={`inline-block size-2.5 rounded-full shrink-0 ${colorClass}`}
+            className={`inline-block size-2 rounded-full shrink-0 ${colorClass}`}
             aria-label={`Link status: ${status}`}
           />
         </TooltipTrigger>

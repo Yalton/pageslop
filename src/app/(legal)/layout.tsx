@@ -12,7 +12,7 @@ export default function LegalLayout({
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <Link
             href="/"
-            className="shrink-0 text-[20px] font-semibold leading-[1.2] hover:text-primary"
+            className="shrink-0 text-[20px] font-semibold leading-[1.2] hover:text-ink"
           >
             Pageslop
           </Link>

@@ -173,13 +173,13 @@ export function LinkViewToolbar({
               <SlidersHorizontal className="size-4" />
               Filters
               {count > 0 && (
-                <span className="ml-1 inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-violet-600 px-1.5 text-xs font-medium text-white">
+                <span className="ml-1 inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
                   {count}
                 </span>
               )}
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-2xl border-white/10 bg-background/80 backdrop-blur-xl">
+          <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto rounded-t-xl bg-background">
             <SheetHeader>
               <SheetTitle>Filters</SheetTitle>
               <SheetDescription className="sr-only">Sort and filter your links</SheetDescription>
@@ -195,7 +195,7 @@ export function LinkViewToolbar({
                 </Button>
               )}
               <Button
-                className="flex-1 bg-gradient-to-br from-violet-500 to-violet-600 text-white"
+                className="flex-1"
                 onClick={() => setSheetOpen(false)}
               >
                 Done

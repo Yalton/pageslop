@@ -4,77 +4,108 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: 240 10% 4%;
-  --foreground: 0 0% 98%;
-  --card: 240 6% 10%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 6% 10%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 263 70% 58%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 240 6% 10%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 6% 10%;
-  --muted-foreground: 240 5% 65%;
-  --accent: 263 70% 58%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 6% 16%;
-  --input: 240 6% 16%;
-  --ring: 263 70% 58%;
-  --radius: 0.5rem;
+  /* Card catalogue: graphite ground, one ink-blue accent. Colour comes from the sites' own images. */
+  --background: 216 11% 9%;
+  --foreground: 40 19% 91%;
+  --card: 214 10% 14%;
+  --card-foreground: 40 19% 91%;
+  --popover: 213 11% 17%;
+  --popover-foreground: 40 19% 91%;
+  --primary: 222 70% 54%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 213 11% 17%;
+  --secondary-foreground: 40 19% 91%;
+  --muted: 213 11% 17%;
+  --muted-foreground: 215 7% 68%;
+  --accent: 213 11% 19%;
+  --accent-foreground: 40 19% 91%;
+  --destructive: 4 72% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 213 10% 21%;
+  --input: 214 9% 26%;
+  --ring: 221 100% 78%;
+  --radius: 0.375rem;
   --chart-1: 220 70% 50%;
   --chart-2: 160 60% 45%;
   --chart-3: 30 80% 55%;
   --chart-4: 280 65% 60%;
   --chart-5: 340 75% 55%;
-  --sidebar-background: 240 6% 10%;
-  --sidebar-foreground: 0 0% 98%;
-  --sidebar-primary: 263 70% 58%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 240 6% 16%;
-  --sidebar-accent-foreground: 0 0% 98%;
-  --sidebar-border: 240 6% 16%;
-  --sidebar-ring: 263 70% 58%;
-  /* Strength of the ambient background glows (see body). */
-  --glow-strength: 1;
+  --sidebar-background: 210 12% 6%;
+  --sidebar-foreground: 40 19% 91%;
+  --sidebar-primary: 222 70% 54%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 214 10% 14%;
+  --sidebar-accent-foreground: 40 19% 91%;
+  --sidebar-border: 213 10% 21%;
+  --sidebar-ring: 221 100% 78%;
+  /* Accent as text (links, active nav, counts); --primary is the accent as a fill. */
+  --ink: 221 100% 78%;
+  --line-strong: 214 9% 29%;
+  --card-shadow: 0 1px 2px hsl(0 0% 0% / 0.35), 0 6px 18px -8px hsl(0 0% 0% / 0.6);
+  /* Lightness of the flat panel behind cards that have no preview image. */
+  --blank-panel: 38% 27%;
+  /* Category colours, tuned per theme for text contrast on cards. */
+  --cat-technology: #5b95f7;
+  --cat-news: #e2a83b;
+  --cat-reference: #3fb8a8;
+  --cat-entertainment: #ec6b8f;
+  --cat-shopping: #e6884d;
+  --cat-social: #a58af3;
+  --cat-education: #86c552;
+  --cat-finance: #bccb4f;
+  --cat-health: #ee8a63;
+  --cat-creative: #cf86e0;
+  --cat-other: #959ca5;
 }
 
 .light {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 4%;
-  --card: 240 5% 96%;
-  --card-foreground: 240 10% 4%;
+  --background: 48 17% 94%;
+  --foreground: 216 9% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 216 9% 11%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 4%;
-  --primary: 263 70% 50%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 240 5% 96%;
-  --secondary-foreground: 240 10% 4%;
-  --muted: 240 5% 96%;
-  --muted-foreground: 240 4% 46%;
-  --accent: 263 70% 50%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 6% 90%;
-  --input: 240 6% 90%;
-  --ring: 263 70% 50%;
+  --popover-foreground: 216 9% 11%;
+  --primary: 223 69% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 45 14% 89%;
+  --secondary-foreground: 216 9% 11%;
+  --muted: 45 14% 89%;
+  --muted-foreground: 214 7% 38%;
+  --accent: 45 14% 89%;
+  --accent-foreground: 216 9% 11%;
+  --destructive: 5 64% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 42 11% 83%;
+  --input: 42 9% 76%;
+  --ring: 223 69% 45%;
   --chart-1: 12 76% 61%;
   --chart-2: 173 58% 39%;
   --chart-3: 197 37% 24%;
   --chart-4: 43 74% 66%;
   --chart-5: 27 87% 67%;
-  --sidebar-background: 240 5% 96%;
-  --sidebar-foreground: 240 10% 4%;
-  --sidebar-primary: 263 70% 50%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 240 6% 90%;
-  --sidebar-accent-foreground: 240 10% 4%;
-  --sidebar-border: 240 6% 90%;
-  --sidebar-ring: 263 70% 50%;
-  --glow-strength: 0.55;
+  --sidebar-background: 45 14% 89%;
+  --sidebar-foreground: 216 9% 11%;
+  --sidebar-primary: 223 69% 45%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 100%;
+  --sidebar-accent-foreground: 216 9% 11%;
+  --sidebar-border: 42 11% 83%;
+  --sidebar-ring: 223 69% 45%;
+  --ink: 223 69% 45%;
+  --line-strong: 42 9% 72%;
+  --card-shadow: 0 1px 2px hsl(40 10% 10% / 0.08), 0 6px 16px -10px hsl(40 10% 10% / 0.25);
+  --blank-panel: 62% 86%;
+  --cat-technology: #2559c9;
+  --cat-news: #8a5a00;
+  --cat-reference: #0f7366;
+  --cat-entertainment: #b02a55;
+  --cat-shopping: #a3460f;
+  --cat-social: #6a44d4;
+  --cat-education: #3d7414;
+  --cat-finance: #5c6b0c;
+  --cat-health: #a8401a;
+  --cat-creative: #9339a8;
+  --cat-other: #5f666f;
 }
 
 @theme inline {
@@ -105,12 +136,15 @@
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
+  --color-ink: hsl(var(--ink));
+  --color-line-strong: hsl(var(--line-strong));
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-space-grotesk);
+  --font-sans: var(--font-source-sans);
+  --font-display: var(--font-zilla-slab);
+  --shadow-card: var(--card-shadow);
 }
 
 @keyframes shimmer {
@@ -130,31 +164,34 @@
   border-color: hsl(var(--border));
 }
 
+html {
+  scrollbar-color: hsl(var(--line-strong)) transparent;
+  accent-color: hsl(var(--primary));
+}
+
 body {
   background-color: hsl(var(--background));
-  /* Soft violet, cyan and pink washes so the dark canvas is not flat black. */
-  background-image:
-    radial-gradient(60rem 40rem at 15% -10%, hsl(263 80% 60% / calc(0.22 * var(--glow-strength))), transparent 60%),
-    radial-gradient(50rem 35rem at 110% 5%, hsl(195 90% 55% / calc(0.1 * var(--glow-strength))), transparent 60%),
-    radial-gradient(45rem 30rem at 55% 115%, hsl(320 80% 60% / calc(0.07 * var(--glow-strength))), transparent 60%);
-  background-attachment: fixed;
   color: hsl(var(--foreground));
+  caret-color: hsl(var(--ink));
   font-family: var(--font-sans, ui-sans-serif), system-ui, -apple-system, sans-serif;
+  font-size: 15px;
 }
 
-h1, h2 {
-  font-family: var(--font-display, var(--font-sans)), system-ui, sans-serif;
-  letter-spacing: -0.015em;
+::selection {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
 }
 
-/* Wordmark: violet to pink gradient text. */
+h1, h2, h3 {
+  font-family: var(--font-display, var(--font-sans)), Rockwell, serif;
+  letter-spacing: -0.01em;
+}
+
+/* Wordmark: the slab face, set solid. */
 .brand-text {
-  font-family: var(--font-display, var(--font-sans)), system-ui, sans-serif;
-  background: linear-gradient(100deg, hsl(263 85% 68%), hsl(300 80% 66%) 55%, hsl(330 85% 66%));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display, var(--font-sans)), Rockwell, serif;
+  color: hsl(var(--foreground));
+  letter-spacing: -0.01em;
 }
 
 /* Icon badge for empty states. */
@@ -165,8 +202,9 @@ h1, h2 {
   width: 4rem;
   height: 4rem;
   margin-bottom: 1.25rem;
-  border-radius: 1rem;
-  color: hsl(var(--primary));
-  background: hsl(var(--primary) / 0.1);
-  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.25), 0 0 48px -12px hsl(var(--primary) / 0.7);
+  border-radius: 0.75rem;
+  color: hsl(var(--ink));
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--card-shadow);
 }

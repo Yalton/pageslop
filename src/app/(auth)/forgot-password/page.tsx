@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
         <Card>
           <CardContent className="py-8 flex flex-col items-center gap-4 text-center">
             <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Mail className="size-6 text-primary" />
+              <Mail className="size-6 text-ink" />
             </div>
             <p className="text-sm text-muted-foreground max-w-sm">
               If an account exists for <strong className="text-foreground">{sentTo}</strong>, we sent a password reset link. Check your inbox.

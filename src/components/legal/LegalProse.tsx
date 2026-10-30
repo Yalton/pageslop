@@ -75,7 +75,7 @@ export function LegalLink({
     <a
       href={href}
       className={cn(
-        "font-medium text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary",
+        "font-medium text-ink underline underline-offset-4 decoration-primary/40 hover:decoration-primary",
         className
       )}
     >

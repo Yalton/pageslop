@@ -30,7 +30,7 @@ export default function TagsPage() {
 
   return (
     <div className="flex flex-col min-h-screen p-6">
-      <h1 className="text-3xl font-semibold tracking-tight mb-6">Tags</h1>
+      <h1 className="text-3xl font-bold mb-6">Tags</h1>
 
       <div className="mb-4 max-w-sm">
         <SearchInput value={filterQuery} onChange={setFilterQuery} placeholder="Search tags..." />
@@ -63,15 +63,15 @@ export default function TagsPage() {
               key={tag.name}
               type="button"
               onClick={() => handleTagClick(tag.name)}
-              className="group flex flex-col gap-3 rounded-xl border border-border/60 bg-card/60 p-4 text-left backdrop-blur-sm transition-[transform,box-shadow,border-color] duration-300 ease-out hover:border-primary/50 hover:shadow-[0_14px_40px_-14px_hsl(var(--primary)/0.55)] motion-safe:hover:-translate-y-1"
+              className="group flex flex-col gap-3 rounded-md border bg-card p-4 text-left shadow-card transition-[transform,border-color] duration-200 ease-out hover:border-line-strong motion-safe:hover:-translate-y-0.5"
             >
               <span className="flex items-baseline justify-between gap-3">
-                <span className="truncate font-display text-base font-semibold">{tag.name}</span>
+                <span className="truncate font-display text-[17px] font-semibold">{tag.name}</span>
                 <span className="shrink-0 text-sm tabular-nums text-muted-foreground">{tag.count}</span>
               </span>
               <span className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
                 <span
-                  className="block h-full rounded-full bg-gradient-to-r from-primary to-[hsl(290_70%_52%)]"
+                  className="block h-full rounded-full bg-primary"
                   style={{ width: `${Math.round(tagWeight(tag.count, maxCount) * 100)}%` }}
                 />
               </span>

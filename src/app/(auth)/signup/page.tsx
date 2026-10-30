@@ -76,7 +76,7 @@ export default function SignupPage() {
         <Card>
           <CardContent className="py-8 flex flex-col items-center gap-4 text-center">
             <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Mail className="size-6 text-primary" />
+              <Mail className="size-6 text-ink" />
             </div>
             <p className="text-sm text-muted-foreground max-w-sm">
               We sent a verification link to <strong className="text-foreground">{sentTo}</strong>. Click the link in the email to activate your account.

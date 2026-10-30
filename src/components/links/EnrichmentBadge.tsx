@@ -22,7 +22,7 @@ export function EnrichmentBadge({ source, error }: EnrichmentBadgeProps) {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex items-center gap-0.5 text-xs text-violet-500">
+            <span className="inline-flex items-center gap-0.5 text-xs text-ink">
               <Sparkles className="size-3" />
             </span>
           </TooltipTrigger>

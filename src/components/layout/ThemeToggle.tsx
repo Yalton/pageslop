@@ -21,14 +21,14 @@ export function ThemeToggle() {
       size="icon"
       onClick={handleToggle}
       aria-label="Toggle theme"
-      className="text-primary"
+      className="text-ink"
     >
       {!mounted ? (
         <span className="size-5" />
       ) : theme === "dark" ? (
-        <Sun className="size-5 text-primary" />
+        <Sun className="size-5 text-ink" />
       ) : (
-        <Moon className="size-5 text-primary" />
+        <Moon className="size-5 text-ink" />
       )}
     </Button>
   )

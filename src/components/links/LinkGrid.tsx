@@ -416,8 +416,8 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '16px',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: '26px 16px',
           }}
         >
           {filteredLinks.map((link) => (

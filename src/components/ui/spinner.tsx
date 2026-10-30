@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 
 /** Spinning loader icon. Pair with a label for screen readers, or use PageSpinner. */
 export function Spinner({ className }: { className?: string }) {
-  return <Loader2 aria-hidden className={cn('size-5 animate-spin text-primary', className)} />
+  return <Loader2 aria-hidden className={cn('size-5 animate-spin text-ink', className)} />
 }
 
 /** Centered spinner for a page or panel that is still loading its data. */

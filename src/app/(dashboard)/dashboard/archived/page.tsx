@@ -5,7 +5,7 @@ import { PageSpinner } from '@/components/ui/spinner'
 export default function ArchivedPage() {
   return (
     <div className="flex flex-col min-h-screen p-6">
-      <h1 className="text-3xl font-semibold tracking-tight mb-6">Archived</h1>
+      <h1 className="text-3xl font-bold mb-6">Archived</h1>
       <Suspense fallback={<PageSpinner label="Loading links" />}>
         <LinkGrid view="archived" />
       </Suspense>

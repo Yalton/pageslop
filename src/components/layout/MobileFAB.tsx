@@ -60,7 +60,7 @@ export function MobileFAB() {
 
   return (
     <>
-      {/* FAB: 56px, violet, bottom-right, mobile only */}
+      {/* FAB: 56px, accent, bottom-right, mobile only */}
       <button
         type="button"
         aria-label="Save link"

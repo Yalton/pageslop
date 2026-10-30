@@ -28,6 +28,7 @@ import { authClient } from "@/lib/auth/client"
 import { cn } from "@/lib/utils"
 import { useLinks } from "@/lib/hooks/useLinks"
 import { countInbox } from "@/lib/stash/revisit"
+import { filterAllLinksView, filterArchivedView } from "@/lib/utils/all-links-filter"
 import { isNavActive } from "@/lib/nav/active"
 import { browserStorage, clearPersisted } from "@/lib/swr/persistent-cache"
 
@@ -47,11 +48,15 @@ function NavItem({
   isActive,
   collapsed = false,
   badge,
+  count,
 }: {
   item: (typeof navItems)[number]
   isActive: boolean
   collapsed?: boolean
+  /** Unread count, shown as an accent pill (To Revisit). */
   badge?: number
+  /** Plain item count, shown muted. */
+  count?: number
 }) {
   const showBadge = typeof badge === "number" && badge > 0
   const badgeText = showBadge && badge > 99 ? "99+" : String(badge ?? "")
@@ -62,7 +67,7 @@ function NavItem({
       className={cn(
         "relative w-full justify-start gap-3 text-sm font-semibold",
         collapsed && "justify-center px-0",
-        isActive && "bg-primary/15 text-primary shadow-[inset_2px_0_0_hsl(var(--primary)),0_0_24px_-10px_hsl(var(--primary)/0.8)] hover:bg-primary/20 hover:text-primary",
+        isActive && "bg-sidebar-accent text-foreground shadow-[inset_0_0_0_1px_hsl(var(--border))] hover:bg-sidebar-accent [&_svg]:text-ink",
         item.disabled && "cursor-not-allowed opacity-50"
       )}
       disabled={item.disabled}
@@ -82,11 +87,14 @@ function NavItem({
           {!collapsed && <span>{item.label}</span>}
           {showBadge && !collapsed && (
             <span
-              className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium tabular-nums text-primary"
+              className="ml-auto rounded-full bg-ink/15 px-2 py-0.5 text-xs font-semibold tabular-nums text-ink"
               aria-label={`${badge} unread`}
             >
               {badgeText}
             </span>
+          )}
+          {!showBadge && !collapsed && typeof count === "number" && (
+            <span className="ml-auto text-xs font-normal tabular-nums text-muted-foreground">{count}</span>
           )}
           {showBadge && collapsed && (
             <span
@@ -128,6 +136,11 @@ function SidebarContent({
   const { cache } = useSWRConfig()
   const { links } = useLinks()
   const inboxCount = countInbox(links)
+  const counts: Record<string, number> = {
+    "/dashboard": filterAllLinksView(links).length,
+    "/dashboard/archived": filterArchivedView(links).length,
+    "/dashboard/tags": new Set(links.flatMap((l) => l.tags?.map((t) => t.name) ?? [])).size,
+  }
 
   async function handleLogOut() {
     await authClient.signOut()
@@ -142,7 +155,7 @@ function SidebarContent({
       {/* App name */}
       {!collapsed && (
         <div className="px-4 py-5">
-          <span className="brand-text text-[22px] font-bold leading-[1.2]">Pageslop</span>
+          <span className="brand-text text-2xl font-bold leading-none">Pageslop</span>
         </div>
       )}
       {collapsed && <div className="py-5" />}
@@ -157,6 +170,7 @@ function SidebarContent({
               isActive={isNavActive(pathname, item.href)}
               collapsed={collapsed}
               badge={item.href === REVISIT_HREF ? inboxCount : undefined}
+              count={counts[item.href]}
             />
           ))}
         </nav>
@@ -199,31 +213,31 @@ export function Sidebar() {
   return (
     <>
       {/* Desktop sidebar: always visible at 240px */}
-      <aside className="hidden lg:flex lg:w-[240px] lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 bg-card/60 backdrop-blur-xl border-r border-border/60">
+      <aside className="hidden lg:flex lg:w-[240px] lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 bg-sidebar-background border-r">
         <SidebarContent pathname={pathname} />
       </aside>
 
       {/* Tablet sidebar: collapsed to 64px, icons only with tooltips */}
-      <aside className="hidden md:flex lg:hidden md:w-16 md:flex-col md:fixed md:inset-y-0 md:left-0 bg-card/60 backdrop-blur-xl border-r border-border/60">
+      <aside className="hidden md:flex lg:hidden md:w-16 md:flex-col md:fixed md:inset-y-0 md:left-0 bg-sidebar-background border-r">
         <SidebarContent pathname={pathname} collapsed />
       </aside>
 
       {/* Mobile: hamburger + Sheet */}
-      <div className="flex items-center md:hidden px-4 py-3 bg-card/70 backdrop-blur-xl border-b border-border/60 sticky top-0 z-30">
+      <div className="flex items-center md:hidden px-4 py-3 bg-sidebar-background border-b sticky top-0 z-30">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="Open menu">
               <Menu className="size-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[240px] p-0 bg-card" showCloseButton={false}>
+          <SheetContent side="left" className="w-[240px] p-0 bg-sidebar-background" showCloseButton={false}>
             <SidebarContent
               pathname={pathname}
               onNavigate={() => setMobileOpen(false)}
             />
           </SheetContent>
         </Sheet>
-        <span className="brand-text ml-3 text-[20px] font-bold">Pageslop</span>
+        <span className="brand-text ml-3 text-[21px] font-bold">Pageslop</span>
       </div>
     </>
   )
