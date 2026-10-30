@@ -112,6 +112,7 @@ describe('POST /api/settings/api-key', () => {
     const body = await res.json()
     expect(body).toHaveProperty('maskedKey', 'sk-a...alue')
     expect(body).toHaveProperty('message')
+    expect(encryptApiKey).toHaveBeenCalledWith(expect.any(String), 'user-1')
     expect(setEncryptedApiKey).toHaveBeenCalledWith('user-1', 'encrypted-blob')
   })
 })
@@ -165,6 +166,7 @@ describe('GET /api/settings/api-key', () => {
     expect(body).toHaveProperty('maskedKey', 'sk-a...alue')
     // Full key must NOT be in the response
     expect(JSON.stringify(body)).not.toContain('sk-ant-api03-longkeyvalue')
+    expect(decryptApiKey).toHaveBeenCalledWith('encrypted-blob', 'user-1')
   })
 })
 

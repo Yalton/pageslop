@@ -41,7 +41,7 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   // Encrypt and store
-  const encrypted = encryptApiKey(apiKey.trim())
+  const encrypted = encryptApiKey(apiKey.trim(), session.user.id)
   await setEncryptedApiKey(session.user.id, encrypted)
 
   // Return masked form only
@@ -60,7 +60,7 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   // Decrypt only to produce the masked form — full key never leaves the server
-  const plaintext = decryptApiKey(encrypted)
+  const plaintext = decryptApiKey(encrypted, session.user.id)
   const maskedKey = maskApiKey(plaintext)
   return Response.json({ hasKey: true, maskedKey })
 }

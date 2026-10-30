@@ -4,11 +4,11 @@ import { screenshotUrl } from '../lib/scraper/screenshot'
 import { checkUrl } from '../lib/monitor/check-url'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import { eq, sql, and, ne } from 'drizzle-orm'
+import { eq, sql, and, ne, isNotNull, notLike } from 'drizzle-orm'
 import * as schema from '../lib/db/schema'
 import { importJobs } from '../lib/db/schema'
 import { enrich } from '../lib/enrichment/classify'
-import { decryptApiKey } from '../lib/enrichment/crypto'
+import { decryptApiKey, reencryptLegacyApiKey } from '../lib/enrichment/crypto'
 import { categoryUpdate } from '../lib/enrichment/category-source'
 import { llmEnrich } from '../lib/enrichment/llm-enrich'
 import { archiveExpiredStash } from '../lib/db/queries/links'
@@ -61,7 +61,35 @@ async function backfillEnrichment() {
   }
 }
 
+/**
+ * Re-encrypt API keys stored before they were bound to their user id.
+ * Runs once at startup. A row whose key changed meanwhile is left for the
+ * next start; a key that cannot be decrypted is logged and left as is.
+ */
+async function upgradeLegacyApiKeys() {
+  const rows = await db
+    .select({ id: schema.user.id, encryptedApiKey: schema.user.encryptedApiKey })
+    .from(schema.user)
+    .where(and(isNotNull(schema.user.encryptedApiKey), notLike(schema.user.encryptedApiKey, 'v2:%')))
+  let upgraded = 0
+  for (const row of rows) {
+    try {
+      const next = reencryptLegacyApiKey(row.encryptedApiKey!, row.id)
+      if (!next) continue
+      await db
+        .update(schema.user)
+        .set({ encryptedApiKey: next })
+        .where(and(eq(schema.user.id, row.id), eq(schema.user.encryptedApiKey, row.encryptedApiKey!)))
+      upgraded++
+    } catch (err) {
+      console.error(`[worker] could not re-encrypt the API key of user ${row.id}:`, err)
+    }
+  }
+  if (rows.length > 0) console.log(`[worker] re-encrypted ${upgraded} of ${rows.length} legacy API key(s)`)
+}
+
 async function main() {
+  await upgradeLegacyApiKeys()
   await boss.start()
   await boss.createQueue('scrape')
   await boss.createQueue('enrich')
@@ -194,7 +222,7 @@ async function main() {
 
     if (userRow?.encryptedApiKey) {
       try {
-        const apiKey = decryptApiKey(userRow.encryptedApiKey)
+        const apiKey = decryptApiKey(userRow.encryptedApiKey, link.userId)
         const llmResult = await llmEnrich(
           {
             bodyText: raw.bodyText,
