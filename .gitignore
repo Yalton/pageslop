@@ -55,3 +55,6 @@ next-env.d.ts
 /.superpowers/
 /.worktrees/
 /.beads/
+
+# Local design-critique archives
+.impeccable/
