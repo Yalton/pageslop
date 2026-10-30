@@ -42,3 +42,10 @@ describe('openExternal', () => {
     expect(win.open).not.toHaveBeenCalled()
   })
 })
+
+describe('parseUrls length cap', () => {
+  it('drops URLs longer than 2048 characters', () => {
+    const long = `https://example.com/${'a'.repeat(2100)}`
+    expect(parseUrls(`${long}\nhttps://ok.com`)).toEqual(['https://ok.com'])
+  })
+})

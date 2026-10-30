@@ -102,3 +102,13 @@ describe('parseNetscapeBookmarks', () => {
     expect(urls).toContain('https://support.mozilla.org/en-US/products/firefox')
   })
 })
+
+describe('parseNetscapeBookmarks limits', () => {
+  it('skips URLs longer than 2048 characters and caps titles at 500', () => {
+    const long = `https://example.com/${'a'.repeat(2100)}`
+    const html = `<DL><DT><A HREF="${long}">Too long</A><DT><A HREF="https://ok.com">${'t'.repeat(800)}</A></DL>`
+    const result = parseNetscapeBookmarks(html)
+    expect(result.map((b) => b.url)).toEqual(['https://ok.com'])
+    expect(result[0].title).toHaveLength(500)
+  })
+})

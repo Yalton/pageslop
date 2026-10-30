@@ -37,6 +37,17 @@ describe('scrapeUrl', () => {
     expect(result.ogImage).toBe('https://example.com/img.jpg')
   })
 
+  it('caps the scraped title at 500 and the description at 2000 characters', async () => {
+    const html = `<html><head><title>${'t'.repeat(5000)}</title>
+      <meta name="description" content="${'d'.repeat(50000)}" /></head><body></body></html>`
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(html))
+
+    const result = await scrapeUrl('https://example.com')
+    expect(result.title).toHaveLength(500)
+    expect(result.title.endsWith('…')).toBe(true)
+    expect(result.description).toHaveLength(2000)
+  })
+
   it('falls back to title tag', async () => {
     const html = `
       <html>

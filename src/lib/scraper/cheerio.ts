@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio'
 import { safeFetch } from '../net/ssrf-guard'
 import { resolveAssetUrl } from './resolve-asset-url'
 import { readLimited } from '../net/read-limited'
+import { MAX_SCRAPED_DESCRIPTION_LENGTH, MAX_TITLE_LENGTH, truncateText } from '../links/limits'
 
 /** Most of a page's body read for metadata; <head> tags come first, so 2 MB is plenty. */
 export const MAX_HTML_BYTES = 2 * 1024 * 1024
@@ -46,13 +47,13 @@ export async function scrapeUrl(url: string): Promise<ScrapeResult> {
   const rawHtml = new TextDecoder().decode(bytes)
   const $ = cheerio.load(rawHtml)
 
-  const title = $('meta[property="og:title"]').attr('content')
+  const title = truncateText($('meta[property="og:title"]').attr('content')
     || $('title').text().trim()
-    || ''
+    || '', MAX_TITLE_LENGTH)
 
-  const description = $('meta[property="og:description"]').attr('content')
+  const description = truncateText($('meta[property="og:description"]').attr('content')
     || $('meta[name="description"]').attr('content')
-    || ''
+    || '', MAX_SCRAPED_DESCRIPTION_LENGTH)
 
   // Try multiple image meta tags in priority order
   const rawOgImage = $('meta[property="og:image"]').attr('content')

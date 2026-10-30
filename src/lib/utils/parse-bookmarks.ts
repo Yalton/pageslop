@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio'
+import { MAX_TITLE_LENGTH, MAX_URL_LENGTH, truncateText } from '@/lib/links/limits'
 
 export interface ParsedBookmark {
   url: string
@@ -18,6 +19,7 @@ export function parseNetscapeBookmarks(html: string): ParsedBookmark[] {
 
   $('a[href]').each((_, el) => {
     const href = $(el).attr('href') || ''
+    if (href.length > MAX_URL_LENGTH) return
 
     // Validate URL — skip javascript:, empty, and other invalid schemes
     let validUrl: string
@@ -32,7 +34,7 @@ export function parseNetscapeBookmarks(html: string): ParsedBookmark[] {
 
     // Extract title — fall back to URL if empty
     const text = $(el).text().trim()
-    const title = text.length > 0 ? text : validUrl
+    const title = truncateText(text.length > 0 ? text : validUrl, MAX_TITLE_LENGTH)
 
     // Extract add_date attribute (Unix timestamp in seconds)
     const addDateAttr = $(el).attr('add_date')
