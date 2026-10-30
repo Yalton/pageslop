@@ -1,10 +1,9 @@
 import puppeteer, { type Browser } from 'puppeteer'
 import { mkdir } from 'node:fs/promises'
-import { join } from 'node:path'
 import { type GuardedProxy, startGuardedProxy } from '../net/guarded-proxy'
 import { validateUrl } from '../net/ssrf-guard'
+import { SCREENSHOT_DIR, screenshotFilePath } from './screenshot-files'
 
-const SCREENSHOT_DIR = process.env.SCREENSHOT_DIR || join(process.cwd(), 'data', 'screenshots')
 
 // Schemes that never touch the network
 const LOCAL_SCHEMES = ['data:', 'blob:', 'about:']
@@ -55,7 +54,7 @@ export async function screenshotUrl(url: string, linkId: string): Promise<string
     await page.setViewport({ width: 1280, height: 800 })
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 })
 
-    const filePath = join(SCREENSHOT_DIR, `${linkId}.webp`)
+    const filePath = screenshotFilePath(linkId)
     await page.screenshot({
       path: filePath,
       type: 'webp',

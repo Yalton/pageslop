@@ -1,13 +1,12 @@
 import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { and, eq } from 'drizzle-orm'
 import { auth } from '@/lib/auth/server'
 import { db } from '@/lib/db/client'
 import { links } from '@/lib/db/schema'
+import { screenshotFilePath } from '@/lib/scraper/screenshot-files'
 
-const SCREENSHOT_DIR = process.env.SCREENSHOT_DIR || join(process.cwd(), 'data', 'screenshots')
 
 export async function GET(
   _req: NextRequest,
@@ -28,7 +27,7 @@ export async function GET(
     .limit(1)
   if (!ownedLink) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const filePath = join(SCREENSHOT_DIR, `${id}.webp`)
+  const filePath = screenshotFilePath(id)
 
   try {
     const data = await readFile(filePath)

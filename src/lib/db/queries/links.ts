@@ -4,6 +4,7 @@ import { eq, and, or, desc, ilike, inArray, isNull, lt, sql, type SQL } from 'dr
 import type { LinkSource, LinkWithTags, StashState, Tag } from '@/types'
 import { normalizeUrl } from '@/lib/links/normalize-url'
 import { encodeCursor, type LinkCursor } from '@/lib/links/cursor'
+import { removeScreenshots } from '@/lib/scraper/screenshot-files'
 
 /**
  * List all links eligible for uptime monitoring.
@@ -74,6 +75,7 @@ export async function deleteLink(userId: string, linkId: string) {
   const result = await db.delete(links)
     .where(and(eq(links.id, linkId), eq(links.userId, userId)))
     .returning()
+  if (result[0]) await removeScreenshots([result[0].id])
   return result[0] || null
 }
 
@@ -83,6 +85,7 @@ export async function bulkDeleteLinks(userId: string, ids: string[]): Promise<nu
   const rows = await db.delete(links)
     .where(and(eq(links.userId, userId), inArray(links.id, ids)))
     .returning({ id: links.id })
+  await removeScreenshots(rows.map((r) => r.id))
   return rows.length
 }
 
@@ -382,6 +385,7 @@ export async function bulkSetStashState(
     })
     .where(and(eq(links.userId, userId), inArray(links.id, ids)))
     .returning({ id: links.id })
+  await removeScreenshots(rows.map((r) => r.id))
   return rows.length
 }
 
@@ -396,5 +400,6 @@ export async function archiveExpiredStash(cutoff: Date): Promise<number> {
     .set({ stashState: 'archived', updatedAt: new Date() })
     .where(and(inArray(links.stashState, ['inbox', 'read']), lt(links.stashedAt, cutoff)))
     .returning({ id: links.id })
+  await removeScreenshots(rows.map((r) => r.id))
   return rows.length
 }
