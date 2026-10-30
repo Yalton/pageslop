@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { SWRConfig, preload, useSWRConfig } from 'swr'
 import { jsonFetcher } from '@/lib/swr/fetcher'
 import { PERSISTED_KEYS, browserStorage, createPersistentCache } from '@/lib/swr/persistent-cache'
@@ -44,10 +44,17 @@ export function DataProvider({ userId, children }: { userId: string; children: R
  * pages' hooks start their requests, so they pick up the preloaded request
  * instead of sending their own, and SWR keeps their result (it drops a
  * request that started before the latest mutate of its key).
+ *
+ * It runs once. In development StrictMode re-runs effects, and SWRConfig's
+ * cleanup unregisters the cache provider until its own effect re-runs, which
+ * happens after this child's: a mutate in between throws inside SWR.
  */
 function Preload({ saved }: { saved: Record<string, unknown> }) {
   const { mutate } = useSWRConfig()
+  const started = useRef(false)
   useLayoutEffect(() => {
+    if (started.current) return
+    started.current = true
     for (const [key, data] of Object.entries(saved)) void mutate(key, data, { revalidate: false })
     for (const key of PERSISTED_KEYS) {
       preload(key, jsonFetcher)
