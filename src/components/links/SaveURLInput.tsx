@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Loader2 } from 'lucide-react'
+import { Link2, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -65,15 +65,16 @@ export function SaveURLInput() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="hidden md:flex items-center gap-2 w-full"
+      className="hidden md:flex items-start gap-1.5 w-full rounded-lg border bg-card p-1 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40"
     >
+      <Link2 className="ml-2 mt-3 size-4 shrink-0 text-muted-foreground" aria-hidden />
       {isMultiLine ? (
         <Textarea
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Paste a link..."
-          className="flex-1 text-sm min-h-9 resize-none"
+          className="flex-1 min-h-9 resize-none border-0 bg-transparent text-[15px] shadow-none focus-visible:ring-0 dark:bg-transparent"
           disabled={isSubmitting}
         />
       ) : (
@@ -82,20 +83,20 @@ export function SaveURLInput() {
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Paste a link..."
-          className="flex-1 text-sm h-9"
+          className="flex-1 h-9 border-0 bg-transparent px-1 text-[15px] shadow-none focus-visible:ring-0 dark:bg-transparent"
           disabled={isSubmitting}
         />
       )}
       <Button
         type="submit"
-        className="h-9 px-3"
+        className="h-9 px-5"
         aria-label="Save link"
         disabled={isSubmitting || !value.trim()}
       >
         {isSubmitting ? (
           <Loader2 className="size-5 animate-spin" />
         ) : (
-          <Plus className="size-5" />
+          'Save'
         )}
       </Button>
     </form>

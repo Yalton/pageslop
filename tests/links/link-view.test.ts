@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { LINK_DEFAULTS } from '../fixtures/link-defaults'
 import {
+  activeFilterChips,
   activeFilterCount,
   applyLinkView,
   categoryOptions,
@@ -299,5 +300,31 @@ describe('status filter', () => {
   it('names the status in the empty message', () => {
     expect(emptyFilterMessage('', null, { ...DEFAULT_LINK_VIEW, status: 'down' })).toBe('No links that are dead')
     expect(emptyFilterMessage('', null, { ...DEFAULT_LINK_VIEW, status: 'unchecked' })).toBe('No links that are unchecked')
+  })
+})
+
+describe('activeFilterChips', () => {
+  it('is empty when nothing filters', () => {
+    expect(activeFilterChips({ ...DEFAULT_LINK_VIEW, sort: 'title' }, null)).toEqual([])
+  })
+
+  it('lists one chip per active filter, tag first', () => {
+    const view = { ...DEFAULT_LINK_VIEW, domain: 'github.com', category: 'Technology', status: 'down' as const, untagged: true, described: true }
+    expect(activeFilterChips(view, 'rust').map((c) => [c.label, c.value])).toEqual([
+      ['Tag', 'rust'],
+      ['Website', 'github.com'],
+      ['Category', 'Technology'],
+      ['Status', 'Dead'],
+      [null, 'Untagged'],
+      [null, 'Has description'],
+    ])
+  })
+
+  it('removes only its own filter from the URL', () => {
+    const current = new URLSearchParams('tag=rust&domain=github.com&status=down&sort=title')
+    const [tag, domain, status] = activeFilterChips(parseLinkView(current), current.get('tag'))
+    expect(linkViewQuery(current, tag.remove)).toBe('domain=github.com&status=down&sort=title')
+    expect(linkViewQuery(current, domain.remove)).toBe('tag=rust&status=down&sort=title')
+    expect(linkViewQuery(current, status.remove)).toBe('tag=rust&domain=github.com&sort=title')
   })
 })

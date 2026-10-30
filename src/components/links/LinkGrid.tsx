@@ -11,11 +11,9 @@ import { LinkCardList } from '@/components/links/LinkCardList'
 import { LinkDetail } from '@/components/links/LinkDetail'
 import { SaveURLInput } from '@/components/links/SaveURLInput'
 import { SearchInput } from '@/components/links/SearchInput'
-import { TagFilterChip } from '@/components/links/TagFilterChip'
 import { GroupedView } from '@/components/links/GroupedView'
 import { BulkActionBar } from '@/components/links/BulkActionBar'
 import { LinkViewToolbar } from '@/components/links/LinkViewToolbar'
-import { SiteTabs } from '@/components/links/SiteTabs'
 import { ShortcutHelp } from '@/components/links/ShortcutHelp'
 import {
   Dialog,
@@ -28,7 +26,7 @@ import {
 import { UNDO_WINDOW_MS } from '@/lib/links/pending-deletes'
 import { PageSpinner } from '@/components/ui/spinner'
 import { groupLinks } from '@/lib/utils/group-links'
-import { groupLinksBySite, siteFavicons } from '@/lib/utils/site-tabs'
+import { groupLinksBySite } from '@/lib/utils/site-tabs'
 import { groupIdsByState, restoreTarget, toggleSelection } from '@/lib/utils/selection'
 import { filterLinks } from '@/lib/utils/search'
 import {
@@ -54,6 +52,13 @@ import type { LinkWithTags, StashState } from '@/types'
 type ViewMode = 'grid' | 'list' | 'grouped' | 'site'
 const VIEW_MODES: readonly string[] = ['grid', 'list', 'grouped', 'site']
 const STORAGE_KEY = 'pageslop-view-mode'
+const VIEW_SWITCH: { mode: ViewMode; label: string; Icon: typeof LayoutGrid }[] = [
+  { mode: 'grid', label: 'Grid view', Icon: LayoutGrid },
+  { mode: 'list', label: 'List view', Icon: List },
+  { mode: 'grouped', label: 'Group by category', Icon: Layers },
+  { mode: 'site', label: 'Group by site', Icon: Globe },
+]
+const VIEW_SHORT: Record<ViewMode, string> = { grid: 'Grid', list: 'List', grouped: 'Category', site: 'Site' }
 
 /** 'all' is All Links; 'archived' lists dismissed or expired stash links so they can be restored. */
 export type LinkGridView = 'all' | 'archived'
@@ -74,7 +79,6 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const selectAnchor = useRef<string | null>(null)
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
-  const [websiteFilterOpen, setWebsiteFilterOpen] = useState(false)
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
   const saveRef = useRef<HTMLDivElement>(null)
@@ -102,7 +106,6 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
   const domains = useMemo(() => domainOptions(visibleLinks), [visibleLinks])
   const categories = useMemo(() => categoryOptions(visibleLinks), [visibleLinks])
   const statuses = useMemo(() => statusOptions(visibleLinks), [visibleLinks])
-  const favicons = useMemo(() => siteFavicons(visibleLinks), [visibleLinks])
   const noMatchMessage = emptyFilterMessage(searchQuery, tagFilter, linkView)
   // Results fade in when the user changes the view, not when SWR refreshes the data.
   const resultsRef = useViewEnterAnimation<HTMLDivElement>(
@@ -249,93 +252,62 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
     router.push(viewHref({ tag: tagName }))
   }
 
-  function handleClearTagFilter() {
-    router.push(viewHref({ tag: null }))
-  }
-
   return (
     <div className="flex flex-col gap-4">
-      {/* Top bar: URL input + search + view toggle */}
-      <div className="flex items-start gap-2 flex-wrap">
+      {/* Row 1: save (the main action) and search */}
+      <div className="grid gap-2 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         {view === 'all' && (
-          <div ref={saveRef} className="flex-1 min-w-[200px]">
+          <div ref={saveRef} className="hidden md:block">
             <SaveURLInput />
           </div>
         )}
-        <div ref={searchRef} className="flex-1 min-w-[160px] max-w-sm">
-          <SearchInput value={searchQuery} onChange={setSearchQuery} />
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Toggle
-            pressed={selecting}
-            onPressedChange={(pressed) => (pressed ? setSelectMode(true) : clearSelection())}
-            aria-label="Select links"
-            size="sm"
-          >
-            <ListChecks className="size-4" />
-          </Toggle>
-          <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-          <Toggle
-            pressed={viewMode === 'grid'}
-            onPressedChange={(pressed) => pressed && handleViewMode('grid')}
-            aria-label="Grid view"
-            size="sm"
-          >
-            <LayoutGrid className="size-4" />
-          </Toggle>
-          <Toggle
-            pressed={viewMode === 'list'}
-            onPressedChange={(pressed) => pressed && handleViewMode('list')}
-            aria-label="List view"
-            size="sm"
-          >
-            <List className="size-4" />
-          </Toggle>
-          <Toggle
-            pressed={viewMode === 'grouped'}
-            onPressedChange={(pressed) => pressed && handleViewMode('grouped')}
-            aria-label="Group by category"
-            title="Group by category"
-            size="sm"
-          >
-            <Layers className="size-4" />
-            <span className="hidden sm:inline">Category</span>
-          </Toggle>
-          <Toggle
-            pressed={viewMode === 'site'}
-            onPressedChange={(pressed) => pressed && handleViewMode('site')}
-            aria-label="Group by site"
-            title="Group by site"
-            size="sm"
-          >
-            <Globe className="size-4" />
-            <span className="hidden sm:inline">Site</span>
-          </Toggle>
+        <div ref={searchRef} className={view === 'all' ? undefined : 'md:col-span-2 md:max-w-md'}>
+          <SearchInput value={searchQuery} onChange={setSearchQuery} shortcut="/" />
         </div>
       </div>
 
-      {visibleLinks.length > 0 && (
-        <LinkViewToolbar
-          view={linkView}
-          domains={domains}
-          categories={categories}
-          statuses={statuses}
-          onChange={handleViewChange}
-          websiteOpen={websiteFilterOpen}
-          onWebsiteOpenChange={setWebsiteFilterOpen}
-        />
-      )}
-
-      {visibleLinks.length > 0 && (domains.length > 1 || linkView.domain) && (
-        <SiteTabs
-          domains={domains}
-          selected={linkView.domain}
-          favicons={favicons}
-          total={visibleLinks.length}
-          onSelect={(domain) => handleViewChange({ domain })}
-          onMore={() => setWebsiteFilterOpen(true)}
-        />
-      )}
+      {/* Row 2: Filters with active chips, then select (touch only) and the view switcher */}
+      <div className="flex flex-wrap items-center gap-2">
+        {visibleLinks.length > 0 && (
+          <LinkViewToolbar
+            view={linkView}
+            tag={tagFilter}
+            domains={domains}
+            categories={categories}
+            statuses={statuses}
+            onChange={handleViewChange}
+            onClearAll={handleClearAllFilters}
+          />
+        )}
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          {/* Cards show their checkbox on hover and focus, so mouse users don't need this. */}
+          <Toggle
+            variant="outline"
+            pressed={selecting}
+            onPressedChange={(pressed) => (pressed ? setSelectMode(true) : clearSelection())}
+            aria-label="Select links"
+            className={selecting ? undefined : '[@media(hover:hover)]:hidden'}
+          >
+            <ListChecks className="size-4" />
+          </Toggle>
+          <div role="group" aria-label="View" className="flex rounded-md border bg-card p-0.5">
+            {VIEW_SWITCH.map(({ mode, label, Icon }) => (
+              <Toggle
+                key={mode}
+                size="sm"
+                pressed={viewMode === mode}
+                onPressedChange={(pressed) => pressed && handleViewMode(mode)}
+                aria-label={label}
+                title={label}
+                className="rounded-[5px] data-[state=on]:text-ink"
+              >
+                <Icon className="size-4" />
+                <span className="hidden lg:inline">{VIEW_SHORT[mode]}</span>
+              </Toggle>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {view === 'archived' && visibleLinks.length > 0 && (
         <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
@@ -352,11 +324,6 @@ export function LinkGrid({ view = 'all' }: { view?: LinkGridView }) {
             Delete all
           </Button>
         </div>
-      )}
-
-      {/* Active tag filter chip */}
-      {tagFilter && (
-        <TagFilterChip tag={tagFilter} onClear={handleClearTagFilter} />
       )}
 
       {isLoading && links.length === 0 && <PageSpinner label="Loading links" />}

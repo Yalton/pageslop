@@ -1,32 +1,6 @@
 import type { LinkWithTags } from '@/types'
 import { domainKey } from '@/lib/utils/group-links'
-import { type FacetOption, type LinkSort } from '@/lib/utils/link-view'
-
-/** How many website tabs show before the rest go under "More". */
-export const SITE_TAB_LIMIT = 8
-
-export interface SiteTabs {
-  tabs: FacetOption[]
-  overflow: FacetOption[]
-}
-
-/**
- * Splits domain options (most links first, as domainOptions returns them) into
- * the tabs shown in the row and the overflow behind "More". The selected site
- * always gets a tab: when it would fall into the overflow it takes the last
- * slot, and a site from the URL that no link has shows with count 0.
- */
-export function siteTabs(options: FacetOption[], selected: string | null, limit = SITE_TAB_LIMIT): SiteTabs {
-  const known = !selected || options.some((o) => o.value === selected)
-  const all = known ? options : [...options, { value: selected, count: 0 }]
-  const index = selected ? all.findIndex((o) => o.value === selected) : -1
-  if (index === -1 || index < limit) {
-    return { tabs: all.slice(0, limit), overflow: all.slice(limit) }
-  }
-  const tabs = [...all.slice(0, Math.max(limit - 1, 0)), all[index]]
-  const overflow = all.filter((o) => !tabs.includes(o))
-  return { tabs, overflow }
-}
+import { type LinkSort } from '@/lib/utils/link-view'
 
 /** Each site's favicon: the first one any of its links has. Sites without one are left out. */
 export function siteFavicons(links: LinkWithTags[]): Map<string, string> {

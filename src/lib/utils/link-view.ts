@@ -86,6 +86,27 @@ export const CLEAR_FACETS: LinkViewPatch = { domain: null, category: null, untag
 /** Patch that turns off every filter including ?tag=; the sort is kept. */
 export const CLEAR_ALL_FILTERS: LinkViewPatch = { ...CLEAR_FACETS, tag: null }
 
+export interface FilterChip {
+  key: string
+  /** What the filter is, e.g. "Website"; null for on/off filters whose value says it all. */
+  label: string | null
+  value: string
+  /** Patch that removes just this filter. */
+  remove: LinkViewPatch
+}
+
+/** One removable chip per active filter, tag first, in the order the Filters panel lists them. */
+export function activeFilterChips(view: LinkViewState, tag: string | null): FilterChip[] {
+  const chips: FilterChip[] = []
+  if (tag) chips.push({ key: 'tag', label: 'Tag', value: tag, remove: { tag: null } })
+  if (view.domain) chips.push({ key: 'domain', label: 'Website', value: view.domain, remove: { domain: null } })
+  if (view.category) chips.push({ key: 'category', label: 'Category', value: view.category, remove: { category: null } })
+  if (view.status) chips.push({ key: 'status', label: 'Status', value: LINK_STATUS_LABELS[view.status], remove: { status: null } })
+  if (view.untagged) chips.push({ key: 'untagged', label: null, value: 'Untagged', remove: { untagged: false } })
+  if (view.described) chips.push({ key: 'described', label: null, value: 'Has description', remove: { described: false } })
+  return chips
+}
+
 /** Path plus the patched query, or the bare path when no params remain. */
 export function linkViewHref(basePath: string, current: URLSearchParams, patch: LinkViewPatch): string {
   const query = linkViewQuery(current, patch)
