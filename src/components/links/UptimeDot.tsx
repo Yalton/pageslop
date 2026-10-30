@@ -6,8 +6,8 @@ import type { UptimeStatus } from '@/types'
 
 const colorMap: Record<UptimeStatus, string> = {
   unchecked: 'bg-muted-foreground/40',
-  up: 'bg-green-500',
-  down: 'bg-red-500 ring-[3px] ring-red-500/25',
+  up: 'bg-status-up',
+  down: 'bg-status-down ring-[3px] ring-status-down/25',
 }
 
 const statusCodeLabels: Record<number, string> = {

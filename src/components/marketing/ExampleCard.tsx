@@ -32,7 +32,7 @@ export function ExampleCard({ link, className }: { link: ExampleLink; className?
             {link.domain.charAt(0).toUpperCase()}
           </span>
         )}
-        <span className="size-2 shrink-0 rounded-full bg-green-500" aria-hidden="true" />
+        <span className="size-2 shrink-0 rounded-full bg-status-up" aria-hidden="true" />
         <span className="truncate">{link.domain}</span>
       </div>
       <div className={cn('overflow-hidden rounded-md border bg-card text-card-foreground shadow-card', slot === 0 && 'rounded-tl-none')}>

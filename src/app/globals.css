@@ -40,6 +40,10 @@
   --sidebar-ring: 221 100% 78%;
   /* Accent as text (links, active nav, counts); --primary is the accent as a fill. */
   --ink: 221 100% 78%;
+  /* Link status: uptime dot, failed enrichment. */
+  --status-up: 145 49% 48%;
+  --status-down: 4 85% 62%;
+  --status-warn: 36 79% 57%;
   --line-strong: 214 9% 29%;
   --card-shadow: 0 1px 2px hsl(0 0% 0% / 0.35), 0 6px 18px -8px hsl(0 0% 0% / 0.6);
   /* Lightness of the flat panel behind cards that have no preview image. */
@@ -92,6 +96,10 @@
   --sidebar-border: 42 11% 83%;
   --sidebar-ring: 223 69% 45%;
   --ink: 223 69% 45%;
+  /* Link status: uptime dot, failed enrichment. */
+  --status-up: 145 63% 33%;
+  --status-down: 5 64% 48%;
+  --status-warn: 35 84% 35%;
   --line-strong: 42 9% 72%;
   --card-shadow: 0 1px 2px hsl(40 10% 10% / 0.08), 0 6px 16px -10px hsl(40 10% 10% / 0.25);
   --blank-panel: 62% 86%;
@@ -137,6 +145,9 @@
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
   --color-ink: hsl(var(--ink));
+  --color-status-up: hsl(var(--status-up));
+  --color-status-down: hsl(var(--status-down));
+  --color-status-warn: hsl(var(--status-warn));
   --color-line-strong: hsl(var(--line-strong));
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

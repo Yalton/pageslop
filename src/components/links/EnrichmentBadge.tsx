@@ -39,7 +39,7 @@ export function EnrichmentBadge({ source, error }: EnrichmentBadgeProps) {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex items-center gap-0.5 text-xs text-amber-500">
+            <span className="inline-flex items-center gap-0.5 text-xs text-status-warn">
               <AlertTriangle className="size-3" />
             </span>
           </TooltipTrigger>

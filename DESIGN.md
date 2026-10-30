@@ -25,6 +25,12 @@ colors:
   off-white-input-line: "hsl(42 9% 76%)"
   off-white-line-strong: "hsl(42 9% 72%)"
   signal-red-light: "hsl(5 64% 48%)"
+  status-up: "hsl(145 49% 48%)"
+  status-down: "hsl(4 85% 62%)"
+  status-warn: "hsl(36 79% 57%)"
+  status-up-light: "hsl(145 63% 33%)"
+  status-down-light: "hsl(5 64% 48%)"
+  status-warn-light: "hsl(35 84% 35%)"
   cat-technology: "#5b95f7"
   cat-news: "#e2a83b"
   cat-reference: "#3fb8a8"
@@ -236,6 +242,9 @@ A neutral graphite (or warm off-white) instrument with a single ink-blue accent;
 - **Input Line** (graphite-input-line / off-white-input-line): input and outline-button strokes.
 - **Line Strong** (graphite-line-strong / off-white-line-strong): the card border on hover, and the scrollbar thumb.
 - **Signal Red** (signal-red / signal-red-light): destructive actions and invalid fields only.
+
+### Status
+- **Status Up / Down / Warn** (status-up, status-down, status-warn, each with a `-light` twin; `--status-*` in globals.css, `bg-status-up` and friends in Tailwind): the uptime dot's up and down states and the failed-enrichment warning icon. Use these tokens rather than raw Tailwind greens, reds or ambers.
 
 ### Named Rules
 **The Two Inks Rule.** Ink Blue is a fill; Ink Blue Text is text, icons and focus. Never set text in the fill blue on graphite, and never fill a surface with the text blue.
