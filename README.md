@@ -1,11 +1,16 @@
 # Pageslop
 
-A self-hosted bookmark manager that classifies, tags, describes and organizes saved links for you. Paste a URL and Pageslop does the rest: no folders to create, no tags to type.
+**Your tabs close themselves. Nothing gets lost.**
+
+The Pageslop Autoclose extension for Firefox closes tabs you have stopped using and saves them to a **To Revisit** inbox, already titled, pictured, tagged and categorised. Go through the pile later: keep the good ones, archive the rest. A tab closes only after the server confirms it saved the URL.
+
+Pageslop runs on your own server, so the tabs it saves go to a machine you control. It is also a bookmark manager in its own right: paste any link and it fills in the title, image, description, tags and category for you. No folders to create, no tags to type.
 
 ![All links in the card grid, with images, categories and tags filled in automatically](docs/screenshots/dashboard.png)
 
 ## Features
 
+- **Idle tabs close themselves**: the [Firefox extension](#browser-extension) saves idle tabs to the To Revisit inbox, then closes them
 - **Instant save**: paste a URL; title, image and metadata are fetched automatically
 - **Auto-classification**: rule-based tags, descriptions and categories with no effort from you
 - **Bring your own LLM key**: add an Anthropic API key for better AI-generated tags and descriptions
@@ -14,7 +19,6 @@ A self-hosted bookmark manager that classifies, tags, describes and organizes sa
 - **Uptime monitoring**: scheduled health checks with a status dot per link
 - **Relationship graph**: a force-directed view of how bookmarks connect through shared tags
 - **Import and export**: import browser bookmark HTML files, export as JSON or HTML
-- **Browser extension** (Firefox) that saves idle tabs to a "To Revisit" inbox and closes them
 - **REST API and MCP server** for scripts and AI agents ([docs/api.md](docs/api.md), [docs/mcp.md](docs/mcp.md))
 
 ## Screenshots
@@ -158,7 +162,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
 ## Browser extension
 
-The Firefox extension in `extension/` closes idle tabs and saves them to the **To Revisit** inbox of your Pageslop instance. A tab is closed only after the server confirms it saved that URL. If the server is unreachable, nothing closes and the toolbar badge shows a red `!`.
+The Firefox extension in `extension/`, Pageslop Autoclose, closes idle tabs and saves them to the **To Revisit** inbox of your Pageslop instance. A tab is closed only after the server confirms it saved that URL. If the server is unreachable, nothing closes and the toolbar badge shows a red `!`.
 
 ### Connect it
 
