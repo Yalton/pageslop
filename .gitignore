@@ -58,3 +58,6 @@ next-env.d.ts
 
 # Local design-critique archives
 .impeccable/
+
+# Local demo clips and AMO screenshots (not committed)
+/demo-clips/

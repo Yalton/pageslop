@@ -1,0 +1,18 @@
+{
+  "categories": [
+    "tabs",
+    "bookmarks"
+  ],
+  "summary": {
+    "en-US": "Tabs you stopped using close themselves and land in the To Revisit inbox of your own Pageslop server, already titled, tagged and categorised. Requires a self-hosted Pageslop instance."
+  },
+  "description": {
+    "en-US": "Your tabs close themselves. Nothing gets lost.\n\nPageslop Autoclose closes tabs you have not used for a while and saves them to the **To Revisit** inbox of your Pageslop server. Pageslop fills in each page's title, image, tags and category, so the pile is easy to go through later: keep the good ones, archive the rest.\n\n**How it works**\n\n- Every 5 minutes the extension looks for tabs idle longer than your limit (default 6 hours), or for tabs beyond your maximum (default 25).\n- It sends their URLs and titles to your server, and closes a tab only after the server confirms it saved that URL. If the server is unreachable, nothing closes and the toolbar badge shows a red !.\n- Pinned, active, audible and private-window tabs are never closed. Neither are domains you exclude, or tabs you mark with **Keep tab (never auto-close)** in the tab context menu.\n- The popup can stash idle tabs now, stash the current tab, pause for an hour, or exclude the current domain.\n\n**You need your own Pageslop server.** Pageslop is open source (AGPL-3.0) and runs with Docker Compose: https://github.com/Yalton/pageslop. Create an API token under Settings → Browser extension, then enter your server URL and the token in the extension's options.\n\nThe extension talks only to the server you configure. It sends nothing anywhere else and has no analytics."
+  },
+  "homepage": {
+    "en-US": "https://github.com/Yalton/pageslop"
+  },
+  "version": {
+    "license": "AGPL-3.0-only"
+  }
+}
