@@ -35,7 +35,7 @@ Pageslop runs on your own server, so the tabs it saves go to a machine you contr
 
 ## Tech stack
 
-Next.js 15 (App Router), PostgreSQL 16 with Drizzle ORM, Better Auth (email and password), pg-boss for background jobs, Puppeteer/Chromium for screenshots, Tailwind CSS with shadcn/ui, and Docker Compose for deployment.
+Next.js 16 (App Router), PostgreSQL 16 with Drizzle ORM, Better Auth (email and password), pg-boss for background jobs, Puppeteer/Chromium for screenshots, Tailwind CSS with shadcn/ui, and Docker Compose for deployment.
 
 ## Self-hosting with Docker
 

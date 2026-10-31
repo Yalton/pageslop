@@ -45,7 +45,7 @@ No single feature carries the product. Its value is the combination, in one plac
 - REST API and MCP server for scripts and agents.
 - Email and password auth (Better Auth) with email verification; sign-up can be closed after the first account.
 - Keyboard: cards open with Enter; `/`, `n`, `j`/`k` and `?` shortcuts on the dashboard.
-- Stack: Next.js 15 App Router, Drizzle ORM, pg-boss, Tailwind CSS with shadcn/ui.
+- Stack: Next.js 16 App Router, Drizzle ORM, pg-boss, Tailwind CSS with shadcn/ui.
 - Licence: AGPL-3.0.
 
 ## Brand Commitments
@@ -57,7 +57,7 @@ No single feature carries the product. Its value is the combination, in one plac
 
 - Screenshots of the real product: `docs/screenshots/` (dashboard, grouped, graph, detail, tags, mobile).
 - API and MCP documentation: `docs/api.md`, `docs/mcp.md`.
-- A demo video of the tab auto-close flow is planned but does not exist yet (pageslop-pbi).
+- Demo clips of the tab auto-close flow exist locally (ignored `demo-clips/`), not in the repo.
 - No users, testimonials, usage numbers or press exist. Future work must not invent any.
 
 ## Product Principles
