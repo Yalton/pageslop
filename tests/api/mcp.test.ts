@@ -26,6 +26,11 @@ vi.mock('@/lib/db/queries/tags', () => ({
 vi.mock('@/lib/queue/boss', () => ({
   enqueueScrapeJob: vi.fn(),
 }))
+vi.mock('@/lib/queue/quota', () => ({
+  checkScrapeQuota: vi.fn(async () => null),
+  hasImportInProgress: vi.fn(async () => false),
+  IMPORT_IN_PROGRESS_MESSAGE: 'An import is still being fetched',
+}))
 
 import { encodeCursor } from '@/lib/links/cursor'
 import type { LinkWithTags } from '@/types'
@@ -393,5 +398,19 @@ describe('revisit and write tools', () => {
     expect(tags.upsertTag).not.toHaveBeenCalled()
     expect((await call('delete_link', { id: 'link-1' })).isError).toBe(true)
     expect(links.deleteLink).toHaveBeenCalledWith('user-2', 'link-1')
+  })
+})
+
+describe('save_link queue cap', () => {
+  it('fails with the message when the queue is full, without saving', async () => {
+    const { call, links, enqueueScrapeJob } = await setup()
+    const { checkScrapeQuota } = await import('@/lib/queue/quota')
+    vi.mocked(links.findDuplicate).mockResolvedValue(null as never)
+    vi.mocked(checkScrapeQuota).mockResolvedValueOnce('You have 1,000 links waiting to be fetched; try again once some finish')
+    const result = await call('save_link', { url: 'https://example.com/' })
+    expect(result.isError).toBe(true)
+    expect(result.content[0].text).toMatch(/1,000 links waiting/)
+    expect(links.insertLink).not.toHaveBeenCalled()
+    expect(enqueueScrapeJob).not.toHaveBeenCalled()
   })
 })

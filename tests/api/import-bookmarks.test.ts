@@ -21,6 +21,11 @@ vi.mock('@/lib/db/queries/links', () => ({
 vi.mock('@/lib/queue/boss', () => ({
   enqueueScrapeJob: vi.fn(),
 }))
+vi.mock('@/lib/queue/quota', () => ({
+  checkScrapeQuota: vi.fn(async () => null),
+  hasImportInProgress: vi.fn(async () => false),
+  IMPORT_IN_PROGRESS_MESSAGE: 'An import is still being fetched',
+}))
 
 vi.mock('@/lib/auth/server', () => ({
   auth: {
@@ -130,5 +135,44 @@ describe('POST /api/import/bookmarks', () => {
     expect(res.status).toBe(400)
     expect((await res.json()).error).toMatch(/at most 10000/)
     expect(insertLink).not.toHaveBeenCalled()
+  })
+})
+
+describe('POST /api/import/bookmarks one at a time', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  async function signedIn() {
+    const { auth } = await import('@/lib/auth/server')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce({ user: { id: 'user-1' }, session: {} } as any)
+  }
+
+  it('returns 409 while an earlier import is still being fetched, and saves nothing', async () => {
+    await signedIn()
+    const { insertLink } = await import('@/lib/db/queries/links')
+    const { hasImportInProgress } = await import('@/lib/queue/quota')
+    vi.mocked(hasImportInProgress).mockResolvedValueOnce(true)
+    const { POST } = await import('@/app/api/import/bookmarks/route')
+    const res = await POST(uploadRequest(BOOKMARKS_HTML))
+    expect(res.status).toBe(409)
+    expect((await res.json()).error).toMatch(/import is still being fetched/)
+    expect(hasImportInProgress).toHaveBeenCalledWith('user-1')
+    expect(insertLink).not.toHaveBeenCalled()
+  })
+
+  it('is exempt from the queue cap, so a 10,000-bookmark import is queued in full', async () => {
+    await signedIn()
+    const { insertLink, findDuplicate } = await import('@/lib/db/queries/links')
+    const { enqueueScrapeJob } = await import('@/lib/queue/boss')
+    const { checkScrapeQuota } = await import('@/lib/queue/quota')
+    vi.mocked(findDuplicate).mockResolvedValue(null as never)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.mocked(insertLink).mockImplementation(async (_userId: string, url: string) => ({ id: url, url }) as any)
+    const entries = Array.from({ length: 10_000 }, (_, i) => `<DT><A HREF="https://example.com/${i}">${i}</A>`).join('\n')
+    const { POST } = await import('@/app/api/import/bookmarks/route')
+    const res = await POST(uploadRequest(`<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<DL><p>\n${entries}\n</DL><p>`))
+    expect(res.status).toBe(202)
+    expect(enqueueScrapeJob).toHaveBeenCalledTimes(10_000)
+    expect(checkScrapeQuota).not.toHaveBeenCalled()
   })
 })

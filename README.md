@@ -134,6 +134,7 @@ Settings live in `.env` (read by the app and worker) and `.env.db` (read only by
 | `NEXT_PUBLIC_ALLOW_SIGNUP` | `false` hides sign-up links in the UI. Inlined at build time, so rebuild after changing. Default `true` |
 | `CONTACT_EMAIL` | Contact address shown on the privacy and terms pages |
 | `NEXT_PUBLIC_EXTENSION_DOCS_URL` | Where the settings page links for extension setup. Defaults to this README |
+| `MAX_PENDING_LINKS` | Most links one user may have waiting to be fetched; further saves get `429` until some finish. Bookmark imports are exempt but run one at a time per user. Default `1000` |
 | `STASH_EXPIRE_DAYS` | Days before stashed links in the inbox or read state are auto-archived (never deleted). Default `14` |
 
 The privacy and terms pages under `src/app/(legal)/` are a starting point written for a small hosted instance. If you run Pageslop for other people, review them for your situation.

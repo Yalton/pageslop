@@ -44,6 +44,14 @@ if (typeof window !== 'undefined') {
   window.addEventListener('pagehide', () => pendingDeletes.flush())
 }
 
+/** A save the server refused; `serverMessage` is its reason (e.g. a full queue), if it gave one. */
+export class SaveLinksError extends Error {
+  constructor(readonly serverMessage: string | null) {
+    super(serverMessage ?? 'Save failed')
+    this.name = 'SaveLinksError'
+  }
+}
+
 export function useLinks() {
   const { data, error, isLoading, mutate } = useSWR<LinkWithTags[]>('/api/links', fetcher, {
     revalidateOnFocus: true,
@@ -82,7 +90,9 @@ export function useLinks() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ urls } satisfies SaveLinksRequest),
     })
-    const { saved } = await res.json()
+    const body = await res.json().catch(() => null)
+    if (!res.ok) throw new SaveLinksError(typeof body?.error === 'string' ? body.error : null)
+    const { saved } = body
 
     // Optimistic update: prepend new links to current data
     mutate(

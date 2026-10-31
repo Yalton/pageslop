@@ -14,6 +14,11 @@ vi.mock('@/lib/db/queries/links', () => ({
 vi.mock('@/lib/queue/boss', () => ({
   enqueueScrapeJob: vi.fn(),
 }))
+vi.mock('@/lib/queue/quota', () => ({
+  checkScrapeQuota: vi.fn(async () => null),
+  hasImportInProgress: vi.fn(async () => false),
+  IMPORT_IN_PROGRESS_MESSAGE: 'An import is still being fetched',
+}))
 
 const NOW = new Date('2026-10-03T12:00:00.000Z')
 
@@ -346,5 +351,21 @@ describe('POST /api/stash', () => {
     it('clamps a closedAt in the future to server now', async () => {
       expect(await closedAtFor('2030-01-01T00:00:00.000Z')).toEqual(NOW)
     })
+  })
+})
+
+describe('POST /api/stash queue cap', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('returns 429 and saves no tabs when the batch would go over the cap', async () => {
+    const { POST, stashTabs, enqueueScrapeJob } = await setup()
+    const { checkScrapeQuota } = await import('@/lib/queue/quota')
+    vi.mocked(checkScrapeQuota).mockResolvedValueOnce('You have 1,000 links waiting to be fetched; try again once some finish')
+    const res = await POST(stashReq({ tabs: [{ url: 'https://a.com' }, { url: 'https://b.com' }] }))
+    expect(res.status).toBe(429)
+    expect((await res.json()).error).toMatch(/1,000 links waiting/)
+    expect(checkScrapeQuota).toHaveBeenCalledWith('user-1', 2)
+    expect(stashTabs).not.toHaveBeenCalled()
+    expect(enqueueScrapeJob).not.toHaveBeenCalled()
   })
 })

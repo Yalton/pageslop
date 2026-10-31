@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { useLinks } from '@/lib/hooks/useLinks'
+import { SaveLinksError, useLinks } from '@/lib/hooks/useLinks'
 
 export function SaveURLInput() {
   const [value, setValue] = useState('')
@@ -55,8 +55,9 @@ export function SaveURLInput() {
 
       setValue('')
       setIsMultiLine(false)
-    } catch {
-      toast.error("Couldn't save that link. Check the URL and try again.", { duration: 5000 })
+    } catch (err) {
+      const reason = err instanceof SaveLinksError ? err.serverMessage : null
+      toast.error(reason ?? "Couldn't save that link. Check the URL and try again.", { duration: 5000 })
     } finally {
       setIsSubmitting(false)
     }

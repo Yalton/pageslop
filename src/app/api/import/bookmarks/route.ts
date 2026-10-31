@@ -4,6 +4,7 @@ import { db } from '@/lib/db/client'
 import { importJobs } from '@/lib/db/schema'
 import { insertLink, findDuplicate } from '@/lib/db/queries/links'
 import { enqueueScrapeJob } from '@/lib/queue/boss'
+import { IMPORT_IN_PROGRESS_MESSAGE, hasImportInProgress } from '@/lib/queue/quota'
 import { parseNetscapeBookmarks } from '@/lib/utils/parse-bookmarks'
 import { readLimited } from '@/lib/net/read-limited'
 
@@ -23,6 +24,11 @@ export async function POST(req: Request) {
   if (!session) return new Response('Unauthorized', { status: 401 })
 
   const userId = session.user.id
+
+  // Imports skip the per-user queue cap, so each user runs one at a time.
+  if (await hasImportInProgress(userId)) {
+    return Response.json({ error: IMPORT_IN_PROGRESS_MESSAGE }, { status: 409 })
+  }
 
   // Bound the upload before buffering it: Content-Length when sent, and the
   // bytes actually read either way (a chunked body has no length up front).

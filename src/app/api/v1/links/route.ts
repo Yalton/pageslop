@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { requireScope, jsonError } from '@/lib/api/bearer'
 import { findDuplicate, getLinkWithTags, insertLink, listLinksPage } from '@/lib/db/queries/links'
 import { enqueueScrapeJob } from '@/lib/queue/boss'
+import { checkScrapeQuota } from '@/lib/queue/quota'
 import { decodeCursor } from '@/lib/links/cursor'
 import { toApiLink } from '@/lib/links/api-link'
 import { isHttpUrl } from '@/lib/links/http-url'
@@ -95,6 +96,9 @@ export async function POST(req: Request): Promise<Response> {
       const withTags = await getLinkWithTags(authed.userId, existing.id)
       return Response.json({ link: toApiLink(withTags ?? existing), duplicate: true })
     }
+
+    const queueFull = await checkScrapeQuota(authed.userId, 1)
+    if (queueFull) return jsonError(429, queueFull)
 
     const link = await insertLink(authed.userId, url, title ? { title } : {})
 

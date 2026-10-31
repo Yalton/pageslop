@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth/server'
 import { headers } from 'next/headers'
 import { insertLink, findDuplicate, listLinksWithTags } from '@/lib/db/queries/links'
 import { enqueueScrapeJob } from '@/lib/queue/boss'
+import { checkScrapeQuota } from '@/lib/queue/quota'
 import { parseUrls } from '@/lib/links/parse-urls'
 import { normalizeUrl } from '@/lib/links/normalize-url'
 import type { SaveLinksRequest, LinkWithDuplicate } from '@/types'
@@ -33,10 +34,18 @@ export async function POST(req: Request) {
     return Response.json({ error: `Too many URLs (${urlList.length}); save at most ${MAX_URLS} at a time` }, { status: 400 })
   }
 
+  // Find the duplicates first, so the queue cap counts only new links and a
+  // request over the cap saves nothing.
+  const found = []
+  for (const url of urlList) found.push(await findDuplicate(session.user.id, url))
+  const newCount = found.filter((existing) => !existing).length
+  const queueFull = await checkScrapeQuota(session.user.id, newCount)
+  if (queueFull) return Response.json({ error: queueFull }, { status: 429 })
+
   const saved: LinkWithDuplicate[] = []
 
-  for (const url of urlList) {
-    const existing = await findDuplicate(session.user.id, url)
+  for (const [i, url] of urlList.entries()) {
+    const existing = found[i]
     if (existing) {
       saved.push({ ...existing, duplicate: true } as LinkWithDuplicate)
       continue

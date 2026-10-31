@@ -46,6 +46,7 @@ Errors are JSON with a single `error` string:
 | 401 | Missing, malformed, unknown or revoked token (`WWW-Authenticate: Bearer` is set) |
 | 403 | Valid token without the scope this endpoint needs |
 | 404 | No such link for this token's user |
+| 429 | Too many of your links are still waiting to be fetched (see `MAX_PENDING_LINKS`) |
 | 500 | Server error |
 
 ## Link object
@@ -159,6 +160,10 @@ port, `https://a.com` = `https://a.com/`), and a URL is never saved twice:
 - New link: `201` with `{ "link": { ... }, "duplicate": false }`
 - Already saved: `200` with the existing link and `"duplicate": true`. Nothing
   is changed and no new scrape is queued.
+- Too many links waiting: `429`. Each user may have at most 1,000 saved links
+  waiting to be fetched (the server's `MAX_PENDING_LINKS`); bookmark imports
+  do not count. Retry once some finish. The MCP `save_link` tool returns the
+  same message as a tool error.
 
 ```sh
 curl -s -X POST \

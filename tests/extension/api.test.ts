@@ -89,6 +89,25 @@ describe("postStash", () => {
 		);
 	});
 
+	it("includes the server's error message, such as a full queue", async () => {
+		const fetchFn = vi.fn(async () =>
+			json(
+				{
+					error:
+						"You have 1,000 links waiting to be fetched; try again once some finish",
+				},
+				429,
+			),
+		);
+		expect(await postStash(fetchFn, "https://s.example", "ps_x", tabs)).toEqual(
+			{
+				ok: false,
+				error:
+					"Server returned 429: You have 1,000 links waiting to be fetched; try again once some finish",
+			},
+		);
+	});
+
 	it("rejects a non-JSON body", async () => {
 		const fetchFn = vi.fn(
 			async () => new Response("<html>login</html>", { status: 200 }),

@@ -20,6 +20,11 @@ vi.mock('@/lib/db/queries/links', () => ({
 vi.mock('@/lib/queue/boss', () => ({
   enqueueScrapeJob: vi.fn(),
 }))
+vi.mock('@/lib/queue/quota', () => ({
+  checkScrapeQuota: vi.fn(async () => null),
+  hasImportInProgress: vi.fn(async () => false),
+  IMPORT_IN_PROGRESS_MESSAGE: 'An import is still being fetched',
+}))
 
 import { encodeCursor } from '@/lib/links/cursor'
 import type { LinkWithTags } from '@/types'
@@ -324,5 +329,20 @@ describe('POST /api/v1/links', () => {
     const res = await list.POST(post({ url: 'https://example.com' }))
     expect(res.status).toBe(500)
     expect(await res.json()).toEqual({ error: expect.any(String) })
+  })
+})
+
+describe('POST /api/v1/links queue cap', () => {
+  it('returns 429 with the message when the queue is full, without saving', async () => {
+    const { list, queries, enqueueScrapeJob } = await setup()
+    const { checkScrapeQuota } = await import('@/lib/queue/quota')
+    vi.mocked(queries.findDuplicate).mockResolvedValue(null as never)
+    vi.mocked(checkScrapeQuota).mockResolvedValueOnce('You have 1,000 links waiting to be fetched; try again once some finish')
+    const res = await list.POST(req('/api/v1/links', { method: 'POST', body: { url: 'https://example.com' } }))
+    expect(res.status).toBe(429)
+    expect((await res.json()).error).toMatch(/1,000 links waiting/)
+    expect(checkScrapeQuota).toHaveBeenCalledWith('user-1', 1)
+    expect(queries.insertLink).not.toHaveBeenCalled()
+    expect(enqueueScrapeJob).not.toHaveBeenCalled()
   })
 })

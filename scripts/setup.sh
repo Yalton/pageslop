@@ -32,3 +32,16 @@ sed -e "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 32)|" \
 echo "Wrote .env and .env.db (mode 600) for ${url}."
 echo "Optional: set SMTP_* in .env to send email; without it, verification links go to 'docker compose logs app'."
 echo "Next: docker compose up -d --build"
+cat <<EOF
+
+Then open ${url} and sign up: the first account is yours. Sign-up stays open
+until you close it, so anyone who can reach the app can register. Once your
+account exists, close it by changing these two lines in .env:
+
+  ALLOW_SIGNUP=false
+  NEXT_PUBLIC_ALLOW_SIGNUP=false
+
+and rebuilding (the second one is baked into the build):
+
+  docker compose up -d --build
+EOF

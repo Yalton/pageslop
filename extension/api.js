@@ -39,7 +39,17 @@ async function request(fetchFn, url, init) {
 		clearTimeout(timer);
 	}
 	if (res.status === 401) return { ok: false, error: UNAUTHORIZED };
-	if (!res.ok) return { ok: false, error: `Server returned ${res.status}` };
+	if (!res.ok) {
+		// Show the server's own reason when it sends one, e.g. a full queue (429).
+		let reason = "";
+		try {
+			const body = await res.json();
+			if (typeof body?.error === "string") reason = `: ${body.error.slice(0, 200)}`;
+		} catch {
+			// Not JSON: the status alone will do.
+		}
+		return { ok: false, error: `Server returned ${res.status}${reason}` };
+	}
 	try {
 		return { ok: true, body: await res.json() };
 	} catch {

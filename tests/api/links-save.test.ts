@@ -6,6 +6,11 @@ vi.mock('@/lib/db/queries/links', () => ({
   listLinksWithTags: vi.fn(),
 }))
 vi.mock('@/lib/queue/boss', () => ({ enqueueScrapeJob: vi.fn() }))
+vi.mock('@/lib/queue/quota', () => ({
+  checkScrapeQuota: vi.fn(async () => null),
+  hasImportInProgress: vi.fn(async () => false),
+  IMPORT_IN_PROGRESS_MESSAGE: 'An import is still being fetched',
+}))
 vi.mock('@/lib/auth/server', () => ({ auth: { api: { getSession: vi.fn() } } }))
 vi.mock('next/headers', () => ({ headers: vi.fn(async () => new Headers()) }))
 
@@ -13,6 +18,7 @@ import { POST } from '@/app/api/links/route'
 import { insertLink, findDuplicate } from '@/lib/db/queries/links'
 import { enqueueScrapeJob } from '@/lib/queue/boss'
 import { auth } from '@/lib/auth/server'
+import { checkScrapeQuota } from '@/lib/queue/quota'
 
 function post(body: unknown) {
   return POST(new Request('http://localhost/api/links', { method: 'POST', body: JSON.stringify(body) }))
@@ -78,3 +84,23 @@ describe('POST /api/links limits', () => {
   })
 })
 
+describe('POST /api/links queue cap', () => {
+  it('returns 429 and saves nothing when the new links would go over the cap', async () => {
+    vi.mocked(findDuplicate).mockResolvedValue(null as never)
+    vi.mocked(checkScrapeQuota).mockResolvedValue('You have 1,000 links waiting to be fetched; try again once some finish')
+    const res = await post({ urls: 'https://a.com\nhttps://b.com' })
+    expect(res.status).toBe(429)
+    expect((await res.json()).error).toMatch(/1,000 links waiting/)
+    expect(insertLink).not.toHaveBeenCalled()
+    expect(enqueueScrapeJob).not.toHaveBeenCalled()
+  })
+
+  it('counts only URLs that are not saved yet', async () => {
+    vi.mocked(findDuplicate).mockImplementation(async (_u, url) =>
+      url === 'https://old.com/' ? ({ id: 'old', url } as never) : (null as never),
+    )
+    await post({ urls: 'https://old.com\nhttps://new.com' })
+    expect(checkScrapeQuota).toHaveBeenCalledWith('user-1', 1)
+    expect(insertLink).toHaveBeenCalledTimes(1)
+  })
+})

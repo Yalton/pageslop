@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { requireScope } from '@/lib/api/bearer'
 import { stashTabs } from '@/lib/db/queries/links'
 import { enqueueScrapeJob } from '@/lib/queue/boss'
+import { checkScrapeQuota } from '@/lib/queue/quota'
 
 const MAX_TABS = 100
 const MAX_URL_LENGTH = 2048
@@ -92,6 +93,17 @@ export async function POST(req: Request): Promise<Response> {
   if (valid.length === 0) {
     return Response.json({ saved: [], rejected })
   }
+
+  // Every tab counts toward the cap, even one already saved, so a batch over
+  // it is refused whole: the extension keeps those tabs open and shows why.
+  let queueFull: string | null
+  try {
+    queueFull = await checkScrapeQuota(authed.userId, valid.length)
+  } catch (err) {
+    console.error('[stash] checkScrapeQuota failed', err)
+    return Response.json({ error: 'Failed to save tabs' }, { status: 500 })
+  }
+  if (queueFull) return Response.json({ error: queueFull }, { status: 429 })
 
   let result: Awaited<ReturnType<typeof stashTabs>>
   try {

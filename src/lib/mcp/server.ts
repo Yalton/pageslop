@@ -14,6 +14,7 @@ import type { TokenScope } from '@/lib/auth/token-scopes'
 import { deleteLink, findDuplicate, getLinkWithTags, insertLink, listLinksPage, updateLinkFields } from '@/lib/db/queries/links'
 import { deleteLinkTag, linkTagToLink, listTagsWithCount, upsertTag } from '@/lib/db/queries/tags'
 import { enqueueScrapeJob } from '@/lib/queue/boss'
+import { checkScrapeQuota } from '@/lib/queue/quota'
 import { decodeCursor } from '@/lib/links/cursor'
 import { toApiLink } from '@/lib/links/api-link'
 import { isHttpUrl } from '@/lib/links/http-url'
@@ -178,6 +179,9 @@ export function createMcpServer(auth: McpAuth): McpServer {
           const withTags = await getLinkWithTags(auth.userId, existing.id)
           return ok({ link: toApiLink(withTags ?? existing), duplicate: true })
         }
+
+        const queueFull = await checkScrapeQuota(auth.userId, 1)
+        if (queueFull) return fail(queueFull)
 
         const link = await insertLink(auth.userId, url, cleanTitle ? { title: cleanTitle } : {})
 
