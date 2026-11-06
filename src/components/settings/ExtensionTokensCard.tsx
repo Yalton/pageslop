@@ -115,7 +115,11 @@ export function ExtensionTokensCard() {
     <div className={settingsPanelClass}>
       <h3 className="font-semibold mb-1">API tokens</h3>
       <p className="text-sm text-muted-foreground mb-4">
-        The Firefox extension uses a token to save idle tabs to your To Revisit list. Create one token per browser.
+        The{' '}
+        <a href="https://addons.mozilla.org/en-US/firefox/addon/pageslop-autoclose/" target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-foreground">
+          Firefox extension
+        </a>{' '}
+        uses a token to save idle tabs to your To Revisit list. Create one token per browser.
         Tokens can also read and manage links through the{' '}
         <code className="font-mono">/api/v1</code> REST API; give each token only the permissions it needs.
       </p>

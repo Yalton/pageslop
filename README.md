@@ -177,7 +177,7 @@ The Firefox extension in `extension/`, Pageslop Autoclose, closes idle tabs and 
 ### Connect it
 
 1. In Pageslop, open **Settings → Browser extension**, enter a name such as "Firefox laptop" and create a token. Copy it right away: the token is shown only once. Revoke it from the same card at any time.
-2. Load the extension (see below), open its **Options** page, and enter your server URL (for example `https://links.example.com`) and the token.
+2. Install [Pageslop Autoclose from addons.mozilla.org](https://addons.mozilla.org/en-US/firefox/addon/pageslop-autoclose/), open its **Options** page, and enter your server URL (for example `https://links.example.com`) and the token.
 3. Click **Test connection**. Firefox asks for permission to access your server. Grant it. You should see ✓ with your account email.
 4. Set the idle hours (default 6), the maximum number of open tabs (default 25) and any domains that must never close, then enable **Auto-close idle tabs** and save. Use **Preview next sweep** to see what would close.
 
@@ -197,9 +197,9 @@ npm run ext:build  # zip in web-ext-artifacts/
 
 You can also load it into your normal Firefox from `about:debugging` → **This Firefox** → **Load Temporary Add-on…** by selecting `extension/manifest.json`. Temporary add-ons are removed when Firefox restarts.
 
-### Install it permanently
+### Sign your own build
 
-Release Firefox only installs signed add-ons permanently. Signing is free on [addons.mozilla.org](https://addons.mozilla.org/developers/) as an **unlisted** add-on, which is not shown publicly. Add-on IDs are unique on AMO, so first change `browser_specific_settings.gecko.id` in `extension/manifest.json` to an ID of your own, such as `tab-stash@yourdomain.com`. Then either upload the zip from `npm run ext:build`, or sign from the command line with your AMO API credentials:
+Most people should install the [published add-on](https://addons.mozilla.org/en-US/firefox/addon/pageslop-autoclose/). To run a modified build permanently, sign it yourself: release Firefox only installs signed add-ons permanently. Signing is free on [addons.mozilla.org](https://addons.mozilla.org/developers/) as an **unlisted** add-on, which is not shown publicly. Add-on IDs are unique on AMO, so first change `browser_specific_settings.gecko.id` in `extension/manifest.json` to an ID of your own, such as `tab-stash@yourdomain.com`. Then either upload the zip from `npm run ext:build`, or sign from the command line with your AMO API credentials:
 
 ```bash
 npx web-ext sign --source-dir extension --channel unlisted --api-key "$AMO_JWT_ISSUER" --api-secret "$AMO_JWT_SECRET"
