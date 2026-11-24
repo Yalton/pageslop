@@ -1,0 +1,12 @@
+{
+  "types": [
+    "web-service"
+  ],
+  "git_authority": {
+    "commit": "agent",
+    "push_branch": "agent",
+    "push_main": "owner",
+    "merge": "pr",
+    "default_branch": "master"
+  }
+}
