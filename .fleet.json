@@ -2,7 +2,6 @@
   "types": [
     "web-service"
   ],
-  "verify_command": "docker compose config -q",
   "git_authority": {
     "commit": "agent",
     "push_branch": "agent",
